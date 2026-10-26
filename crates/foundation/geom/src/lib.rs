@@ -2,7 +2,7 @@
 //!
 //! This crate provides [`Point`], [`Rect`], [`RectList`], [`Line`], [`Parallelogram`] and
 //! [`BorderSize`] (generic over the [`Coord`] scalar types `i32`, `f32` and `f64`),
-//! and [`AffineTransform`].
+//! [`AffineTransform`], and the alignment types [`Justification`] and [`RectanglePlacement`].
 //! Coordinates follow screen conventions: x grows to the right and y grows downwards.
 //!
 //! The `kurbo` feature adds `From` conversions between the `f64` types and their `kurbo`
@@ -22,6 +22,7 @@ mod coord;
 #[cfg(feature = "kurbo")]
 mod kurbo_interop;
 mod line;
+mod placement;
 mod point;
 mod rect;
 mod rect_list;
@@ -30,6 +31,7 @@ mod transform;
 pub use border::BorderSize;
 pub use coord::Coord;
 pub use line::{Line, Parallelogram};
+pub use placement::{Justification, RectanglePlacement};
 pub use point::Point;
 pub use rect::Rect;
 pub use rect_list::RectList;
