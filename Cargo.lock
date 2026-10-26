@@ -1248,6 +1248,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "syrp-maths"
+version = "0.0.1"
+dependencies = [
+ "syrp-error",
+]
+
+[[package]]
 name = "syrp-mcp"
 version = "0.0.1"
 dependencies = [
@@ -1349,6 +1356,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "syrp-strings"
+version = "0.0.1"
+dependencies = [
+ "proptest",
+ "syrp-error",
+]
+
+[[package]]
 name = "syrp-sys"
 version = "0.0.1"
 dependencies = [
@@ -1368,6 +1383,10 @@ dependencies = [
  "syrp-rt",
  "toml 0.9.12+spec-1.1.0",
 ]
+
+[[package]]
+name = "syrp-var"
+version = "0.0.1"
 
 [[package]]
 name = "target-tuple"
