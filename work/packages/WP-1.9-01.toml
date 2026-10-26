@@ -1,0 +1,11 @@
+id = "WP-1.9-01"
+title = "syrp-compat-state: JUCE-shaped ValueTree, Value and CachedValue over the syrp-state store"
+crate = "crates/compat/state"
+depends_on = ["WP-0.2-15"]
+spec = "work/specs/WP-1.9-01.md"
+risk = ["public-api"]
+acceptance = "cargo syrp wp check WP-1.9-01 --json"
+platforms = ["linux", "macos", "windows"]
+role = "implementer"
+status = "planned"
+budget = { agent_hours = 24, max_review_rounds = 3, max_restarts = 2 }

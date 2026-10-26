@@ -1,0 +1,11 @@
+id = "WP-1.9-02"
+title = "syrp-compat-audio: SynthesiserVoice and Synthesiser over VoicePool, per-channel processor duplication"
+crate = "crates/compat/audio"
+depends_on = ["WP-0.2-14", "WP-0.2-02"]
+spec = "work/specs/WP-1.9-02.md"
+risk = ["public-api", "rt-safety"]
+acceptance = "cargo syrp wp check WP-1.9-02 --json"
+platforms = ["linux", "macos", "windows"]
+role = "implementer"
+status = "planned"
+budget = { agent_hours = 32, max_review_rounds = 3, max_restarts = 2 }
