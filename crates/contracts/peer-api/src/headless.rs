@@ -43,7 +43,21 @@ struct Shared {
     next_id: u64,
     scale: f64,
     requests: Vec<Request>,
-    sinks: Vec<(PeerId, Option<EventSink>)>,
+    peers: Vec<Slot>,
+}
+
+/// A live peer's sink (taken while it runs) and the state platform events can change.
+struct Slot {
+    id: PeerId,
+    sink: Option<EventSink>,
+    bounds: Rect<f64>,
+    state: WindowState,
+}
+
+impl Shared {
+    fn slot(&mut self, id: PeerId) -> Option<&mut Slot> {
+        self.peers.iter_mut().find(|s| s.id == id)
+    }
 }
 
 /// A headless desktop. Clones share the same peers and request log, so a test can keep one
@@ -78,7 +92,7 @@ impl HeadlessDesktop {
                 next_id: 1,
                 scale,
                 requests: Vec::new(),
-                sinks: Vec::new(),
+                peers: Vec::new(),
             })),
         }
     }
@@ -101,7 +115,9 @@ impl HeadlessDesktop {
 
     /// Delivers `event` to `peer`'s sink as the platform would. Returns `false` if the peer
     /// does not exist (dropped) or is already handling an event (re-entrant injection).
-    /// The sink may call back into the desktop or the peer.
+    /// The sink may call back into the desktop or the peer. Like a platform, a delivered
+    /// [`Event::BoundsChanged`] or [`Event::StateChanged`] first updates what the peer's
+    /// `bounds()` or `state()` returns.
     /// ```
     /// # use syrp_loop_api::ManualLoop;
     /// use syrp_peer_api::{headless::HeadlessDesktop, Event, PeerId};
@@ -109,20 +125,24 @@ impl HeadlessDesktop {
     /// ManualLoop::new().with_token(|mt| assert!(!d.inject(mt, PeerId::from_raw(9), &Event::FocusLost)));
     /// ```
     pub fn inject(&self, mt: &MessageThread<'_>, peer: PeerId, event: &Event) -> bool {
-        let taken = {
+        let mut sink = {
             let mut sh = self.shared.borrow_mut();
-            sh.sinks
-                .iter_mut()
-                .find(|(id, _)| *id == peer)
-                .and_then(|(_, s)| s.take())
-        };
-        let Some(mut sink) = taken else {
-            return false;
+            let Some(slot) = sh.slot(peer) else {
+                return false;
+            };
+            let Some(sink) = slot.sink.take() else {
+                return false;
+            };
+            match event {
+                Event::BoundsChanged(b) => slot.bounds = *b,
+                Event::StateChanged(st) => slot.state = *st,
+                _ => {}
+            }
+            sink
         };
         sink(mt, event);
-        let mut sh = self.shared.borrow_mut();
-        if let Some((_, slot)) = sh.sinks.iter_mut().find(|(id, _)| *id == peer) {
-            *slot = Some(sink);
+        if let Some(slot) = self.shared.borrow_mut().slot(peer) {
+            slot.sink = Some(sink);
         }
         true
     }
@@ -143,7 +163,7 @@ impl HeadlessDesktop {
         let ids: Vec<PeerId> = {
             let mut sh = self.shared.borrow_mut();
             sh.scale = scale;
-            sh.sinks.iter().map(|(id, _)| *id).collect()
+            sh.peers.iter().map(|s| s.id).collect()
         };
         for id in ids {
             self.inject(mt, id, &Event::ScaleChanged(scale));
@@ -161,15 +181,18 @@ impl Desktop for HeadlessDesktop {
         let mut sh = self.shared.borrow_mut();
         let id = PeerId::from_raw(sh.next_id);
         sh.next_id += 1;
-        sh.sinks.push((id, Some(events)));
+        sh.peers.push(Slot {
+            id,
+            sink: Some(events),
+            bounds: options.bounds(),
+            state: WindowState::Normal,
+        });
         sh.requests.push(Request::Create(id, options.clone()));
         Ok(Box::new(HeadlessPeer {
             id,
             shared: Rc::clone(&self.shared),
             child: options.parent().is_some(),
-            bounds: options.bounds(),
             visible: options.is_visible(),
-            state: WindowState::Normal,
             title: options.title().to_owned(),
         }))
     }
@@ -179,15 +202,18 @@ struct HeadlessPeer {
     id: PeerId,
     shared: Rc<RefCell<Shared>>,
     child: bool,
-    bounds: Rect<f64>,
     visible: bool,
-    state: WindowState,
     title: String,
 }
 
 impl HeadlessPeer {
     fn record(&self, r: Request) {
         self.shared.borrow_mut().requests.push(r);
+    }
+
+    fn with_slot<R>(&self, f: impl FnOnce(&mut Slot) -> R) -> R {
+        let mut sh = self.shared.borrow_mut();
+        f(sh.slot(self.id).expect("a live peer has a slot"))
     }
 }
 
@@ -199,10 +225,10 @@ impl Peer for HeadlessPeer {
         self.child
     }
     fn bounds(&self) -> Rect<f64> {
-        self.bounds
+        self.with_slot(|s| s.bounds)
     }
     fn set_bounds(&mut self, _mt: &MessageThread<'_>, bounds: Rect<f64>) {
-        self.bounds = bounds;
+        self.with_slot(|s| s.bounds = bounds);
         self.record(Request::SetBounds(self.id, bounds));
     }
     fn is_visible(&self) -> bool {
@@ -213,13 +239,13 @@ impl Peer for HeadlessPeer {
         self.record(Request::SetVisible(self.id, visible));
     }
     fn state(&self) -> WindowState {
-        self.state
+        self.with_slot(|s| s.state)
     }
     fn set_state(&mut self, _mt: &MessageThread<'_>, state: WindowState) -> Result<(), PeerError> {
         if self.child && state != WindowState::Normal {
             return Err(PeerError::Unsupported);
         }
-        self.state = state;
+        self.with_slot(|s| s.state = state);
         self.record(Request::SetState(self.id, state));
         Ok(())
     }
@@ -247,7 +273,7 @@ impl Peer for HeadlessPeer {
 impl Drop for HeadlessPeer {
     fn drop(&mut self) {
         let mut sh = self.shared.borrow_mut();
-        sh.sinks.retain(|(id, _)| *id != self.id);
+        sh.peers.retain(|s| s.id != self.id);
         sh.requests.push(Request::Destroy(self.id));
     }
 }

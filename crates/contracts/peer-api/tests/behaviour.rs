@@ -83,11 +83,9 @@ fn b1_child_peer_embeds_in_host_parent_and_cannot_change_state() {
     let mut d = HeadlessDesktop::new(1.0);
     let parent = RawWindowHandle::Web(WebWindowHandle::new(7));
     ManualLoop::new().with_token(|mt| {
-        let (mut p, _) = open(
-            &mut d,
-            mt,
-            PeerOptions::child(parent, Rect::new(0.0, 0.0, 9.0, 9.0)),
-        );
+        // SAFETY: the headless desktop never passes the handle to an OS.
+        let o = unsafe { PeerOptions::child(parent, Rect::new(0.0, 0.0, 9.0, 9.0)) };
+        let (mut p, _) = open(&mut d, mt, o);
         assert!(p.is_child());
         assert_eq!(
             p.set_state(mt, WindowState::Maximised),
@@ -217,6 +215,26 @@ fn b6_sinks_may_call_back_into_the_desktop_and_reentry_is_refused() {
         assert_eq!(*reentered.borrow(), Some(false));
         // The sink was put back after the call.
         assert!(d.inject(mt, p.id(), &Event::FocusLost));
+    });
+}
+
+#[test]
+fn b6_injected_bounds_and_state_events_update_the_peer_getters() {
+    let mut d = HeadlessDesktop::new(1.0);
+    ManualLoop::new().with_token(|mt| {
+        let (mut p, log) = open(&mut d, mt, PeerOptions::top_level(Rect::default()));
+        p.set_bounds(mt, Rect::new(0.0, 0.0, 300.0, 200.0));
+        // The platform clamps the request to a display edge and reports it.
+        let applied = Rect::new(0.0, 0.0, 280.0, 200.0);
+        assert!(d.inject(mt, p.id(), &Event::BoundsChanged(applied)));
+        assert_eq!(p.bounds(), applied);
+        p.set_state(mt, WindowState::Fullscreen).unwrap();
+        // The user restores the window; the event wins until the next setter call.
+        assert!(d.inject(mt, p.id(), &Event::StateChanged(WindowState::Normal)));
+        assert_eq!(p.state(), WindowState::Normal);
+        p.set_state(mt, WindowState::Maximised).unwrap();
+        assert_eq!(p.state(), WindowState::Maximised);
+        assert_eq!(log.borrow().len(), 2);
     });
 }
 

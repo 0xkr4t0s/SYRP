@@ -21,7 +21,10 @@ juce_gui_basics/TextInputTarget (event side; shared with `syrp-ui`)
   and event positions are relative to the parent / the peer. Scale factor = physical pixels
   per logical unit, as `syrp_gfx_api::RenderTarget`; `Peer::render_target` uses
   `RenderTarget::from_logical`, so rounding matches the renderers.
-- Setters are requests; the platform reports adjustments as `BoundsChanged`/`StateChanged`.
+- Setters record at once and request; the platform reports only what differs (or what the
+  user changed) as `BoundsChanged`/`StateChanged`, never echoing an unchanged request. A getter
+  returns whichever came last; the headless desktop applies injected events the same way.
+- `PeerOptions::child` is `unsafe`: platforms hand the raw parent handle to the OS.
   A child peer accepts only `WindowState::Normal` (`PeerError::Unsupported` otherwise).
 - Dropping a peer destroys its window; a dropped peer's sink never runs again.
 - IME: `Preedit` ranges are byte ranges into the preedit string. `set_ime_caret(None)`

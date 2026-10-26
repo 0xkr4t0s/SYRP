@@ -93,15 +93,30 @@ impl PeerOptions {
     }
 
     /// A visible, undecorated child window inside the host's `parent`, at `bounds` relative
-    /// to it. The parent must outlive the peer; that is the host's promise, not checked here.
+    /// to it. A platform [`Desktop`] passes the handle to the OS, which trusts it, so a forged
+    /// handle is undefined behaviour; this constructor is therefore `unsafe`.
+    ///
+    /// # Safety
+    /// Until every peer created from these options (and every clone of them) is dropped:
+    /// - `parent` must identify a window that exists and is not destroyed, of the windowing
+    ///   system that the [`Desktop`] receiving the options drives (an `AppKit` handle for the
+    ///   macOS desktop, `Win32` for Windows, `Xlib`/`Xcb`/`Wayland` for that Linux backend);
+    /// - every pointer in the handle (an `NSView`, a `wl_surface`, an `HINSTANCE`, ...) must be
+    ///   non-null, properly aligned, point to a live object of the type the variant names, and
+    ///   stay valid; integer ids (an `HWND`, an X11 window) must name that live window;
+    /// - the handle must be usable from the thread that runs the message loop, as the platform
+    ///   requires (`AppKit` views on the main thread).
+    ///
+    /// The headless desktop never dereferences the handle, but callers may not rely on that.
     /// ```
     /// use syrp_peer_api::raw_window_handle::{RawWindowHandle, WebWindowHandle};
     /// let parent = RawWindowHandle::Web(WebWindowHandle::new(1));
-    /// let o = syrp_peer_api::PeerOptions::child(parent, syrp_geom::Rect::new(0.0, 0.0, 1.0, 1.0));
+    /// // SAFETY: these options are only inspected here, never passed to a Desktop.
+    /// let o = unsafe { syrp_peer_api::PeerOptions::child(parent, syrp_geom::Rect::new(0.0, 0.0, 1.0, 1.0)) };
     /// assert_eq!((o.parent(), o.is_decorated()), (Some(parent), false));
     /// ```
     #[doc(alias = "addToDesktop")]
-    pub fn child(parent: RawWindowHandle, bounds: Rect<f64>) -> Self {
+    pub unsafe fn child(parent: RawWindowHandle, bounds: Rect<f64>) -> Self {
         PeerOptions {
             parent: Some(parent),
             decorated: false,
@@ -223,10 +238,14 @@ pub trait Desktop {
     ) -> Result<Box<dyn Peer>, PeerError>;
 }
 
-/// One native window (JUCE's ComponentPeer). Setters take the [`MessageThread`] token and are
-/// requests: the platform may adjust them (a size constraint, a display edge) and reports the
-/// outcome as [`Event::BoundsChanged`] or [`Event::StateChanged`]. Getters report what the
-/// peer last applied or was told.
+/// One native window (JUCE's ComponentPeer). Setters take the [`MessageThread`] token.
+///
+/// Request and confirm: a setter records its value at once and asks the platform for it.
+/// If the platform applies something else (a size constraint, a display edge, a refused
+/// state) it reports the outcome as [`Event::BoundsChanged`] or [`Event::StateChanged`],
+/// and it reports changes the user makes (dragging, the maximise button) the same way. A
+/// platform never echoes a request it applied unchanged. So a getter returns whichever came
+/// last: the latest setter call or the latest platform event.
 /// ```
 /// # use syrp_geom::Rect; use syrp_loop_api::ManualLoop;
 /// use syrp_peer_api::{headless::HeadlessDesktop, Desktop, PeerOptions, WindowState};
@@ -249,12 +268,14 @@ pub trait Peer {
     /// fn f(p: &dyn syrp_peer_api::Peer) { let _ = p.is_child(); }
     /// ```
     fn is_child(&self) -> bool;
-    /// Bounds in logical units (desktop coordinates, or parent-relative for a child).
+    /// Bounds in logical units (desktop coordinates, or parent-relative for a child): the last
+    /// [`set_bounds`](Self::set_bounds) or [`Event::BoundsChanged`], whichever came later.
     /// ```
     /// fn f(p: &dyn syrp_peer_api::Peer) { let _ = p.bounds().width(); }
     /// ```
     fn bounds(&self) -> Rect<f64>;
-    /// Requests new bounds.
+    /// Requests new bounds; [`bounds`](Self::bounds) returns them at once. The platform sends
+    /// [`Event::BoundsChanged`] only if it applies different bounds.
     /// ```
     /// fn f(p: &mut dyn syrp_peer_api::Peer, mt: &syrp_loop_api::MessageThread<'_>) { let _ = p.set_bounds(mt, syrp_geom::Rect::new(0.0, 0.0, 640.0, 480.0)); }
     /// ```
@@ -269,12 +290,14 @@ pub trait Peer {
     /// fn f(p: &mut dyn syrp_peer_api::Peer, mt: &syrp_loop_api::MessageThread<'_>) { let _ = p.set_visible(mt, true); }
     /// ```
     fn set_visible(&mut self, mt: &MessageThread<'_>, visible: bool);
-    /// The current window state.
+    /// The window state: the last accepted [`set_state`](Self::set_state) or
+    /// [`Event::StateChanged`], whichever came later.
     /// ```
     /// fn f(p: &dyn syrp_peer_api::Peer) { let _ = p.state(); }
     /// ```
     fn state(&self) -> WindowState;
-    /// Requests a window state.
+    /// Requests a window state; once accepted, [`state`](Self::state) returns it at once. The
+    /// platform sends [`Event::StateChanged`] only if the window ends up in another state.
     ///
     /// # Errors
     /// [`PeerError::Unsupported`] for any state but [`WindowState::Normal`] on a child window,
