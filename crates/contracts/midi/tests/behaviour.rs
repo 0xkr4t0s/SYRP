@@ -193,6 +193,8 @@ fn b6_contract_types_have_no_public_fields() {
         include_str!("../src/lib.rs"),
         include_str!("../src/message.rs"),
         include_str!("../src/buffer.rs"),
+        include_str!("../src/ump.rs"),
+        include_str!("../src/ump_buffer.rs"),
     ];
     let mut in_struct = false;
     for line in src.iter().flat_map(|s| s.lines()) {

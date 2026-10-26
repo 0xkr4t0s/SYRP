@@ -1,0 +1,1 @@
+{"wp": "WP-0.2-03", "kind": "added", "summary": "syrp-midi (increment 3): MIDI 2.0 Universal MIDI Packets (UmpPacket for every message type, UmpMessageType, SysExStatus) with validated constructors and a non-panicking read, and UmpBuffer (packed heads plus a u32 word arena, non-allocating try_add, by-value UmpEvents iteration); new code SYRP-MIDI-0004."}
