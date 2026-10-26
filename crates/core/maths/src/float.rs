@@ -29,6 +29,22 @@ pub trait Float:
     + Mul<Output = Self>
     + Div<Output = Self>
 {
+    /// The difference between 1 and the next larger representable value.
+    ///
+    /// ```
+    /// use syrp_maths::Float;
+    /// assert_eq!(<f32 as Float>::EPSILON, f32::EPSILON);
+    /// ```
+    const EPSILON: Self;
+
+    /// The smallest positive normal value.
+    ///
+    /// ```
+    /// use syrp_maths::Float;
+    /// assert_eq!(<f64 as Float>::MIN_POSITIVE, f64::MIN_POSITIVE);
+    /// ```
+    const MIN_POSITIVE: Self;
+
     /// Converts to `f64` exactly.
     ///
     /// ```
@@ -47,6 +63,8 @@ pub trait Float:
 }
 
 impl Float for f32 {
+    const EPSILON: Self = f32::EPSILON;
+    const MIN_POSITIVE: Self = f32::MIN_POSITIVE;
     fn to_f64(self) -> f64 {
         f64::from(self)
     }
@@ -57,6 +75,8 @@ impl Float for f32 {
 }
 
 impl Float for f64 {
+    const EPSILON: Self = f64::EPSILON;
+    const MIN_POSITIVE: Self = f64::MIN_POSITIVE;
     fn to_f64(self) -> f64 {
         self
     }

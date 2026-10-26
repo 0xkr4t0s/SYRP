@@ -1252,6 +1252,7 @@ name = "syrp-maths"
 version = "0.0.1"
 dependencies = [
  "syrp-error",
+ "syrp-rt",
 ]
 
 [[package]]

@@ -4,9 +4,14 @@
 //! - [`Range`]: a half-open `start..end` range for integers and floats.
 //! - [`NormalisableRange`]: a value range mapped to and from `0..=1` with skew, symmetric skew,
 //!   interval snapping and optional custom mappings. Parameters and sliders map through it.
+//! - Helpers: [`map_range`], [`map_to_0to1`], [`map_from_log10`], [`map_to_log10`], [`limit`],
+//!   [`is_within`], [`approximately_equal`], [`next_power_of_two`], [`is_power_of_two`],
+//!   [`round_to_int`] and the [`MathConstants`] for `f32` and `f64`.
+//! - [`Random`]: a seedable SplitMix64 generator, and the shared [`system_random`].
+//! - [`StatisticsAccumulator`]: running mean, variance, minimum and maximum (Welford).
 //!
-//! Both are plain `Copy` data with pure methods: none of them allocate. The numeric helpers,
-//! `Random` and `StatisticsAccumulator` arrive in later increments of WP-1.1-11.
+//! Nothing here allocates except [`Random::with_entropy`] and [`system_random`]. `Range`,
+//! `NormalisableRange`, `Random` and `StatisticsAccumulator` implement [`syrp_rt::RtSafe`].
 //!
 //! ```
 //! use syrp_maths::{NormalisableRange, Range};
@@ -22,12 +27,36 @@ use std::fmt;
 use syrp_error::{Diagnostic, ErrorCode};
 
 mod float;
+mod helpers;
 mod normalisable;
+mod random;
 mod range;
+mod statistics;
 
 pub use float::Float;
+pub use helpers::{
+    MathConstants, PowerOfTwo, Tolerance, approximately_equal, approximately_equal_with,
+    is_power_of_two, is_within, limit, map_from_log10, map_range, map_to_0to1, map_to_log10,
+    next_power_of_two, round_to_int,
+};
 pub use normalisable::{MapFn, NormalisableRange};
+pub use random::{Random, system_random};
 pub use range::Range;
+pub use statistics::StatisticsAccumulator;
+
+// SAFETY: two `T` values inline, no destructor beyond `T`'s; every method is arithmetic on
+// `T`, which is itself `RtSafe`.
+unsafe impl<T: syrp_rt::RtSafe> syrp_rt::RtSafe for Range<T> {}
+// SAFETY: `Copy` scalars and `fn` pointers, no destructor; the built-in mappings are
+// arithmetic only. Custom `MapFn`s run the caller's code, which must itself be RT-safe for
+// the range to be used on an audio thread (documented on `MapFn`).
+unsafe impl<T: Float + syrp_rt::RtSafe> syrp_rt::RtSafe for NormalisableRange<T> {}
+// SAFETY: one `u64` of state; every method except `with_entropy` (documented as not for the
+// audio thread) is integer arithmetic or writes into a caller-provided slice.
+unsafe impl syrp_rt::RtSafe for Random {}
+// SAFETY: a count, two `f64` and two `Option<T>` inline, no destructor; `add` and the
+// accessors are arithmetic only.
+unsafe impl<T: Float + syrp_rt::RtSafe> syrp_rt::RtSafe for StatisticsAccumulator<T> {}
 
 /// Errors from building the numeric types in this crate.
 ///
