@@ -1,0 +1,1 @@
+{"wp": "WP-1.1-13", "kind": "added", "summary": "syrp-strings increment 2: LocalisedStrings (translation-file parser with line-numbered errors, translate, ignore_case, fallback chain, merge) and the process-wide set_current_mappings, current_mappings and translate (TRANS); error codes SYRP-STRINGS-0004 and 0005."}

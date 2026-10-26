@@ -8,7 +8,8 @@
 //! - [`TextDiff`]: a list of character-position insertions and removals that turn one text into
 //!   another.
 //!
-//! `LocalisedStrings` and the process-wide `translate` function follow in a later increment.
+//! - [`LocalisedStrings`]: a parsed translation file (JUCE's `LocalisedStrings`), and the
+//!   process-wide [`set_current_mappings`] and [`translate`] (JUCE's `TRANS`).
 //!
 //! ```
 //! use syrp_strings::{base64, StringPool, TextDiff};
@@ -19,10 +20,15 @@
 //! ```
 
 pub mod base64;
+mod current;
 mod diff;
+mod localised;
 mod pool;
 
+pub use current::{current_mappings, set_current_mappings, translate};
+
 pub use diff::{Change, TextDiff};
+pub use localised::LocalisedStrings;
 pub use pool::StringPool;
 
 use std::fmt;
@@ -44,6 +50,10 @@ pub enum StringsErrorKind {
     Base64Padding,
     /// A buffer sized by the input could not be allocated (`SYRP-STRINGS-0003`).
     OutOfMemory,
+    /// A translation-file line that is not a header, comment or mapping (`SYRP-STRINGS-0004`).
+    TranslationSyntax,
+    /// Merging translations for two different languages (`SYRP-STRINGS-0005`).
+    LanguageMismatch,
 }
 
 /// The error type of this crate: a [`StringsErrorKind`] plus, where it applies, a position.
@@ -61,11 +71,24 @@ pub enum StringsErrorKind {
 pub struct StringsError {
     kind: StringsErrorKind,
     position: Option<usize>,
+    line: Option<usize>,
 }
 
 impl StringsError {
     pub(crate) const fn new(kind: StringsErrorKind, position: Option<usize>) -> Self {
-        Self { kind, position }
+        Self {
+            kind,
+            position,
+            line: None,
+        }
+    }
+
+    pub(crate) const fn at_line(kind: StringsErrorKind, line: usize, position: usize) -> Self {
+        Self {
+            kind,
+            position: Some(position),
+            line: Some(line),
+        }
     }
 
     /// What went wrong.
@@ -78,7 +101,8 @@ impl StringsError {
         self.kind
     }
 
-    /// The byte offset in the input where the problem was found, if the error has one.
+    /// The byte offset where the problem was found, if the error has one. For a translation
+    /// file it counts from the start of [`StringsError::line`].
     ///
     /// ```
     /// use syrp_strings::base64;
@@ -87,19 +111,39 @@ impl StringsError {
     pub const fn position(&self) -> Option<usize> {
         self.position
     }
+
+    /// The 1-based line number in a translation file, for `SYRP-STRINGS-0004`.
+    ///
+    /// ```
+    /// let err = syrp_strings::LocalisedStrings::parse("\"a\" = \"b\"\nnonsense", false).unwrap_err();
+    /// assert_eq!(err.line(), Some(2));
+    /// ```
+    pub const fn line(&self) -> Option<usize> {
+        self.line
+    }
 }
 
 impl fmt::Display for StringsError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let Self { kind, position } = self;
+        let Self {
+            kind,
+            position,
+            line,
+        } = self;
         f.write_str(match kind {
             StringsErrorKind::Base64Character => "character outside the Base64 alphabet",
             StringsErrorKind::Base64Padding => "bad Base64 padding or length",
             StringsErrorKind::OutOfMemory => "out of memory for a string operation",
+            StringsErrorKind::TranslationSyntax => "malformed translation line",
+            StringsErrorKind::LanguageMismatch => {
+                "cannot merge translations for different languages"
+            }
         })?;
-        match position {
-            Some(p) => write!(f, " at byte {p}"),
-            None => Ok(()),
+        match (line, position) {
+            (Some(l), Some(p)) => write!(f, " at line {l}, byte {p}"),
+            (Some(l), None) => write!(f, " at line {l}"),
+            (None, Some(p)) => write!(f, " at byte {p}"),
+            (None, None) => Ok(()),
         }
     }
 }
@@ -112,6 +156,8 @@ impl Diagnostic for StringsError {
             StringsErrorKind::Base64Character => "SYRP-STRINGS-0001",
             StringsErrorKind::Base64Padding => "SYRP-STRINGS-0002",
             StringsErrorKind::OutOfMemory => "SYRP-STRINGS-0003",
+            StringsErrorKind::TranslationSyntax => "SYRP-STRINGS-0004",
+            StringsErrorKind::LanguageMismatch => "SYRP-STRINGS-0005",
         })
     }
 }
