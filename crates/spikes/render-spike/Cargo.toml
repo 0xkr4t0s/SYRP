@@ -16,6 +16,11 @@ wp = "WP-0.2-09"
 [dependencies]
 syrp-geom = { version = "0.0.1", path = "../../foundation/geom" }
 syrp-gfx-api = { version = "0.0.1", path = "../../contracts/gfx-api" }
+syrp-testkit = { version = "0.0.1", path = "../../tooling/testkit" }
+# Apache-2.0 OR MIT. The sparse-strip CPU renderer under evaluation.
+vello_cpu = { version = "0.3.0", default-features = false, features = ["std", "u8_pipeline"] }
+# BSD-3-Clause. The Skia-derived CPU rasteriser under evaluation.
+tiny-skia = { version = "0.12.0", default-features = false, features = ["std", "simd"] }
 # MIT OR Apache-2.0. Encodes the comparator's diff images.
 png = "0.18.1"
 
