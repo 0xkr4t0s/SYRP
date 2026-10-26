@@ -17,19 +17,19 @@ use crate::node::{NodeKey, NodeRef, Properties};
 
 /// One arena slot.
 pub(crate) struct Node {
-    node_type: Identifier,
+    pub(crate) node_type: Identifier,
     /// Sorted by identifier, no duplicates.
     pub(crate) props: Vec<(Identifier, Var)>,
     pub(crate) children: Vec<NodeKey>,
     pub(crate) parent: Option<NodeKey>,
     /// Handles + subscriptions + parent link + undelivered records naming the node.
-    refs: u32,
+    pub(crate) refs: u32,
 }
 
 /// The shared interior of a [`Store`]. No borrow of it is held while a [`NodeRef`] is dropped.
 #[derive(Default)]
 pub(crate) struct Inner {
-    nodes: SlotMap<NodeKey, Node>,
+    pub(crate) nodes: SlotMap<NodeKey, Node>,
     /// Scratch stack for freeing subtrees, kept to reuse its allocation.
     free_stack: Vec<NodeKey>,
     /// Retained records, oldest first, with consecutive sequence numbers.
@@ -45,6 +45,10 @@ pub(crate) struct Inner {
     /// Listeners per node, in registration order, with their ids.
     pub(crate) listeners: SecondaryMap<NodeKey, Vec<(u64, Listener)>>,
     pub(crate) next_listener: u64,
+    /// Live subscriptions in the store; zero lets delivery skip building events.
+    pub(crate) subscriptions: usize,
+    /// Reused per-record listener snapshot.
+    pub(crate) scratch: Vec<(NodeKey, u64, Listener)>,
 }
 
 impl Inner {
@@ -172,7 +176,7 @@ impl Store {
     }
 
     /// The key of `node` if it belongs to this store.
-    fn own(&self, node: &NodeRef) -> Result<NodeKey, StateError> {
+    pub(crate) fn own(&self, node: &NodeRef) -> Result<NodeKey, StateError> {
         if Rc::ptr_eq(&self.inner, &node.store) {
             Ok(node.key)
         } else {
@@ -603,6 +607,10 @@ impl Store {
     /// each ancestor's, upwards. A listener added during a delivery hears the next change; one
     /// removed during a delivery is not called again.
     ///
+    /// If a listener panics, the panic propagates out of the mutating call. The record being
+    /// delivered is finished, but the records after it stay undelivered, and keep their counts
+    /// on the nodes they name, until the next mutation on this store delivers them.
+    ///
     /// ```
     /// # use syrp_var::{Identifier, Var}; syrp_loop_api::ManualLoop::new().with_token(|mt| { let store = syrp_state::Store::new();
     /// let (p, c) = (store.create(mt, Identifier::new("P")), store.create(mt, Identifier::new("C")));
@@ -625,6 +633,7 @@ impl Store {
         let mut inner = self.inner.borrow_mut();
         let id = inner.next_listener;
         inner.next_listener += 1;
+        inner.subscriptions += 1;
         let listener: Listener = Rc::new(RefCell::new(listener));
         let list = inner.listeners.entry(key).expect("live node");
         list.or_default().push((id, listener));
@@ -752,7 +761,9 @@ impl Store {
         })
     }
 
-    /// The first child whose property `id` equals `value` (by `Var`'s `==`).
+    /// The first child whose property `id` equals `value` by `Var`'s strict `==`: the same
+    /// variant and value, except that `i32`, `i64` and `f64` compare by exact numeric value and
+    /// objects by identity. It is not `loose_eq` (`"1"` does not match `1`).
     ///
     /// ```
     /// # use syrp_var::{Identifier, Var}; syrp_loop_api::ManualLoop::new().with_token(|mt| { let store = syrp_state::Store::new();

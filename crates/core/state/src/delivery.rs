@@ -96,17 +96,26 @@ impl Store {
     /// loop, after the current record's remaining listeners.
     pub(crate) fn flush(&self, mt: &MessageThread<'_>) {
         let rc = self.rc();
-        if std::mem::replace(&mut rc.borrow_mut().delivering, true) {
-            return;
+        {
+            let mut inner = rc.borrow_mut();
+            if inner.delivering {
+                return;
+            }
+            if inner.subscriptions == 0 {
+                inner.drain_unobserved(); // B6: nobody listens, so build nothing
+                return;
+            }
+            inner.delivering = true;
         }
         let mut guard = Delivering {
             store: rc,
             current: None,
         };
+        // A reused snapshot buffer (B6); lost, harmlessly, if a listener panics.
+        let mut targets = std::mem::take(&mut rc.borrow_mut().scratch);
         // No handle or listener is cloned or dropped while `rc` is borrowed: listeners run, and
         // snapshots drop, outside any borrow (`b5_listeners_may_clone_and_drop_handles`).
         loop {
-            let mut targets: Vec<(NodeKey, u64, Listener)> = Vec::new();
             let change = {
                 let mut inner = rc.borrow_mut();
                 let Some(change) = inner.take_undelivered() else {
@@ -126,9 +135,10 @@ impl Store {
                     f(self, mt, change);
                 }
             }
-            drop(targets);
+            targets.clear(); // outside the borrow: may drop an unsubscribed listener
             guard.finish_record();
         }
+        rc.borrow_mut().scratch = targets;
     }
 }
 
@@ -161,9 +171,33 @@ impl Inner {
         let list = self.listeners.get_mut(key)?;
         let at = list.iter().position(|(i, _)| *i == id)?;
         let (_, listener) = list.remove(at);
+        self.subscriptions -= 1;
         if list.is_empty() {
             self.listeners.remove(key);
         }
         Some(listener)
+    }
+}
+
+impl Inner {
+    /// Marks every undelivered record delivered and releases its pins, without building
+    /// events. Used when the store has no subscriptions.
+    fn drain_unobserved(&mut self) {
+        while self.delivered < self.next_seq {
+            let first = self
+                .log
+                .front()
+                .expect("undelivered records are retained")
+                .seq();
+            let change =
+                self.log[usize::try_from(self.delivered - first).expect("in range")].change();
+            let (node, child) = (change.node(), change.child());
+            self.delivered += 1;
+            self.release(node);
+            if let Some(child) = child {
+                self.release(child);
+            }
+        }
+        self.trim();
     }
 }

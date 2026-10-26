@@ -22,9 +22,16 @@ None. `syrp-compat-state` owns the `juce_data_structures/ValueTree` rows.
   leaves the store unchanged. Setting a property to an `eq_same_type` value is a no-op.
 - No `RefCell` borrow of the store is held while a `NodeRef` or listener is dropped, or while
   a listener runs. Every mutation logs under the borrow, releases it, then calls `flush`.
+- A store with no subscriptions skips event building (`drain_unobserved`); with listeners the
+  per-record snapshot reuses `Inner::scratch`. `set_property` with `i32`/`f64` values does not
+  allocate after warm-up, with or without listeners (`tests/no_alloc.rs`).
+- `deep_copy` logs nothing and copies iteratively; `is_equivalent` compares values with
+  `Var`'s `==`.
 - Delivery (`delivery.rs`): non-reentrant; listener mutations queue behind the current record.
   Targets are the node then ancestors at delivery time (`ParentChanged`: own listeners only),
-  snapshotted per record. A drop guard unpins the current record and clears the flag on panic.
+  snapshotted per record. A drop guard unpins the current record and clears the flag on panic;
+  later records keep their pins until the next mutation's `flush` delivers them. Records a
+  `LogCursor` reads after delivery hold no pins, so their keys may be dead.
   Listener order is the spike's and is not yet parity-checked.
 - The log keeps records until delivered and passed by every `LogCursor`. No-op sets and
   removing an absent property log nothing (Syrp choice, spike open questions 7 and 9).
@@ -46,10 +53,21 @@ experimental
 ## How to test
 ```sh
 cargo syrp test --crate syrp-state
+PROPTEST_CASES=3000 cargo test -p syrp-state --test invariants   # deeper invariant run
+cargo bench -p syrp-state   # Callgrind instruction counts; skips without valgrind
 ```
+`tests/no_alloc.rs` installs `syrp_rt::GuardedAllocator`, so it is its own test binary.
+
+## Benchmarks
+Instructions per operation from `cargo bench -p syrp-state` (Callgrind, release, x86-64 Linux,
+2026-10-26), by property count. CI does not gate on these yet.
+
+| Case | 4 | 16 | 64 |
+|---|---:|---:|---:|
+| `property` | 112 | 132 | 152 |
+| `set_property` (`f64`), no listeners | 434 | 454 | 474 |
+| `set_property` (`f64`), listener on node and parent | 902 | 922 | 942 |
 
 ## Known gaps
-Increments 1 and 2 cover B1-B5. Remaining: B6 (reusable snapshot buffer, per-store
-listener count to skip delivery, `no_alloc` test), B7 (`deep_copy`, `is_equivalent`, invariant
-proptest) and B8 (Callgrind benchmarks, numbers recorded here). The CLI catalogue entry for the new
+WP-1.2-03 is complete (B1-B8). The CLI catalogue entry for the new
 `errors/state.toml` domain needs a change request (the CLI crate is not owned here).

@@ -1364,9 +1364,11 @@ dependencies = [
 name = "syrp-state"
 version = "0.0.1"
 dependencies = [
+ "proptest",
  "slotmap",
  "syrp-error",
  "syrp-loop-api",
+ "syrp-rt",
  "syrp-var",
 ]
 

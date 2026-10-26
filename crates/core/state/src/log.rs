@@ -184,6 +184,10 @@ impl LogRecord {
 /// every registered cursor has read them; dropping the cursor unregisters it. Without cursors,
 /// records are dropped once delivered.
 ///
+/// A record may be read after it was delivered, and its counts on the nodes it names are
+/// released at delivery. So its keys may name nodes that have since been freed: upgrade them
+/// with [`Store::upgrade`](crate::Store::upgrade) and expect `DeadKey`.
+///
 /// ```
 /// # use syrp_var::Identifier; syrp_loop_api::ManualLoop::new().with_token(|mt| { let store = syrp_state::Store::new();
 /// let cursor = store.cursor();
