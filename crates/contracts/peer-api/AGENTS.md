@@ -37,6 +37,9 @@ juce_gui_basics/FileChooser (native dialog), juce_gui_basics/NativeMessageBox
 - Dropping a peer destroys its window; a dropped peer's sink never runs again.
 - Pressure is clamped to `[0, 1]`, tilt per axis to `[-1, 1]`; NaN becomes 0; `None` means
   the device does not report it. `PointerSource` ids stay fixed from `Down` to `Up`.
+- Pointer and wheel `time()` is the platform's input time on the loop's monotonic clock;
+  `None` means the GUI layer stamps on receipt.
+- Drag data is present from `Enter`: XDND and Wayland backends fetch it eagerly.
 - Drags: each starts unaccepted; `Drop` is delivered only if the last `accept_drop` was true.
 - `Desktop: HasDisplayHandle`, `Peer: HasWindowHandle`; headless returns `NotSupported`.
 - `Desktop::displays` is never empty, primary first; a display's scale is finite and

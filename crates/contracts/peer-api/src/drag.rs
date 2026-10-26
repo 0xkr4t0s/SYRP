@@ -42,6 +42,11 @@ pub enum DragPhase {
 /// One step of an external drag over a peer. Answer `Enter` and `Over` with
 /// [`Peer::accept_drop`](crate::Peer::accept_drop) so the platform shows the right cursor; a
 /// `Drop` arrives only if the last answer accepted.
+///
+/// Every step carries the dragged data, from `Enter` on. On X11 (XDND) and Wayland the
+/// source announces only MIME types until the data is requested, so those platform crates
+/// must fetch the data (`text/uri-list` for files, `text/plain;charset=utf-8` for text) as
+/// soon as the drag enters, before sending `Enter`.
 /// ```
 /// use syrp_geom::Point;
 /// use syrp_peer_api::{DragData, DragEvent, DragPhase};

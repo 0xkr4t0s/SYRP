@@ -263,6 +263,16 @@ fn b2_pointer_events_carry_pressure_tilt_and_source_ids() {
         .with_button(PointerButton::Primary)
         .with_pressure(-1.0);
     assert!(up.buttons().is_empty() && up.pressure() == Some(0.0));
+    let held = down.buttons().with(PointerButton::Secondary);
+    let up = up.with_buttons(held.without(PointerButton::Primary));
+    assert!(
+        up.buttons().contains(PointerButton::Secondary)
+            && !up.buttons().contains(PointerButton::Primary)
+    );
+    let t = std::time::Duration::from_micros(1500);
+    assert_eq!((down.time(), down.with_time(t).time()), (None, Some(t)));
+    let wheel = WheelEvent::new(Point::new(0.0, 0.0), 0.0, 1.0, WheelUnit::Lines);
+    assert_eq!((wheel.time(), wheel.with_time(t).time()), (None, Some(t)));
     assert_ne!(finger, PointerSource::new(PointerKind::Touch, 2));
     let hover = PointerEvent::new(
         PointerPhase::Move,
