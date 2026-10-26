@@ -10,7 +10,7 @@ Syrp uses two licence tiers.
 
 The foundation (L0) and contract (L1) crates are permissively licensed so that third-party
 libraries can target Syrp's interfaces freely:
-`syrp-error`, `syrp-rt`, `syrp-geom`, every `syrp-*-api` crate and `syrp-midi`.
+`syrp-error`, `syrp-rt`, `syrp-geom`, `syrp-simd`, every `syrp-*-api` crate and `syrp-midi`.
 Each of these declares `license = "MIT OR Apache-2.0"` in its `Cargo.toml`.
 Texts: [LICENSES/MIT.txt](LICENSES/MIT.txt), [LICENSES/Apache-2.0.txt](LICENSES/Apache-2.0.txt).
 
