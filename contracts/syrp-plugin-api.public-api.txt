@@ -1,0 +1,241 @@
+pub mod syrp_plugin_api
+#[non_exhaustive] pub enum syrp_plugin_api::EditorError
+pub syrp_plugin_api::EditorError::CreationFailed
+pub syrp_plugin_api::EditorError::Unsupported
+impl core::error::Error for syrp_plugin_api::EditorError
+impl core::fmt::Display for syrp_plugin_api::EditorError
+pub fn syrp_plugin_api::EditorError::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl syrp_error::Diagnostic for syrp_plugin_api::EditorError
+pub fn syrp_plugin_api::EditorError::code(&self) -> syrp_error::ErrorCode
+pub enum syrp_plugin_api::GesturePhase
+pub syrp_plugin_api::GesturePhase::Begin
+pub syrp_plugin_api::GesturePhase::Change
+pub syrp_plugin_api::GesturePhase::End
+#[non_exhaustive] pub enum syrp_plugin_api::PluginCategory
+pub syrp_plugin_api::PluginCategory::Analyzer
+pub syrp_plugin_api::PluginCategory::Delay
+pub syrp_plugin_api::PluginCategory::Distortion
+pub syrp_plugin_api::PluginCategory::Dynamics
+pub syrp_plugin_api::PluginCategory::Effect
+pub syrp_plugin_api::PluginCategory::Filter
+pub syrp_plugin_api::PluginCategory::Instrument
+pub syrp_plugin_api::PluginCategory::MidiEffect
+pub syrp_plugin_api::PluginCategory::Modulation
+pub syrp_plugin_api::PluginCategory::Reverb
+pub syrp_plugin_api::PluginCategory::Utility
+#[non_exhaustive] pub enum syrp_plugin_api::PluginError
+pub syrp_plugin_api::PluginError::AllocationFailed
+pub syrp_plugin_api::PluginError::DuplicateParamId
+pub syrp_plugin_api::PluginError::InvalidDescriptor
+pub syrp_plugin_api::PluginError::InvalidParamSpec
+pub syrp_plugin_api::PluginError::ParamChangesFull
+pub syrp_plugin_api::PluginError::PrecisionUnsupported
+pub syrp_plugin_api::PluginError::PrepareFailed
+pub syrp_plugin_api::PluginError::StateMalformed
+pub syrp_plugin_api::PluginError::StateTooNew
+impl core::error::Error for syrp_plugin_api::PluginError
+impl core::fmt::Display for syrp_plugin_api::PluginError
+pub fn syrp_plugin_api::PluginError::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl syrp_error::Diagnostic for syrp_plugin_api::PluginError
+pub fn syrp_plugin_api::PluginError::code(&self) -> syrp_error::ErrorCode
+#[non_exhaustive] pub enum syrp_plugin_api::PluginFormat
+pub syrp_plugin_api::PluginFormat::Aax
+pub syrp_plugin_api::PluginFormat::AudioUnit
+pub syrp_plugin_api::PluginFormat::Clap
+pub syrp_plugin_api::PluginFormat::Lv2
+pub syrp_plugin_api::PluginFormat::Vst3
+#[non_exhaustive] pub enum syrp_plugin_api::Smoothing
+pub syrp_plugin_api::Smoothing::Linear(core::time::Duration)
+pub syrp_plugin_api::Smoothing::Multiplicative(core::time::Duration)
+pub syrp_plugin_api::Smoothing::None
+#[non_exhaustive] pub enum syrp_plugin_api::Tail
+pub syrp_plugin_api::Tail::Infinite
+pub syrp_plugin_api::Tail::None
+pub syrp_plugin_api::Tail::Samples(u64)
+pub struct syrp_plugin_api::NodeHandle(_)
+impl syrp_plugin_api::NodeHandle
+pub const fn syrp_plugin_api::NodeHandle::from_bits(u64) -> Self
+pub const fn syrp_plugin_api::NodeHandle::generation(self) -> u32
+pub const fn syrp_plugin_api::NodeHandle::index(self) -> u32
+pub const fn syrp_plugin_api::NodeHandle::new(u32, u32) -> Self
+pub const fn syrp_plugin_api::NodeHandle::to_bits(self) -> u64
+pub struct syrp_plugin_api::ParamChange
+impl syrp_plugin_api::ParamChange
+pub const fn syrp_plugin_api::ParamChange::index(self) -> syrp_plugin_api::ParamIndex
+pub const fn syrp_plugin_api::ParamChange::new(u32, syrp_plugin_api::ParamIndex, f32) -> Self
+pub const fn syrp_plugin_api::ParamChange::sample_offset(self) -> u32
+pub const fn syrp_plugin_api::ParamChange::value(self) -> f32
+impl syrp_rt::RtSafe for syrp_plugin_api::ParamChange
+pub struct syrp_plugin_api::ParamChanges
+impl syrp_plugin_api::ParamChanges
+pub fn syrp_plugin_api::ParamChanges::capacity(&self) -> usize
+pub fn syrp_plugin_api::ParamChanges::clear(&mut self)
+pub fn syrp_plugin_api::ParamChanges::is_empty(&self) -> bool
+pub fn syrp_plugin_api::ParamChanges::iter(&self) -> core::iter::adapters::copied::Copied<core::slice::iter::Iter<'_, syrp_plugin_api::ParamChange>>
+pub fn syrp_plugin_api::ParamChanges::len(&self) -> usize
+pub const fn syrp_plugin_api::ParamChanges::new() -> Self
+pub fn syrp_plugin_api::ParamChanges::range(&self, core::ops::range::Range<u32>) -> &[syrp_plugin_api::ParamChange]
+pub fn syrp_plugin_api::ParamChanges::try_push(&mut self, syrp_plugin_api::ParamChange) -> core::result::Result<(), syrp_plugin_api::PluginError>
+pub fn syrp_plugin_api::ParamChanges::with_capacity(usize) -> core::result::Result<Self, syrp_plugin_api::PluginError>
+pub struct syrp_plugin_api::ParamHandles
+impl syrp_plugin_api::ParamHandles
+pub fn syrp_plugin_api::ParamHandles::begin_gesture(&self, syrp_plugin_api::ParamIndex)
+pub fn syrp_plugin_api::ParamHandles::end_gesture(&self, syrp_plugin_api::ParamIndex)
+pub fn syrp_plugin_api::ParamHandles::get(&self, syrp_plugin_api::ParamIndex) -> f32
+pub fn syrp_plugin_api::ParamHandles::index_of(&self, &str) -> core::option::Option<syrp_plugin_api::ParamIndex>
+pub fn syrp_plugin_api::ParamHandles::is_empty(&self) -> bool
+pub fn syrp_plugin_api::ParamHandles::len(&self) -> usize
+pub fn syrp_plugin_api::ParamHandles::new(&syrp_plugin_api::ParamLayout) -> core::result::Result<Self, syrp_plugin_api::PluginError>
+pub fn syrp_plugin_api::ParamHandles::set(&self, syrp_plugin_api::ParamIndex, f64)
+pub fn syrp_plugin_api::ParamHandles::set_normalised(&self, syrp_plugin_api::ParamIndex, f64)
+pub fn syrp_plugin_api::ParamHandles::shared(alloc::rcs::arc::Arc<syrp_plugin_api::ParamLayout>, alloc::rcs::arc::Arc<syrp_plugin_api::Params>) -> Self
+pub fn syrp_plugin_api::ParamHandles::spec(&self, syrp_plugin_api::ParamIndex) -> core::option::Option<&syrp_plugin_api::ParamSpec>
+pub fn syrp_plugin_api::ParamHandles::text(&self, syrp_plugin_api::ParamIndex) -> core::option::Option<alloc::string::String>
+pub fn syrp_plugin_api::ParamHandles::with_gestures(self, alloc::rcs::arc::Arc<dyn syrp_plugin_api::ParamGestures>) -> Self
+impl core::fmt::Debug for syrp_plugin_api::ParamHandles
+pub fn syrp_plugin_api::ParamHandles::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+pub struct syrp_plugin_api::ParamIndex(_)
+impl syrp_plugin_api::ParamIndex
+pub const fn syrp_plugin_api::ParamIndex::as_usize(self) -> usize
+pub const fn syrp_plugin_api::ParamIndex::get(self) -> u32
+pub const fn syrp_plugin_api::ParamIndex::new(u32) -> Self
+impl syrp_rt::RtSafe for syrp_plugin_api::ParamIndex
+pub struct syrp_plugin_api::ParamLayout
+impl syrp_plugin_api::ParamLayout
+pub fn syrp_plugin_api::ParamLayout::index_of(&self, &str) -> core::option::Option<syrp_plugin_api::ParamIndex>
+pub fn syrp_plugin_api::ParamLayout::is_empty(&self) -> bool
+pub fn syrp_plugin_api::ParamLayout::len(&self) -> usize
+pub const fn syrp_plugin_api::ParamLayout::new() -> Self
+pub fn syrp_plugin_api::ParamLayout::register(&mut self, syrp_plugin_api::ParamSpec) -> core::result::Result<syrp_plugin_api::ParamIndex, syrp_plugin_api::PluginError>
+pub fn syrp_plugin_api::ParamLayout::spec(&self, syrp_plugin_api::ParamIndex) -> core::option::Option<&syrp_plugin_api::ParamSpec>
+pub fn syrp_plugin_api::ParamLayout::specs(&self) -> &[syrp_plugin_api::ParamSpec]
+pub struct syrp_plugin_api::ParamRange
+impl syrp_plugin_api::ParamRange
+pub fn syrp_plugin_api::ParamRange::denormalise(&self, f64) -> f64
+pub const fn syrp_plugin_api::ParamRange::end(&self) -> f64
+pub const fn syrp_plugin_api::ParamRange::is_symmetric_skew(&self) -> bool
+pub fn syrp_plugin_api::ParamRange::is_valid(&self) -> bool
+pub const fn syrp_plugin_api::ParamRange::new(f64, f64) -> Self
+pub fn syrp_plugin_api::ParamRange::normalise(&self, f64) -> f64
+pub const fn syrp_plugin_api::ParamRange::skew(&self) -> f64
+pub fn syrp_plugin_api::ParamRange::snap(&self, f64) -> f64
+pub const fn syrp_plugin_api::ParamRange::start(&self) -> f64
+pub const fn syrp_plugin_api::ParamRange::step(&self) -> f64
+pub fn syrp_plugin_api::ParamRange::with_centre(self, f64) -> Self
+pub const fn syrp_plugin_api::ParamRange::with_skew(self, f64) -> Self
+pub const fn syrp_plugin_api::ParamRange::with_step(self, f64) -> Self
+pub const fn syrp_plugin_api::ParamRange::with_symmetric_skew(self, bool) -> Self
+pub struct syrp_plugin_api::ParamSpec
+impl syrp_plugin_api::ParamSpec
+pub fn syrp_plugin_api::ParamSpec::default_value(&self) -> f64
+pub fn syrp_plugin_api::ParamSpec::group(&self) -> core::option::Option<&str>
+pub fn syrp_plugin_api::ParamSpec::id(&self) -> &str
+pub fn syrp_plugin_api::ParamSpec::is_automatable(&self) -> bool
+pub fn syrp_plugin_api::ParamSpec::name(&self) -> &str
+pub fn syrp_plugin_api::ParamSpec::new(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, syrp_plugin_api::ParamRange) -> Self
+pub fn syrp_plugin_api::ParamSpec::range(&self) -> &syrp_plugin_api::ParamRange
+pub fn syrp_plugin_api::ParamSpec::smoothing(&self) -> syrp_plugin_api::Smoothing
+pub fn syrp_plugin_api::ParamSpec::text_to_value(&self, &str) -> core::option::Option<f64>
+pub fn syrp_plugin_api::ParamSpec::unit(&self) -> &str
+pub fn syrp_plugin_api::ParamSpec::value_to_text(&self, f64) -> alloc::string::String
+pub fn syrp_plugin_api::ParamSpec::with_automatable(self, bool) -> Self
+pub fn syrp_plugin_api::ParamSpec::with_default(self, f64) -> Self
+pub fn syrp_plugin_api::ParamSpec::with_group(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn syrp_plugin_api::ParamSpec::with_smoothing(self, syrp_plugin_api::Smoothing) -> Self
+pub fn syrp_plugin_api::ParamSpec::with_text_to_value(self, impl core::ops::function::Fn(&str) -> core::option::Option<f64> + core::marker::Send + core::marker::Sync + 'static) -> Self
+pub fn syrp_plugin_api::ParamSpec::with_unit(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn syrp_plugin_api::ParamSpec::with_value_to_text(self, impl core::ops::function::Fn(f64) -> alloc::string::String + core::marker::Send + core::marker::Sync + 'static) -> Self
+impl core::fmt::Debug for syrp_plugin_api::ParamSpec
+pub fn syrp_plugin_api::ParamSpec::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+pub struct syrp_plugin_api::Params
+impl syrp_plugin_api::Params
+pub fn syrp_plugin_api::Params::get(&self, syrp_plugin_api::ParamIndex) -> f32
+pub fn syrp_plugin_api::Params::is_empty(&self) -> bool
+pub fn syrp_plugin_api::Params::len(&self) -> usize
+pub fn syrp_plugin_api::Params::new(&syrp_plugin_api::ParamLayout) -> core::result::Result<Self, syrp_plugin_api::PluginError>
+pub fn syrp_plugin_api::Params::set(&self, syrp_plugin_api::ParamIndex, f32)
+pub fn syrp_plugin_api::Params::try_get(&self, syrp_plugin_api::ParamIndex) -> core::option::Option<f32>
+pub struct syrp_plugin_api::PluginDescriptor
+impl syrp_plugin_api::PluginDescriptor
+pub fn syrp_plugin_api::PluginDescriptor::categories(&self) -> &[syrp_plugin_api::PluginCategory]
+pub fn syrp_plugin_api::PluginDescriptor::id(&self, syrp_plugin_api::PluginFormat) -> core::option::Option<&str>
+pub fn syrp_plugin_api::PluginDescriptor::name(&self) -> &str
+pub fn syrp_plugin_api::PluginDescriptor::new(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>, (u32, u32, u32)) -> Self
+pub fn syrp_plugin_api::PluginDescriptor::validate(&self) -> core::result::Result<(), syrp_plugin_api::PluginError>
+pub fn syrp_plugin_api::PluginDescriptor::vendor(&self) -> &str
+pub fn syrp_plugin_api::PluginDescriptor::version(&self) -> (u32, u32, u32)
+pub fn syrp_plugin_api::PluginDescriptor::with_category(self, syrp_plugin_api::PluginCategory) -> Self
+pub fn syrp_plugin_api::PluginDescriptor::with_id(self, syrp_plugin_api::PluginFormat, impl core::convert::Into<alloc::string::String>) -> Self
+pub struct syrp_plugin_api::PrepareCtx<'a>
+impl<'a> syrp_plugin_api::PrepareCtx<'a>
+pub fn syrp_plugin_api::PrepareCtx<'a>::param_index(&self, &str) -> core::option::Option<syrp_plugin_api::ParamIndex>
+pub fn syrp_plugin_api::PrepareCtx<'a>::reserve_param_changes(&mut self, usize)
+pub struct syrp_plugin_api::Prepared
+impl syrp_plugin_api::Prepared
+pub fn syrp_plugin_api::Prepared::param_change_capacity(&self) -> usize
+pub struct syrp_plugin_api::ProcessIo<'a>
+impl<'a> syrp_plugin_api::ProcessIo<'a>
+pub fn syrp_plugin_api::ProcessIo<'a>::audio_f32(&mut self) -> core::option::Option<syrp_audio_api::block::AudioBlockMut<'_, f32>>
+pub fn syrp_plugin_api::ProcessIo<'a>::audio_f64(&mut self) -> core::option::Option<syrp_audio_api::block::AudioBlockMut<'_, f64>>
+pub fn syrp_plugin_api::ProcessIo<'a>::channels(&self) -> usize
+pub fn syrp_plugin_api::ProcessIo<'a>::frames(&self) -> usize
+pub fn syrp_plugin_api::ProcessIo<'a>::input_channels(&self) -> usize
+pub fn syrp_plugin_api::ProcessIo<'a>::midi_in(&self) -> core::option::Option<&'a syrp_midi::buffer::MidiBuffer>
+pub fn syrp_plugin_api::ProcessIo<'a>::midi_out(&mut self) -> core::option::Option<&mut syrp_midi::buffer::MidiBuffer>
+pub fn syrp_plugin_api::ProcessIo<'a>::new(syrp_audio_api::block::AudioBlockMut<'a, f32>, usize) -> Self
+pub fn syrp_plugin_api::ProcessIo<'a>::new_f64(syrp_audio_api::block::AudioBlockMut<'a, f64>, usize) -> Self
+pub fn syrp_plugin_api::ProcessIo<'a>::param_changes(&self) -> &'a syrp_plugin_api::ParamChanges
+pub fn syrp_plugin_api::ProcessIo<'a>::ump_in(&self) -> core::option::Option<&'a syrp_midi::ump_buffer::UmpBuffer>
+pub fn syrp_plugin_api::ProcessIo<'a>::ump_out(&mut self) -> core::option::Option<&mut syrp_midi::ump_buffer::UmpBuffer>
+pub fn syrp_plugin_api::ProcessIo<'a>::with_midi(self, &'a syrp_midi::buffer::MidiBuffer, &'a mut syrp_midi::buffer::MidiBuffer) -> Self
+pub fn syrp_plugin_api::ProcessIo<'a>::with_param_changes(self, &'a syrp_plugin_api::ParamChanges) -> Self
+pub fn syrp_plugin_api::ProcessIo<'a>::with_ump(self, &'a syrp_midi::ump_buffer::UmpBuffer, &'a mut syrp_midi::ump_buffer::UmpBuffer) -> Self
+pub struct syrp_plugin_api::RtCtx<'a>
+impl syrp_plugin_api::RtCtx<'_>
+pub fn syrp_plugin_api::RtCtx<'_>::new() -> Self
+pub fn syrp_plugin_api::RtCtx<'_>::play_head(&self) -> core::option::Option<syrp_audio_api::playhead::PlayHeadInfo>
+pub fn syrp_plugin_api::RtCtx<'_>::with_play_head(self, syrp_audio_api::playhead::PlayHeadInfo) -> Self
+pub struct syrp_plugin_api::SizeConstraints
+impl syrp_plugin_api::SizeConstraints
+pub const fn syrp_plugin_api::SizeConstraints::aspect_ratio(&self) -> core::option::Option<f32>
+pub fn syrp_plugin_api::SizeConstraints::clamp(&self, f32, f32) -> (f32, f32)
+pub const fn syrp_plugin_api::SizeConstraints::fixed(f32, f32) -> Self
+pub fn syrp_plugin_api::SizeConstraints::is_resizable(&self) -> bool
+pub const fn syrp_plugin_api::SizeConstraints::preferred(&self) -> (f32, f32)
+pub const fn syrp_plugin_api::SizeConstraints::resizable((f32, f32), (f32, f32), (f32, f32)) -> Self
+pub const fn syrp_plugin_api::SizeConstraints::with_aspect_ratio(self, f32) -> Self
+pub struct syrp_plugin_api::StateEnvelope<'a>
+impl<'a> syrp_plugin_api::StateEnvelope<'a>
+pub fn syrp_plugin_api::StateEnvelope<'a>::parse(&'a [u8]) -> core::result::Result<Self, syrp_plugin_api::PluginError>
+pub fn syrp_plugin_api::StateEnvelope<'a>::payload(&self) -> &'a [u8]
+pub fn syrp_plugin_api::StateEnvelope<'a>::version(&self) -> u32
+pub fn syrp_plugin_api::StateEnvelope<'a>::write(u32, &[u8], &mut alloc::vec::Vec<u8>)
+pub trait syrp_plugin_api::Editor: core::marker::Send
+pub fn syrp_plugin_api::Editor::constraints(&self) -> syrp_plugin_api::SizeConstraints
+pub fn syrp_plugin_api::Editor::create(&mut self, &mut dyn syrp_plugin_api::EditorHost, &syrp_plugin_api::ParamHandles) -> core::result::Result<syrp_plugin_api::NodeHandle, syrp_plugin_api::EditorError>
+pub fn syrp_plugin_api::Editor::destroy(&mut self, &mut dyn syrp_plugin_api::EditorHost)
+pub fn syrp_plugin_api::Editor::resized(&mut self, &mut dyn syrp_plugin_api::EditorHost, (f32, f32))
+pub trait syrp_plugin_api::EditorHost
+pub fn syrp_plugin_api::EditorHost::as_any_mut(&mut self) -> &mut dyn core::any::Any
+pub fn syrp_plugin_api::EditorHost::root(&self) -> syrp_plugin_api::NodeHandle
+pub trait syrp_plugin_api::ParamGestures: core::marker::Send + core::marker::Sync
+pub fn syrp_plugin_api::ParamGestures::edited(&self, syrp_plugin_api::ParamIndex, syrp_plugin_api::GesturePhase, f32)
+pub trait syrp_plugin_api::PluginState
+pub fn syrp_plugin_api::PluginState::load_state(&mut self, u32, &[u8]) -> core::result::Result<(), syrp_plugin_api::PluginError>
+pub fn syrp_plugin_api::PluginState::save_state(&self, &mut alloc::vec::Vec<u8>) -> core::result::Result<(), syrp_plugin_api::PluginError>
+pub fn syrp_plugin_api::PluginState::state_version(&self) -> u32
+pub trait syrp_plugin_api::Processor: core::marker::Send + 'static
+pub fn syrp_plugin_api::Processor::bypass_param(&self) -> core::option::Option<syrp_plugin_api::ParamIndex>
+pub fn syrp_plugin_api::Processor::default_layout(&self) -> syrp_audio_api::channels::BusLayout
+pub fn syrp_plugin_api::Processor::latency_samples(&self) -> u32
+pub fn syrp_plugin_api::Processor::prepare(&mut self, &syrp_audio_api::config::ProcessConfig, &mut syrp_plugin_api::PrepareCtx<'_>) -> core::result::Result<(), syrp_plugin_api::PluginError>
+pub fn syrp_plugin_api::Processor::process(&mut self, &mut syrp_plugin_api::ProcessIo<'_>, &syrp_plugin_api::Params, &mut syrp_plugin_api::RtCtx<'_>)
+pub fn syrp_plugin_api::Processor::process_bypassed(&mut self, &mut syrp_plugin_api::ProcessIo<'_>, &syrp_plugin_api::Params, &mut syrp_plugin_api::RtCtx<'_>)
+pub fn syrp_plugin_api::Processor::register_params(&mut self, &mut syrp_plugin_api::ParamLayout) -> core::result::Result<(), syrp_plugin_api::PluginError>
+pub fn syrp_plugin_api::Processor::reset(&mut self)
+pub fn syrp_plugin_api::Processor::supports_double_precision(&self) -> bool
+pub fn syrp_plugin_api::Processor::supports_layout(&self, &syrp_audio_api::channels::BusLayout) -> syrp_audio_api::channels::LayoutResponse
+pub fn syrp_plugin_api::Processor::tail(&self) -> syrp_plugin_api::Tail
+pub fn syrp_plugin_api::load_state<S: syrp_plugin_api::PluginState + ?core::marker::Sized>(&mut S, &[u8]) -> core::result::Result<(), syrp_plugin_api::PluginError>
+pub fn syrp_plugin_api::prepare_processor<P: syrp_plugin_api::Processor + ?core::marker::Sized>(&mut P, &syrp_audio_api::config::ProcessConfig, &syrp_plugin_api::ParamLayout) -> core::result::Result<syrp_plugin_api::Prepared, syrp_plugin_api::PluginError>
+pub fn syrp_plugin_api::save_state<S: syrp_plugin_api::PluginState + ?core::marker::Sized>(&S) -> core::result::Result<alloc::vec::Vec<u8>, syrp_plugin_api::PluginError>
