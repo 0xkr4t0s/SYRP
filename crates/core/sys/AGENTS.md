@@ -1,10 +1,11 @@
 # syrp-sys
 
 ## Purpose
-The L2 system layer (master plan §5.2): wall-clock and calendar time, durations and the
-monotonic counters. Covers JUCE's Time (as `Time` plus the `DateTime` calendar view) and
-RelativeTime; Uuid, SystemStats and Logger arrive in later increments. Behaviour comes from the
-WP spec and the public JUCE class documentation only.
+The L2 system layer (master plan §5.2): wall-clock and calendar time, durations, monotonic
+counters, UUIDs, system facts and logging. Covers JUCE's Time (as `Time` plus the `DateTime`
+calendar view), RelativeTime, Uuid, SystemStats and Logger. Platform code is in `src/os.rs`
+(clock, time zone, memory) and `src/os_info.rs` (OS, CPU, user and host queries). Behaviour
+comes from the WP spec and the public JUCE class documentation only.
 
 ## Ledger rows
 juce_core/Time, juce_core/RelativeTime, juce_core/Uuid, juce_core/SystemStats, juce_core/Logger
@@ -30,8 +31,9 @@ juce_core/Time, juce_core/RelativeTime, juce_core/Uuid, juce_core/SystemStats, j
 Any thread. RT-safe (lock-free, no allocation, no blocking): `Time::millisecond_counter`,
 `millisecond_counter_hi_res`, `high_resolution_ticks`, `high_resolution_ticks_per_second`, and
 the `Copy` accessors of `Time`, `DateTime` and `RelativeTime` that return numbers. Not RT-safe:
-anything returning `String`, `SystemStats`, local-time conversion (the C library may lock), and
-`wait_for_millisecond_counter` (sleeps).
+anything returning `String`, `SystemStats`, local-time conversion (the C library may lock),
+`wait_for_millisecond_counter` (sleeps), and the logger functions (they lock and do I/O).
+`set_current_logger` must not be called from inside `Logger::log` (deadlock).
 
 ## Stability
 experimental
@@ -45,10 +47,12 @@ allocate. `tests/local_time.rs` is its own binary with one test because it sets 
 only; it prints a skip message elsewhere).
 
 ## Known gaps
-Increments 1-2 cover B1-B4, B7 and part of B5 (`is_64_bit`, `num_cpus`, `memory_size_mb`,
-`page_size`, `has_cpu_feature`, `environment_variable`). Still to come in WP-1.1-12:
-`operating_system_type`/`_name`, `num_physical_cpus`, `cpu_vendor`/`_model`/`_speed_mhz`,
-`user_login_name`, `full_user_name`, `computer_name`, `stack_backtrace` (B5) and `Logger`
-with `WriterLogger` (B6). `num_cpus` follows `available_parallelism` (affinity and quotas).
-`%Z` prints the numeric offset, not a zone name. `errors/sys.toml` is not yet in the CLI's
-embedded catalogue.
+WP-1.1-12 is complete (B1-B7). Parity notes (deliberate divergences from JUCE):
+- `formatted` `%Z` (and `%z`) write the numeric offset such as `-0400`, not a zone name.
+- `Time::from_iso8601` truncates fractions past milliseconds and rejects leap seconds.
+- `num_cpus` follows `available_parallelism`, so affinity masks and quotas lower it.
+- `operating_system_name` is family plus version numbers (`Windows 10.0.22631`), not a
+  marketing name; `cpu_vendor`/`cpu_model` use `cpuid` on x86-64 only, the OS elsewhere.
+- `Logger` has no welcome message or file trimming; `FileLogger` belongs to `syrp-io`.
+
+`errors/sys.toml` is not yet in the CLI's embedded catalogue.

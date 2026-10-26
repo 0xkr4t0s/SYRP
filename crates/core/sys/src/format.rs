@@ -75,13 +75,14 @@ impl Time {
     ///
     /// Accepted: a four-digit year, month and day, with or without `-` between them; then
     /// optionally `T` and hours and minutes, with optional seconds and a fraction after `.` or
-    /// `,` (read to the millisecond, extra digits dropped), with or without `:` between them;
+    /// `,` (read to the millisecond; digits past the third are truncated, not rounded), with or without `:` between them;
     /// then optionally `Z` or an offset `+hh`, `+hhmm` or `+hh:mm` (or `-`). Text without an
     /// offset is local time; a date without a time is midnight.
     ///
     /// # Errors
     /// [`SysError::InvalidIso8601`] (`SYRP-SYS-0001`) for any other text, or for fields out
-    /// of range (a day the month does not have, hour 24, minute or second 60).
+    /// of range (a day the month does not have, hour 24, minute 60, or a leap second `:60`, which
+    /// is rejected rather than folded into the next minute).
     ///
     /// ```
     /// # use syrp_sys::Time;

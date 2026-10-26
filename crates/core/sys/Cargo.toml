@@ -1,6 +1,6 @@
 [package]
 name = "syrp-sys"
-description = "System layer for Syrp: Time, RelativeTime, high-resolution counters and Uuid (SystemStats and Logger follow)."
+description = "System layer for Syrp: Time, RelativeTime, high-resolution counters, Uuid, SystemStats and Logger."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -20,8 +20,17 @@ syrp-error = { version = "0.0.1", path = "../../foundation/error" }
 [target.'cfg(any(unix, windows))'.dependencies]
 libc = { version = "0.2.186", default-features = false }
 
-[target.'cfg(windows)'.dependencies]
-windows-sys = { version = "0.61.2", features = ["Win32_System_Performance", "Win32_System_SystemInformation"] }
+[target.'cfg(windows)'.dependencies.windows-sys]
+version = "0.61.2"
+features = [
+  "Wdk_System_SystemServices",
+  "Win32_Security_Authentication_Identity",
+  "Win32_System_Diagnostics_Debug",
+  "Win32_System_Performance",
+  "Win32_System_Registry",
+  "Win32_System_SystemInformation",
+  "Win32_System_WindowsProgramming",
+]
 
 [dev-dependencies]
 syrp-rt = { version = "0.0.1", path = "../../foundation/rt" }

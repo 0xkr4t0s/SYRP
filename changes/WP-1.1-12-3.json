@@ -1,0 +1,1 @@
+{"wp": "WP-1.1-12", "kind": "added", "summary": "syrp-sys increment 3 (final): the rest of SystemStats (OS type and version, OS name, physical CPUs, CPU vendor, model and speed, user and computer names, stack backtraces) and Logger with set_current_logger, write_to_log and WriterLogger."}
