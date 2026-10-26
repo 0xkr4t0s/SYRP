@@ -420,7 +420,7 @@ syrp-peer-api   -> geom, gfx-api, loop-api [raw-window-handle, accesskit, keyboa
 // L2
 syrp-strings, syrp-sys -> error
 syrp-maths      -> error, rt
-syrp-var        -> error, strings [serde, serde_json, quick-xml]
+syrp-var        -> error [serde, serde_json, quick-xml]
 syrp-io         -> error, sys [flate2, zip]
 syrp-thread     -> error, rt, sys
 syrp-process    -> thread, io
