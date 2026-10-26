@@ -1379,7 +1379,9 @@ dependencies = [
 name = "syrp-sys"
 version = "0.0.1"
 dependencies = [
+ "getrandom",
  "libc",
+ "syrp-error",
  "syrp-rt",
  "windows-sys",
 ]
