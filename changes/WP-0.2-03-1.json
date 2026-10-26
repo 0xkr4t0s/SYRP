@@ -1,0 +1,1 @@
+{"wp": "WP-0.2-03", "kind": "added", "summary": "syrp-midi (first increment): MidiMessage, MidiMessageRef views, the sealed MidiData accessors and MidiMessageKind, with validating, non-panicking parsers; new errors/midi.toml domain (SYRP-MIDI-0001..0002). MidiBuffer and UMP follow."}
