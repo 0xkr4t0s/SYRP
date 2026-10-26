@@ -1349,6 +1349,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "syrp-strings"
+version = "0.0.1"
+dependencies = [
+ "proptest",
+ "syrp-error",
+]
+
+[[package]]
 name = "syrp-testkit"
 version = "0.0.1"
 dependencies = [
