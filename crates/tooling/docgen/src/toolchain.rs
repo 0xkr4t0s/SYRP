@@ -21,8 +21,10 @@ pub struct NightlyToolchain {
 
 /// Checks that rustup toolchain `toolchain` exists and its rustdoc is a nightly.
 ///
-/// Returns [`DocError::NightlyMissing`] (SYRP-DOC-0001) when rustup is absent, the toolchain is
-/// not installed, or its rustdoc is not a nightly build (it would reject the unstable flags).
+/// Returns [`DocError::NightlyMissing`] (SYRP-DOC-0001) when the name is empty, starts with `-`
+/// or contains whitespace (so it can never be read as a rustup or cargo option), rustup is
+/// absent, the toolchain is not installed, or its rustdoc is not a nightly build (it would
+/// reject the unstable flags).
 ///
 /// ```
 /// use syrp_docgen::Diagnostic;
@@ -35,6 +37,12 @@ pub fn detect_nightly(toolchain: &str) -> Result<NightlyToolchain, DocError> {
         toolchain: name.clone(),
         detail,
     };
+    if toolchain.is_empty() || toolchain.starts_with('-') || toolchain.contains(char::is_whitespace)
+    {
+        return Err(missing(format!(
+            "`{toolchain}` is not a toolchain name (empty, leading `-` or whitespace)"
+        )));
+    }
     let mut cmd = Command::new("rustup");
     cmd.args(["run", toolchain, "rustdoc", "--version"])
         .env_remove("RUSTUP_TOOLCHAIN");

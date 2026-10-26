@@ -131,6 +131,15 @@ fn b3_missing_nightly_gives_doc_0001() {
     assert!(err.to_string().starts_with("SYRP-DOC-0001: "), "{err}");
     let hint = err.hint().unwrap();
     assert!(hint.contains("rustup toolchain install syrp-docgen-no-such-toolchain"));
+    // Names that rustup or cargo could read as options are rejected before anything runs.
+    for bad in ["", "-V", "--help", "nightly --offline", "night\tly"] {
+        let err = detect_nightly(bad).unwrap_err();
+        assert_eq!(err.code().as_str(), "SYRP-DOC-0001", "{bad:?}");
+        assert!(
+            err.to_string().contains("not a toolchain name"),
+            "{bad:?}: {err}"
+        );
+    }
     // Whether or not this machine has nightly, the answer is a nightly or exactly SYRP-DOC-0001.
     match detect_nightly("nightly") {
         Ok(n) => assert!(n.version.starts_with("rustdoc ") && n.version.contains("-nightly")),

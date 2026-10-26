@@ -36,3 +36,7 @@ crates' `paths`, `external_crates`, target features and synthetic impls.
 - CLI wiring (`cargo syrp docs search`, `explain SYRP-DOC-*`) and committing
   `docs/agents/api-index.schema.json` need change requests (a test checks it once present).
 - No `since` field yet; tuple-struct fields are not indexed.
+- `pub use` re-exports of items from other crates are dropped (only same-crate targets are
+  resolved), so a facade crate's re-exported API is missing from its index.
+- The summary is the first doc paragraph verbatim: a doc comment that opens with a code fence
+  gets that fence as its summary.
