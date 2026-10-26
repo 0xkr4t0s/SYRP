@@ -1,0 +1,1 @@
+{"wp": "WP-0.1-05", "kind": "added", "summary": "syrp-geom: Point and Rect generic over i32/f32/f64 (Coord), with Rect property tests."}

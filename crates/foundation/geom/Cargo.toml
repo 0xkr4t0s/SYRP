@@ -1,0 +1,22 @@
+[package]
+name = "syrp-geom"
+description = "2D geometry for Syrp: points, rectangles and affine transforms with JUCE-equivalent semantics."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT OR Apache-2.0"
+repository.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[package.metadata.syrp]
+layer = "L0"
+wp = "WP-0.1-05"
+
+[dependencies]
+
+[dev-dependencies]
+proptest = { version = "1.5", default-features = false, features = ["std"] }
+
+[lints]
+workspace = true
