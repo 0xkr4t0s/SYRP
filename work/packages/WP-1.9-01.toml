@@ -1,7 +1,7 @@
 id = "WP-1.9-01"
 title = "syrp-compat-state: JUCE-shaped ValueTree, Value and CachedValue over the syrp-state store"
 crate = "crates/compat/state"
-depends_on = ["WP-0.2-15"]
+depends_on = ["WP-0.2-15", "WP-1.2-03", "WP-1.2-04"]
 spec = "work/specs/WP-1.9-01.md"
 risk = ["public-api"]
 acceptance = "cargo syrp wp check WP-1.9-01 --json"

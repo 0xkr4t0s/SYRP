@@ -1,0 +1,8 @@
+id = "1.1"
+phase = 1
+title = "Core runtime: syrp-var, syrp-maths, syrp-sys, syrp-strings"
+# Waves roll: a WP here starts as soon as its own dependencies merge. Numbers follow the master
+# plan's Wave 1.1 list (§7.2); the io, thread, process, net and message-loop items get WPs once
+# syrp-sys has merged.
+enabled = true
+packages = ["WP-1.1-01", "WP-1.1-11", "WP-1.1-12", "WP-1.1-13"]
