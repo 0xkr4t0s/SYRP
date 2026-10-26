@@ -1,0 +1,1 @@
+{"wp": "WP-0.2-10", "kind": "added", "summary": "syrp-mcp v0: an rmcp stdio MCP server exposing doctor, check, test, explain, docs_search, wp_show, wp_ready and review_checklist tools plus syrp://errors/{code} and syrp://wp/{id} resources, returning the cargo syrp envelope unchanged."}
