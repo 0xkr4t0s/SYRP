@@ -1,3 +1,3 @@
 @AGENTS.md
 
-Agent Skill: `skills/auricle/SKILL.md`. Role prompts for pipeline jobs: `agents/roles/`.
+Agent Skill: `skills/syrp/SKILL.md`. Role prompts for pipeline jobs: `agents/roles/`.

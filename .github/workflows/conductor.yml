@@ -27,16 +27,16 @@ jobs:
     # Safety switch: nothing runs until the repository variable is set to "true".
     # Issue events only matter when a WP closes or a person hands one back.
     if: >-
-      vars.AURICLE_PIPELINE_ENABLED == 'true' && (github.event_name != 'issues' ||
+      vars.SYRP_PIPELINE_ENABLED == 'true' && (github.event_name != 'issues' ||
       github.event.action == 'closed' || github.event.label.name == 'needs-human')
     runs-on: ubuntu-24.04
     env:
-      GH_TOKEN: ${{ secrets.AURICLE_BOT_TOKEN || github.token }}
+      GH_TOKEN: ${{ secrets.SYRP_BOT_TOKEN || github.token }}
       GH_REPO: ${{ github.repository }}
     steps:
       - uses: actions/checkout@v4
       - uses: Swatinem/rust-cache@v2
-      - run: cargo build --quiet -p auricle-cli
+      - run: cargo build --quiet -p syrp-cli
 
       - name: Snapshot GitHub state
         run: |
@@ -45,8 +45,8 @@ jobs:
 
       - name: Tick
         run: |
-          cargo auricle conductor tick --issues issues.json --prs prs.json \
-            --slots "${{ vars.AURICLE_SLOTS || 12 }}" --json > tick.json || {
+          cargo syrp conductor tick --issues issues.json --prs prs.json \
+            --slots "${{ vars.SYRP_SLOTS || 12 }}" --json > tick.json || {
             cat tick.json; exit 1; }
           jq -c '.results[]' tick.json | tee actions.jsonl
 
@@ -87,7 +87,7 @@ jobs:
                 gh issue edit "$issue" --add-label needs-human
                 gh issue edit "$issue" --remove-label status:in-progress || true
                 gh issue edit "$issue" --add-assignee "$OWNER" || true
-                gh issue comment "$issue" --body "$(printf '**Needs a person** (`%s`): %s\n\nRun `cargo auricle explain %s` for what to do. Remove the `needs-human` label to hand it back to the pipeline.' \
+                gh issue comment "$issue" --body "$(printf '**Needs a person** (`%s`): %s\n\nRun `cargo syrp explain %s` for what to do. Remove the `needs-human` label to hand it back to the pipeline.' \
                   "$(jq -r .code <<<"$a")" "$(jq -r .reason <<<"$a")" "$(jq -r .code <<<"$a")")"
                 ;;
             esac

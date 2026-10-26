@@ -9,7 +9,7 @@ You write behaviour specs, parity scenarios and inventories. Inputs: WP `{{WP}}`
   documentation prose: describe behaviour in your own words, as numbered statements (B1, B2...)
   that a test can check.
 - Follow the same branch, commit-trailer, PR front matter and acceptance rules as implementers
-  (`agents/roles/implementer.md`). Your owned paths are listed by `cargo auricle wp show {{WP}}`
+  (`agents/roles/implementer.md`). Your owned paths are listed by `cargo syrp wp show {{WP}}`
   plus `work/` and `parity/scenarios/`.
 - When an implementer asks a `BLOCKED:` question on a WP issue, answer it there, preferably by
   adding an observation scenario.

@@ -1,5 +1,5 @@
 name: Parity gap
-description: Auricle differs from documented or observed JUCE behaviour.
+description: Syrp differs from documented or observed JUCE behaviour.
 labels: ["parity-gap"]
 body:
   - type: input
@@ -13,6 +13,6 @@ body:
     id: observed
     attributes:
       label: Observed difference
-      description: Scenario, Auricle output, reference output. Public docs or harness output only.
+      description: Scenario, Syrp output, reference output. Public docs or harness output only.
     validations:
       required: true

@@ -1,4 +1,4 @@
-//! Library behind `cargo auricle`.
+//! Library behind `cargo syrp`.
 //!
 //! The CLI, the MCP server (WP-0.2-10) and the Agent Skill's scripts all call this library,
 //! so their results and schemas are identical (master plan §13.3). Every command returns an
@@ -26,7 +26,7 @@ pub const ENVELOPE_JSON_SCHEMA: &str = include_str!("../../../../docs/agents/env
 mod tests {
     use std::collections::BTreeSet;
 
-    /// Every `AUR-*` code the CLI emits must be documented in `errors/*.toml`.
+    /// Every `SYRP-*` code the CLI emits must be documented in `errors/*.toml`.
     #[test]
     fn every_emitted_code_is_catalogued() {
         let known: BTreeSet<String> = crate::catalogue::all()
@@ -36,7 +36,7 @@ mod tests {
         let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
         for f in crate::repo::files_with_suffix(&dir, ".rs") {
             let src = std::fs::read_to_string(&f).unwrap();
-            for (i, _) in src.match_indices("\"AUR-") {
+            for (i, _) in src.match_indices("\"SYRP-") {
                 let code: String = src[i + 1..].chars().take_while(|c| *c != '"').collect();
                 let parts: Vec<&str> = code.split('-').collect();
                 let well_formed = parts.len() == 3

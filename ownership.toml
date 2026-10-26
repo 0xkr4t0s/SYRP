@@ -1,4 +1,4 @@
-# SHARED FILE: who may edit what (master plan §12.4). Enforced by `cargo auricle wp check-paths`.
+# SHARED FILE: who may edit what (master plan §12.4). Enforced by `cargo syrp wp check-paths`.
 #
 # Work packages own the paths listed in their own spec (`crate` plus optional `paths`) under
 # work/packages/. This file lists everything that belongs to a role instead of a WP.

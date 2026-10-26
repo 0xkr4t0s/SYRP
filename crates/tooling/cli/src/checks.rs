@@ -24,7 +24,7 @@ pub struct CrateInfo {
     pub name: String,
     /// Directory relative to the root.
     pub dir: String,
-    /// `L0`..`L7`, from `[package.metadata.auricle] layer`.
+    /// `L0`..`L7`, from `[package.metadata.syrp] layer`.
     pub layer: Option<String>,
     /// Optional sibling group; crates in the same group may not depend on each other.
     pub group: Option<String>,
@@ -56,7 +56,7 @@ pub fn crates(root: &Path) -> Vec<CrateInfo> {
         let meta = doc
             .get("package")
             .and_then(|p| p.get("metadata"))
-            .and_then(|m| m.get("auricle"));
+            .and_then(|m| m.get("syrp"));
         let get = |k: &str| {
             meta.and_then(|m| m.get(k))
                 .and_then(|v| v.as_str())
@@ -101,8 +101,8 @@ pub fn lint_crates(root: &Path, crates: &[CrateInfo]) -> Vec<Diagnostic> {
         if rank(&c.layer).is_none() {
             diags.push(
                 Diagnostic::error(
-                    "AUR-CLI-0206",
-                    format!("{} has no valid [package.metadata.auricle] layer", c.name),
+                    "SYRP-CLI-0206",
+                    format!("{} has no valid [package.metadata.syrp] layer", c.name),
                 )
                 .at(&manifest)
                 .hint("add `layer = \"L0\"`..`\"L7\"` per the master plan §5.2"),
@@ -110,7 +110,7 @@ pub fn lint_crates(root: &Path, crates: &[CrateInfo]) -> Vec<Diagnostic> {
         }
         if !root.join(&c.dir).join("AGENTS.md").is_file() {
             diags.push(
-                Diagnostic::error("AUR-CLI-0206", format!("{} has no AGENTS.md", c.name))
+                Diagnostic::error("SYRP-CLI-0206", format!("{} has no AGENTS.md", c.name))
                     .at(format!("{}/AGENTS.md", c.dir))
                     .hint("copy the headings from docs/agents/crate-agents-template.md"),
             );
@@ -124,7 +124,7 @@ pub fn lint_crates(root: &Path, crates: &[CrateInfo]) -> Vec<Diagnostic> {
             {
                 diags.push(
                     Diagnostic::error(
-                        "AUR-CLI-0203",
+                        "SYRP-CLI-0203",
                         format!(
                             "{} ({}) depends on higher-layer {} ({})",
                             c.name,
@@ -139,7 +139,7 @@ pub fn lint_crates(root: &Path, crates: &[CrateInfo]) -> Vec<Diagnostic> {
             if c.group.is_some() && c.group == d.group {
                 diags.push(
                     Diagnostic::error(
-                        "AUR-CLI-0203",
+                        "SYRP-CLI-0203",
                         format!(
                             "{} and {} are siblings in group {:?}",
                             c.name,
@@ -166,7 +166,7 @@ pub fn lint_sizes(root: &Path) -> Vec<Diagnostic> {
             if n > MAX_FILE_LINES {
                 diags.push(
                     Diagnostic::error(
-                        "AUR-CLI-0205",
+                        "SYRP-CLI-0205",
                         format!("{n} lines (limit {MAX_FILE_LINES})"),
                     )
                     .at(repo::rel(root, &f))
@@ -189,7 +189,7 @@ pub fn lint_banned(root: &Path) -> Vec<Diagnostic> {
         .filter(|n| BANNED_PREFIXES.iter().any(|p| n.starts_with(p)))
         .map(|n| {
             Diagnostic::error(
-                "AUR-CLI-0204",
+                "SYRP-CLI-0204",
                 format!("banned dependency {n} (clean room)"),
             )
             .at("Cargo.lock")
@@ -208,8 +208,8 @@ fn run(root: &Path, program: &str, args: &[&str]) -> Result<Run, Diagnostic> {
         .current_dir(root)
         .output()
         .map_err(|e| {
-            Diagnostic::error("AUR-CLI-0101", format!("could not run {program}: {e}"))
-                .hint("run `cargo auricle doctor`")
+            Diagnostic::error("SYRP-CLI-0101", format!("could not run {program}: {e}"))
+                .hint("run `cargo syrp doctor`")
         })?;
     let mut text = String::from_utf8_lossy(&out.stdout).into_owned();
     text.push_str(&String::from_utf8_lossy(&out.stderr));
@@ -224,7 +224,7 @@ fn tail(s: &str, n: usize) -> String {
     lines[lines.len().saturating_sub(n)..].join("\n")
 }
 
-/// `cargo auricle check`: fmt, clippy, layering, size, metadata, banned crates and WP specs.
+/// `cargo syrp check`: fmt, clippy, layering, size, metadata, banned crates and WP specs.
 pub fn check(root: &Path, lints_only: bool) -> Outcome {
     let mut out = Outcome::default();
     let mut steps: Vec<Value> = Vec::new();
@@ -252,7 +252,7 @@ pub fn check(root: &Path, lints_only: bool) -> Outcome {
                 "fmt",
                 "cargo",
                 &["fmt", "--all", "--", "--check"][..],
-                "AUR-CLI-0201",
+                "SYRP-CLI-0201",
             ),
             (
                 "clippy",
@@ -266,7 +266,7 @@ pub fn check(root: &Path, lints_only: bool) -> Outcome {
                     "-D",
                     "warnings",
                 ][..],
-                "AUR-CLI-0202",
+                "SYRP-CLI-0202",
             ),
         ] {
             match run(root, program, args) {
@@ -316,7 +316,7 @@ pub fn parse_libtest(output: &str) -> (u64, u64, u64) {
     totals
 }
 
-/// `cargo auricle test`: cargo test (nextest when installed) with a structured summary.
+/// `cargo syrp test`: cargo test (nextest when installed) with a structured summary.
 pub fn test(root: &Path, krate: Option<&str>) -> Outcome {
     let mut args: Vec<&str> = vec!["test", "--quiet"];
     match krate {
@@ -337,7 +337,7 @@ pub fn test(root: &Path, krate: Option<&str>) -> Outcome {
             }));
             if !r.ok {
                 out.diagnostics.push(Diagnostic::error(
-                    "AUR-CLI-0301",
+                    "SYRP-CLI-0301",
                     format!("tests failed:\n{}", tail(&r.output, 60)),
                 ));
                 out.exit = Some(ExitCode::Failed);
@@ -347,7 +347,7 @@ pub fn test(root: &Path, krate: Option<&str>) -> Outcome {
     }
 }
 
-/// `cargo auricle doctor`: toolchain and tool availability.
+/// `cargo syrp doctor`: toolchain and tool availability.
 pub fn doctor(root: Option<&Path>) -> Outcome {
     let mut out = Outcome::default();
     let mut tools = Vec::new();
@@ -395,9 +395,9 @@ pub fn doctor(root: Option<&Path>) -> Outcome {
         if version.is_none() {
             let d = if *required {
                 out.exit = Some(ExitCode::Environment);
-                Diagnostic::error("AUR-CLI-0101", format!("{label} is missing ({purpose})"))
+                Diagnostic::error("SYRP-CLI-0101", format!("{label} is missing ({purpose})"))
             } else {
-                Diagnostic::warning("AUR-CLI-0101", format!("{label} is missing ({purpose})"))
+                Diagnostic::warning("SYRP-CLI-0101", format!("{label} is missing ({purpose})"))
             };
             out.diagnostics.push(d.hint(format!("install {label}")));
         }
@@ -424,7 +424,7 @@ pub fn doctor(root: Option<&Path>) -> Outcome {
             && !r.contains(p.as_str())
         {
             out.diagnostics.push(
-                    Diagnostic::warning("AUR-CLI-0102", format!("rustc is `{r}` but rust-toolchain.toml pins {p}"))
+                    Diagnostic::warning("SYRP-CLI-0102", format!("rustc is `{r}` but rust-toolchain.toml pins {p}"))
                         .hint("rustup will switch automatically inside the repo; outside it, run `rustup toolchain install`"),
                 );
         }
@@ -465,7 +465,7 @@ mod tests {
         ];
         let diags: Vec<_> = lint_crates(Path::new("/nonexistent"), &crates)
             .into_iter()
-            .filter(|d| d.code == "AUR-CLI-0203")
+            .filter(|d| d.code == "SYRP-CLI-0203")
             .collect();
         assert_eq!(diags.len(), 2, "{diags:#?}");
     }

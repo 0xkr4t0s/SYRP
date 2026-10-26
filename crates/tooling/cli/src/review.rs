@@ -1,7 +1,7 @@
 //! Structured reviews (master plan §12.5).
 //!
 //! Reviewer agents never set statuses or approve directly. They write a review JSON file;
-//! `cargo auricle review validate` checks it against the checklist and derives the verdict,
+//! `cargo syrp review validate` checks it against the checklist and derives the verdict,
 //! and the workflow (not the agent) posts the comment and the commit status.
 
 use serde::{Deserialize, Serialize};
@@ -99,7 +99,7 @@ pub fn validate(src: &str) -> Outcome {
         Err(e) => {
             return Outcome {
                 diagnostics: vec![Diagnostic::error(
-                    "AUR-PR-0007",
+                    "SYRP-PR-0007",
                     format!("review JSON is invalid: {e}"),
                 )],
                 exit: Some(ExitCode::Usage),
@@ -111,12 +111,12 @@ pub fn validate(src: &str) -> Outcome {
     for (id, _) in CHECKLIST {
         match review.items.iter().find(|i| i.id == *id) {
             None => diags.push(Diagnostic::error(
-                "AUR-PR-0007",
+                "SYRP-PR-0007",
                 format!("checklist item `{id}` is missing"),
             )),
             Some(i) if i.pass && !i.na && i.evidence.trim().is_empty() => {
                 diags.push(Diagnostic::error(
-                    "AUR-PR-0007",
+                    "SYRP-PR-0007",
                     format!("`{id}` passes without evidence; attach what you ran"),
                 ))
             }
@@ -125,7 +125,7 @@ pub fn validate(src: &str) -> Outcome {
     }
     if review.commands_run.is_empty() {
         diags.push(Diagnostic::error(
-            "AUR-PR-0007",
+            "SYRP-PR-0007",
             "commands_run is empty: reviewers rerun everything themselves",
         ));
     }
@@ -196,7 +196,8 @@ mod tests {
             .enumerate()
             .map(|(n, (id, _))| json!({"id": id, "pass": pass_all || n > 0, "evidence": evidence}))
             .collect();
-        json!({"pr": 1, "items": items, "summary": "s", "commands_run": ["cargo auricle wp check X"]}).to_string()
+        json!({"pr": 1, "items": items, "summary": "s", "commands_run": ["cargo syrp wp check X"]})
+            .to_string()
     }
 
     #[test]

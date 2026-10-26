@@ -6,12 +6,12 @@ PRs of at most 1,200 changed lines. Definitions live in `work/packages/<id>.toml
 
 ```toml
 id = "WP-0.1-04"
-title = "auricle-rt: RT tokens, RtSafe, SPSC queues, deferred drop, atomics, allocation guard"
+title = "syrp-rt: RT tokens, RtSafe, SPSC queues, deferred drop, atomics, allocation guard"
 crate = "crates/foundation/rt"          # owned directory
 depends_on = ["WP-0.1-03"]              # must be merged first
 spec = "work/specs/WP-0.1-04.md"
 risk = ["public-api", "unsafe"]         # any entry => adversarial review
-acceptance = "cargo auricle wp check WP-0.1-04 --json"
+acceptance = "cargo syrp wp check WP-0.1-04 --json"
 role = "implementer"                    # implementer | spec-room | pr-manager | oracle | human
 status = "planned"                      # done = finished outside the pipeline
 budget = { agent_hours = 24, max_review_rounds = 3, max_restarts = 2 }
@@ -22,7 +22,7 @@ budget = { agent_hours = 24, max_review_rounds = 3, max_restarts = 2 }
 - Branch: `wp/<id>-<slug>`, for example `wp/WP-0.1-04-rt`.
 - PR title: `[<id>] <crate>: <what>`.
 - PR body starts with the front matter marker:
-  `<!-- auricle-pr: {"wp":"WP-0.1-04","final":false,"risk":["unsafe"],"deps_added":["rtrb"],"unsafe_count":3} -->`
+  `<!-- syrp-pr: {"wp":"WP-0.1-04","final":false,"risk":["unsafe"],"deps_added":["rtrb"],"unsafe_count":3} -->`
 - The PR that completes the WP sets `"final": true` and says `Closes #<issue>`.
 - Every commit carries trailers:
 

@@ -14,9 +14,9 @@ use crate::envelope::{Diagnostic, ExitCode, Outcome};
 use crate::wp::{Board, Ownership, Role, WorkPackage};
 
 /// Commit-status context the reviewer workflow sets.
-pub const REVIEW_CONTEXT: &str = "auricle/review";
+pub const REVIEW_CONTEXT: &str = "syrp/review";
 /// Commit-status context the adversarial verifier sets.
-pub const ADVERSARIAL_CONTEXT: &str = "auricle/adversarial";
+pub const ADVERSARIAL_CONTEXT: &str = "syrp/adversarial";
 /// Checks produced by the pipeline itself (the review statuses and the jobs of `reviewer.yml`),
 /// which G1 must not wait on. Matched exactly, or as a prefix when ending in `(`.
 const PIPELINE_CHECKS: &[&str] = &[
@@ -41,7 +41,7 @@ fn is_pipeline_check(name: &str) -> bool {
 pub const MAX_CHANGED_LINES: u64 = 1200;
 /// Files that do not count towards the size cap.
 const SIZE_EXEMPT: &[&str] = &["Cargo.lock"];
-const FRONT_MATTER_OPEN: &str = "<!-- auricle-pr: ";
+const FRONT_MATTER_OPEN: &str = "<!-- syrp-pr: ";
 
 /// A changed file.
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -136,7 +136,7 @@ impl FrontMatter {
     pub fn parse(body: &str) -> Result<FrontMatter, String> {
         let start = body
             .find(FRONT_MATTER_OPEN)
-            .ok_or("no `<!-- auricle-pr: {...} -->` marker")?;
+            .ok_or("no `<!-- syrp-pr: {...} -->` marker")?;
         let rest = &body[start + FRONT_MATTER_OPEN.len()..];
         let end = rest
             .find(" -->")
@@ -250,7 +250,7 @@ pub fn evaluate(pr: &PrView, board: &Board, own: &Ownership) -> Outcome {
                         "front-matter",
                         State::Fail,
                         msg.clone(),
-                        Some(Diagnostic::error("AUR-PR-0005", msg)),
+                        Some(Diagnostic::error("SYRP-PR-0005", msg)),
                     );
                     None
                 }
@@ -265,7 +265,7 @@ pub fn evaluate(pr: &PrView, board: &Board, own: &Ownership) -> Outcome {
                 "front-matter",
                 State::Fail,
                 e.clone(),
-                Some(Diagnostic::error("AUR-PR-0005", e.clone())),
+                Some(Diagnostic::error("SYRP-PR-0005", e.clone())),
             );
             None
         }
@@ -284,7 +284,7 @@ pub fn evaluate(pr: &PrView, board: &Board, own: &Ownership) -> Outcome {
             "size",
             State::Fail,
             msg.clone(),
-            Some(Diagnostic::error("AUR-PR-0001", msg).hint("split the PR")),
+            Some(Diagnostic::error("SYRP-PR-0001", msg).hint("split the PR")),
         );
     } else {
         record("size", State::Pass, format!("{changed} lines"), None);
@@ -358,7 +358,7 @@ pub fn evaluate(pr: &PrView, board: &Board, own: &Ownership) -> Outcome {
             "provenance",
             State::Fail,
             msg.clone(),
-            Some(Diagnostic::error("AUR-PR-0006", msg)),
+            Some(Diagnostic::error("SYRP-PR-0006", msg)),
         );
     }
 
@@ -386,7 +386,7 @@ pub fn evaluate(pr: &PrView, board: &Board, own: &Ownership) -> Outcome {
             "G1-ci",
             State::Fail,
             msg.clone(),
-            Some(Diagnostic::error("AUR-PR-0002", msg)),
+            Some(Diagnostic::error("SYRP-PR-0002", msg)),
         );
     } else if ci.iter().any(|(_, s)| *s == State::Pending) {
         record("G1-ci", State::Pending, "checks running".into(), None);
@@ -407,7 +407,7 @@ pub fn evaluate(pr: &PrView, board: &Board, own: &Ownership) -> Outcome {
             State::Fail,
             "changes requested".into(),
             Some(Diagnostic::error(
-                "AUR-PR-0003",
+                "SYRP-PR-0003",
                 "reviewer requested changes",
             )),
         ),
@@ -453,7 +453,7 @@ pub fn evaluate(pr: &PrView, board: &Board, own: &Ownership) -> Outcome {
                 State::Fail,
                 format!("rejected ({list})"),
                 Some(Diagnostic::error(
-                    "AUR-PR-0004",
+                    "SYRP-PR-0004",
                     format!("adversarial verifier rejected ({list})"),
                 )),
             ),
@@ -510,7 +510,7 @@ mod tests {
     fn green_pr() -> PrView {
         PrView {
             number: 7,
-            body: "<!-- auricle-pr: {\"wp\":\"A\",\"final\":true} -->\nCloses #3".into(),
+            body: "<!-- syrp-pr: {\"wp\":\"A\",\"final\":true} -->\nCloses #3".into(),
             labels: vec![],
             files: vec![FileChange {
                 path: "crates/x/A/src/lib.rs".into(),
@@ -553,7 +553,7 @@ mod tests {
             json!({"name": "test", "status": "COMPLETED", "conclusion": "FAILURE"});
         let o = evaluate(&pr, &b, &own());
         assert_eq!(verdict(&o), "block");
-        assert!(o.diagnostics.iter().any(|d| d.code == "AUR-PR-0002"));
+        assert!(o.diagnostics.iter().any(|d| d.code == "SYRP-PR-0002"));
     }
 
     #[test]
@@ -568,9 +568,9 @@ mod tests {
         pr.commits[0].message_body = "no trailers".into();
         let o = evaluate(&pr, &b, &own());
         let codes: Vec<_> = o.diagnostics.iter().map(|d| d.code.as_str()).collect();
-        assert!(codes.contains(&"AUR-PR-0001"));
-        assert!(codes.contains(&"AUR-WP-0005"));
-        assert!(codes.contains(&"AUR-PR-0006"));
+        assert!(codes.contains(&"SYRP-PR-0001"));
+        assert!(codes.contains(&"SYRP-WP-0005"));
+        assert!(codes.contains(&"SYRP-PR-0006"));
         // Touching a shared file also makes the PR high-risk.
         assert!(
             o.results[0]["risks"]
@@ -602,6 +602,6 @@ mod tests {
         pr.body = "nothing".into();
         let o = evaluate(&pr, &b, &own());
         assert_eq!(verdict(&o), "block");
-        assert!(o.diagnostics.iter().any(|d| d.code == "AUR-PR-0005"));
+        assert!(o.diagnostics.iter().any(|d| d.code == "SYRP-PR-0005"));
     }
 }

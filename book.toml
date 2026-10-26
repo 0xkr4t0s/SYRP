@@ -1,7 +1,7 @@
 [book]
-title = "Auricle"
+title = "Syrp"
 description = "A Rust reimplementation of JUCE, built and used agent-first."
-authors = ["The Auricle Authors"]
+authors = ["The Syrp Authors"]
 language = "en"
 src = "docs"
 
@@ -10,8 +10,8 @@ build-dir = "target/site"
 create-missing = false
 
 [output.html]
-git-repository-url = "https://github.com/0xkr4t0s/auricle"
-edit-url-template = "https://github.com/0xkr4t0s/auricle/edit/main/{path}"
+git-repository-url = "https://github.com/0xkr4t0s/SYRP"
+edit-url-template = "https://github.com/0xkr4t0s/SYRP/edit/main/{path}"
 
 [output.html.search]
 enable = true

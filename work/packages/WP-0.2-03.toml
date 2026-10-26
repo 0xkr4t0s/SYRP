@@ -1,10 +1,10 @@
 id = "WP-0.2-03"
-title = "auricle-midi: MidiMessage, MidiBuffer, UMP packets and codecs"
+title = "syrp-midi: MidiMessage, MidiBuffer, UMP packets and codecs"
 crate = "crates/contracts/midi"
 depends_on = ["WP-0.1-03", "WP-0.1-04"]
 spec = "work/specs/WP-0.2-03.md"
 risk = ["public-api", "contract-change"]
-acceptance = "cargo auricle wp check WP-0.2-03 --json"
+acceptance = "cargo syrp wp check WP-0.2-03 --json"
 platforms = ["linux", "macos", "windows"]
 role = "implementer"
 status = "planned"

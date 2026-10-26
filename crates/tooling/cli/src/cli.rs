@@ -11,9 +11,9 @@ use crate::envelope::{Diagnostic, ExitCode, Outcome};
 use crate::wp::{Board, Ownership, SpecStatus};
 use crate::{catalogue, checks, conductor, docs, gates, repo, review};
 
-/// The Auricle closed-loop CLI. Output is JSON when stdout is not a terminal, or with --json.
+/// The Syrp closed-loop CLI. Output is JSON when stdout is not a terminal, or with --json.
 #[derive(Debug, Parser)]
-#[command(name = "cargo-auricle", bin_name = "cargo auricle", version)]
+#[command(name = "cargo-syrp", bin_name = "cargo syrp", version)]
 pub struct Cli {
     /// Force JSON output.
     #[arg(long, global = true)]
@@ -31,9 +31,9 @@ pub struct Cli {
 pub enum Cmd {
     /// Diagnose the toolchain and repository. Run once per session.
     Doctor,
-    /// Explain an AUR-* error code: cause, fix, example.
+    /// Explain an SYRP-* error code: cause, fix, example.
     Explain {
-        /// The code, for example AUR-WP-0005.
+        /// The code, for example SYRP-WP-0005.
         code: Option<String>,
         /// List every code.
         #[arg(long)]
@@ -247,13 +247,13 @@ fn fail(d: Diagnostic, exit: ExitCode) -> Outcome {
 fn read_json<T: serde::de::DeserializeOwned>(path: &Path) -> Result<T, Outcome> {
     let src = fs::read_to_string(path).map_err(|e| {
         fail(
-            Diagnostic::error("AUR-CLI-0003", format!("{}: {e}", path.display())),
+            Diagnostic::error("SYRP-CLI-0003", format!("{}: {e}", path.display())),
             ExitCode::Usage,
         )
     })?;
     serde_json::from_str(&src).map_err(|e| {
         fail(
-            Diagnostic::error("AUR-CLI-0003", format!("{}: {e}", path.display())),
+            Diagnostic::error("SYRP-CLI-0003", format!("{}: {e}", path.display())),
             ExitCode::Usage,
         )
     })
@@ -264,10 +264,10 @@ fn changed_files(root: &Path, base: &str) -> Result<Vec<String>, Diagnostic> {
         .args(["diff", "--name-only", &format!("{base}...HEAD")])
         .current_dir(root)
         .output()
-        .map_err(|e| Diagnostic::error("AUR-CLI-0101", format!("git: {e}")))?;
+        .map_err(|e| Diagnostic::error("SYRP-CLI-0101", format!("git: {e}")))?;
     if !out.status.success() {
         return Err(Diagnostic::error(
-            "AUR-CLI-0004",
+            "SYRP-CLI-0004",
             format!(
                 "git diff against {base} failed: {}",
                 String::from_utf8_lossy(&out.stderr).trim()
@@ -303,7 +303,7 @@ pub fn dispatch(cli: &Cli) -> Outcome {
         Cmd::Explain { code: Some(c), .. } => return catalogue::explain(c),
         Cmd::Explain { .. } => {
             return fail(
-                Diagnostic::error("AUR-CLI-0002", "give a code or --list"),
+                Diagnostic::error("SYRP-CLI-0002", "give a code or --list"),
                 ExitCode::Usage,
             );
         }
@@ -325,7 +325,7 @@ pub fn dispatch(cli: &Cli) -> Outcome {
             return match fs::read_to_string(file) {
                 Ok(s) => review::validate(&s),
                 Err(e) => fail(
-                    Diagnostic::error("AUR-CLI-0003", format!("{}: {e}", file.display())),
+                    Diagnostic::error("SYRP-CLI-0003", format!("{}: {e}", file.display())),
                     ExitCode::Usage,
                 ),
             };
@@ -421,7 +421,7 @@ fn wp_cmd(root: &Path, c: &WpCmd) -> Outcome {
         }
         WpCmd::Show { id } => {
             let Some(wp) = board.packages.get(id) else {
-                return fail(Diagnostic::error("AUR-WP-0002", format!("unknown work package {id}")), ExitCode::Usage);
+                return fail(Diagnostic::error("SYRP-WP-0002", format!("unknown work package {id}")), ExitCode::Usage);
             };
             let spec = fs::read_to_string(root.join(&wp.spec)).ok();
             let agents_md = wp
@@ -443,14 +443,14 @@ fn wp_cmd(root: &Path, c: &WpCmd) -> Outcome {
                 "branch": format!("wp/{id}-<slug>"),
                 "next": [
                     "write failing tests from the spec first",
-                    "loop: cargo auricle check --json; cargo auricle test --crate <pkg> --json",
+                    "loop: cargo syrp check --json; cargo syrp test --crate <pkg> --json",
                     format!("finish: {}", wp.acceptance),
                 ],
             }))
         }
         WpCmd::CheckPaths { id, files, base } => {
             let Some(wp) = board.packages.get(id) else {
-                return fail(Diagnostic::error("AUR-WP-0002", format!("unknown work package {id}")), ExitCode::Usage);
+                return fail(Diagnostic::error("SYRP-WP-0002", format!("unknown work package {id}")), ExitCode::Usage);
             };
             let files = if files.is_empty() {
                 match changed_files(root, base) {
@@ -471,7 +471,7 @@ fn wp_cmd(root: &Path, c: &WpCmd) -> Outcome {
         }
         WpCmd::Check { id, base } => {
             let Some(wp) = board.packages.get(id) else {
-                return fail(Diagnostic::error("AUR-WP-0002", format!("unknown work package {id}")), ExitCode::Usage);
+                return fail(Diagnostic::error("SYRP-WP-0002", format!("unknown work package {id}")), ExitCode::Usage);
             };
             let mut out = checks::check(root, false);
             let mut steps = vec![json!({"step": "check", "ok": out.exit_code() == ExitCode::Ok})];
@@ -481,7 +481,7 @@ fn wp_cmd(root: &Path, c: &WpCmd) -> Outcome {
             });
             if wp.crate_path.is_some() && pkg.is_none() {
                 out.diagnostics.push(Diagnostic::error(
-                    "AUR-WP-0008",
+                    "SYRP-WP-0008",
                     format!("{id} owns {} but no crate exists there yet", wp.crate_path.as_deref().unwrap_or("")),
                 ));
             }

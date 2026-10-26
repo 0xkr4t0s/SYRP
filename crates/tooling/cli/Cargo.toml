@@ -1,6 +1,6 @@
 [package]
-name = "auricle-cli"
-description = "The `cargo auricle` closed-loop CLI: one JSON envelope, stable exit codes, no prompts."
+name = "syrp-cli"
+description = "The `cargo syrp` closed-loop CLI: one JSON envelope, stable exit codes, no prompts."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -8,12 +8,12 @@ license.workspace = true
 repository.workspace = true
 authors.workspace = true
 
-[package.metadata.auricle]
+[package.metadata.syrp]
 layer = "L6"
 wp = "WP-0.1-08"
 
 [[bin]]
-name = "cargo-auricle"
+name = "cargo-syrp"
 path = "src/main.rs"
 
 [dependencies]

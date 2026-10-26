@@ -53,16 +53,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "auricle-cli"
-version = "0.0.1"
-dependencies = [
- "clap",
- "serde",
- "serde_json",
- "toml",
-]
-
-[[package]]
 name = "clap"
 version = "4.6.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -245,6 +235,16 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
+]
+
+[[package]]
+name = "syrp-cli"
+version = "0.0.1"
+dependencies = [
+ "clap",
+ "serde",
+ "serde_json",
+ "toml",
 ]
 
 [[package]]

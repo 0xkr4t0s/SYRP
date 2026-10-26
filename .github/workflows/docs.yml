@@ -24,7 +24,7 @@ jobs:
       - uses: taiki-e/install-action@v2
         with:
           tool: mdbook
-      - run: cargo auricle docs build --json
+      - run: cargo syrp docs build --json
       - run: cargo doc --workspace --no-deps && cp -r target/doc target/site/api
       - uses: actions/upload-pages-artifact@v3
         with:
@@ -32,7 +32,7 @@ jobs:
 
   deploy:
     needs: build
-    if: vars.AURICLE_PAGES_ENABLED == 'true'
+    if: vars.SYRP_PAGES_ENABLED == 'true'
     runs-on: ubuntu-24.04
     environment:
       name: github-pages

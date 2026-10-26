@@ -2,4 +2,4 @@
 /book
 **/*.rs.bk
 .DS_Store
-/.auricle/
+/.syrp/

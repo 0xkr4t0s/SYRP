@@ -20,7 +20,7 @@ ignore = true
 multiple-versions = "warn"
 wildcards = "deny"
 # Clean room (master plan §10.9): crates named `aloe-*` (self-described JUCE translations)
-# are rejected by `cargo auricle check` (AUR-CLI-0204), since cargo-deny bans take exact names.
+# are rejected by `cargo syrp check` (SYRP-CLI-0204), since cargo-deny bans take exact names.
 deny = []
 
 [sources]

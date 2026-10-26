@@ -1,4 +1,4 @@
-# WP-0.1-08: cargo auricle skeleton: JSON envelope, exit codes, doctor, explain, wp
+# WP-0.1-08: cargo syrp skeleton: JSON envelope, exit codes, doctor, explain, wp
 
 Status: done.
 

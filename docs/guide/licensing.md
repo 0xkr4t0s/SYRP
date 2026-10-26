@@ -1,8 +1,8 @@
 # Licensing
 
-> Draft, pending counsel review. See [LICENSE.md](https://github.com/0xkr4t0s/auricle/blob/main/LICENSE.md).
+> Draft, pending counsel review. See [LICENSE.md](https://github.com/0xkr4t0s/SYRP/blob/main/LICENSE.md).
 
-- **Interface crates** (L0 foundation, L1 contracts, `auricle-midi`): `MIT OR Apache-2.0`.
+- **Interface crates** (L0 foundation, L1 contracts, `syrp-midi`): `MIT OR Apache-2.0`.
 - **Everything else**: your choice of `AGPL-3.0-only` or `BUSL-1.1`.
   - Under BUSL-1.1, production use is free (closed source included) for individuals and
     organisations under USD 100,000 a year in revenue plus funding, for education, and for small

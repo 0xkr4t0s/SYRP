@@ -27,14 +27,14 @@ jobs:
     # Below the conductor's 4 h lease TTL, so the finish step always releases the lease first.
     timeout-minutes: 230
     env:
-      GH_TOKEN: ${{ secrets.AURICLE_BOT_TOKEN }}
+      GH_TOKEN: ${{ secrets.SYRP_BOT_TOKEN }}
       GH_REPO: ${{ github.repository }}
-      MODEL: ${{ vars.AURICLE_IMPLEMENTER_MODEL || 'claude-opus-5-5' }}
+      MODEL: ${{ vars.SYRP_IMPLEMENTER_MODEL || 'claude-opus-5-5' }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.AURICLE_BOT_TOKEN }}
+          token: ${{ secrets.SYRP_BOT_TOKEN }}
 
       - name: Clean room - block JUCE hosts
         run: |
@@ -43,12 +43,12 @@ jobs:
           done
 
       - uses: Swatinem/rust-cache@v2
-      - run: cargo build --quiet -p auricle-cli
+      - run: cargo build --quiet -p syrp-cli
 
       - name: Git identity
         run: |
-          git config user.name "auricle-bot"
-          git config user.email "auricle-bot@users.noreply.github.com"
+          git config user.name "syrp-bot"
+          git config user.email "syrp-bot@users.noreply.github.com"
 
       - name: Render prompt
         id: prompt
@@ -65,7 +65,7 @@ jobs:
       - uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          github_token: ${{ secrets.AURICLE_BOT_TOKEN }}
+          github_token: ${{ secrets.SYRP_BOT_TOKEN }}
           prompt: ${{ steps.prompt.outputs.text }}
           claude_args: >-
             --model ${{ env.MODEL }}
@@ -80,7 +80,7 @@ jobs:
             --jq "map(select(.headRefName | startswith(\"wp/$wp\"))) | length")"
           gh issue view "$issue" --json number,title,state,labels,body > issue.json
           flag=""; [ "$open" -gt 0 ] && flag="--has-pr"
-          cargo auricle conductor finish --issue issue.json $flag --json > finish.json
+          cargo syrp conductor finish --issue issue.json $flag --json > finish.json
           jq -r '.results[0].body' finish.json > body.md
           status="$(jq -r '.results[0].status' finish.json)"
           gh issue edit "$issue" --body-file body.md --add-label "$status"

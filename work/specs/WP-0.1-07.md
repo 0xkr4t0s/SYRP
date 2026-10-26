@@ -2,4 +2,4 @@
 
 Status: done.
 
-Bootstrap work. `cargo auricle conductor`, `work/wp.schema.json`, `.github/workflows/conductor.yml`.
+Bootstrap work. `cargo syrp conductor`, `work/wp.schema.json`, `.github/workflows/conductor.yml`.

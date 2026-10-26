@@ -1,57 +1,57 @@
 # Error catalogue: work packages.
 
 [[error]]
-code = "AUR-WP-0001"
+code = "SYRP-WP-0001"
 title = "Work package or wave file invalid"
 severity = "error"
 cause = "A file in work/packages/ or work/waves/ (or ownership.toml) failed to parse, has unknown keys, or its file name differs from its id."
 fix = "Compare with work/wp.schema.json and an existing spec, for example work/packages/WP-0.1-03.toml."
 
 [[error]]
-code = "AUR-WP-0002"
+code = "SYRP-WP-0002"
 title = "Unknown work package"
 severity = "error"
 cause = "A command or wave referenced a WP id with no file in work/packages/."
-fix = "Run `cargo auricle wp list` for valid ids."
+fix = "Run `cargo syrp wp list` for valid ids."
 
 [[error]]
-code = "AUR-WP-0003"
+code = "SYRP-WP-0003"
 title = "Dependency on unknown work package"
 severity = "error"
 cause = "`depends_on` names a WP that does not exist."
 fix = "Fix the id or add the missing WP (spec-room work)."
 
 [[error]]
-code = "AUR-WP-0004"
+code = "SYRP-WP-0004"
 title = "Dependency cycle"
 severity = "error"
 cause = "Work packages depend on each other in a loop, so none of them can ever start."
 fix = "Break the cycle, usually by moving the shared part into a contract crate WP."
 
 [[error]]
-code = "AUR-WP-0005"
+code = "SYRP-WP-0005"
 title = "Path outside the work package's ownership"
 severity = "error"
 cause = "A change touches a file the WP does not own: another crate, or a shared file owned by a role (master plan §12.4)."
 fix = "Revert the change. For shared files (workspace Cargo.toml, CI, deny.toml...) open a change-request issue; the PR manager applies it."
 
 [[error]]
-code = "AUR-WP-0006"
+code = "SYRP-WP-0006"
 title = "Two work packages own the same path"
 severity = "error"
 cause = "Overlapping ownership would let two agents edit the same files at once."
 fix = "Give each path to exactly one WP."
 
 [[error]]
-code = "AUR-WP-0007"
+code = "SYRP-WP-0007"
 title = "Spec file missing"
 severity = "error"
 cause = "The WP's `spec` path does not exist."
 fix = "Write the spec under work/specs/ (spec room) before scheduling the WP."
 
 [[error]]
-code = "AUR-WP-0008"
+code = "SYRP-WP-0008"
 title = "Owned crate does not exist yet"
 severity = "error"
 cause = "`wp check` ran for a WP whose crate directory has no Cargo.toml yet."
-fix = "Create the crate: Cargo.toml using workspace inheritance, [package.metadata.auricle] layer, AGENTS.md, src/lib.rs. Workspace members are globbed, so no root edit is needed."
+fix = "Create the crate: Cargo.toml using workspace inheritance, [package.metadata.syrp] layer, AGENTS.md, src/lib.rs. Workspace members are globbed, so no root edit is needed."

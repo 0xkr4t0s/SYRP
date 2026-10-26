@@ -9,9 +9,9 @@ version = "0.0.1"
 edition = "2024"
 rust-version = "1.95"
 license = "AGPL-3.0-only OR BUSL-1.1"
-repository = "https://github.com/0xkr4t0s/auricle"
-homepage = "https://github.com/0xkr4t0s/auricle"
-authors = ["The Auricle Authors"]
+repository = "https://github.com/0xkr4t0s/SYRP"
+homepage = "https://github.com/0xkr4t0s/SYRP"
+authors = ["The Syrp Authors"]
 
 [workspace.dependencies]
 # Third-party versions are pinned here so every crate agrees. Add new ones via a change request.

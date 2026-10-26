@@ -1,21 +1,21 @@
 # Error catalogue: the conductor (master plan §12.3 and §12.9).
 
 [[error]]
-code = "AUR-COND-0001"
+code = "SYRP-COND-0001"
 title = "Restarts exhausted"
 severity = "error"
 cause = "Fresh agents lost the WP's lease (crashed, timed out or produced no PR) more times than budget.max_restarts."
 fix = "Spec room: split or clarify the WP, then remove `needs-human` and reset the lease marker. Escalation E5."
 
 [[error]]
-code = "AUR-COND-0002"
+code = "SYRP-COND-0002"
 title = "Review rounds exhausted"
 severity = "error"
 cause = "The PR still has changes requested after budget.max_review_rounds rounds. Escalation E1."
 fix = "Read the review thread. Either clarify the spec, arbitrate, or close the PR and re-plan the WP."
 
 [[error]]
-code = "AUR-COND-0003"
+code = "SYRP-COND-0003"
 title = "Work package needs a person"
 severity = "error"
 cause = "The WP's role is `human` or `oracle` (accounts, legal, hardware, or the separate juce-oracle repository), which agents in this repository cannot do."

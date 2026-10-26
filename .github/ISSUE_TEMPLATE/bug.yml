@@ -10,7 +10,7 @@ body:
     id: repro
     attributes:
       label: Reproduction
-      description: Minimal code or the `cargo auricle` command and its JSON output.
+      description: Minimal code or the `cargo syrp` command and its JSON output.
     validations:
       required: true
   - type: textarea

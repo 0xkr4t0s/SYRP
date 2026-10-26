@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 /// Version tag of the envelope format. Bump only with a `BREAKING.md` entry.
-pub const ENVELOPE_SCHEMA: &str = "auricle.envelope/v1";
+pub const ENVELOPE_SCHEMA: &str = "syrp.envelope/v1";
 
 /// Process exit codes. These numbers are a public contract and never change meaning.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -73,10 +73,10 @@ pub enum Severity {
     Info,
 }
 
-/// One finding, always carrying a catalogued `AUR-*` code.
+/// One finding, always carrying a catalogued `SYRP-*` code.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Diagnostic {
-    /// Catalogued error code, for example `AUR-WP-0003`. `cargo auricle explain <code>` documents it.
+    /// Catalogued error code, for example `SYRP-WP-0003`. `cargo syrp explain <code>` documents it.
     pub code: String,
     /// Severity.
     pub severity: Severity,
@@ -110,7 +110,7 @@ impl Diagnostic {
             message: message.into(),
             location: None,
             hint: None,
-            docs: format!("cargo auricle explain {code}"),
+            docs: format!("cargo syrp explain {code}"),
         }
     }
 
@@ -249,10 +249,10 @@ mod tests {
         let mut o = Outcome::default();
         assert_eq!(o.exit_code(), ExitCode::Ok);
         o.diagnostics
-            .push(Diagnostic::warning("AUR-CLI-0205", "big"));
+            .push(Diagnostic::warning("SYRP-CLI-0205", "big"));
         assert_eq!(o.exit_code(), ExitCode::Ok);
         o.diagnostics
-            .push(Diagnostic::error("AUR-CLI-0203", "layer"));
+            .push(Diagnostic::error("SYRP-CLI-0203", "layer"));
         assert_eq!(o.exit_code(), ExitCode::Failed);
     }
 

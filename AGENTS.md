@@ -1,6 +1,6 @@
 # AGENTS.md
 
-You are working on **Auricle**, a Rust reimplementation of the JUCE framework, built agent-first.
+You are working on **Syrp**, a Rust reimplementation of the JUCE framework, built agent-first.
 This file is the root guide for every agent. Read it fully before your first edit.
 
 ## Mission
@@ -12,7 +12,7 @@ own work. The full design is `docs/design/master-plan.md`; open decisions and th
 - Never fetch, open, paste or recall JUCE **source code**, from any site or from memory.
 - Allowed: JUCE's public **documentation** for behaviour, your WP spec, the master plan, and
   observed behaviour from parity scenarios.
-- Never use or read `aloe-*` crates (self-described JUCE translations). `cargo auricle check`
+- Never use or read `aloe-*` crates (self-described JUCE translations). `cargo syrp check`
   rejects them.
 - No comments, constants or tables copied from JUCE. Write everything in your own words.
 - If you realise you have seen JUCE source for the area you are working on,
@@ -27,34 +27,34 @@ own work. The full design is `docs/design/master-plan.md`; open decisions and th
 | `parity/` | Ledger schema, scenarios | Spec room; the ledger itself is generated |
 | `contracts/` | Frozen public-API snapshots | Contract-change WPs only |
 | `docs/` | Docs site sources | Guides: any WP. Design: spec room |
-| `skills/auricle/` | Agent Skill | Its WP |
+| `skills/syrp/` | Agent Skill | Its WP |
 | `agents/`, `.github/`, root files | Pipeline and shared files | PR manager only |
 
-`ownership.toml` is the authority; `cargo auricle wp check-paths <id>` checks your diff.
+`ownership.toml` is the authority; `cargo syrp wp check-paths <id>` checks your diff.
 
 ## The closed loop
 ```sh
-cargo auricle doctor                  # once per session
-cargo auricle wp show <id>            # your spec, owned paths, dependencies
-cargo auricle docs search <words>     # before writing a helper, look for one
-cargo auricle check                   # after every edit
-cargo auricle test --crate <package>  # after every edit
-cargo auricle explain <AUR-code>      # on any diagnostic
-cargo auricle wp check <id>           # acceptance: must exit 0 before you open the PR
+cargo syrp doctor                  # once per session
+cargo syrp wp show <id>            # your spec, owned paths, dependencies
+cargo syrp docs search <words>     # before writing a helper, look for one
+cargo syrp check                   # after every edit
+cargo syrp test --crate <package>  # after every edit
+cargo syrp explain <SYRP-code>      # on any diagnostic
+cargo syrp wp check <id>           # acceptance: must exit 0 before you open the PR
 ```
 Output is JSON when piped. Exit codes: 0 ok, 1 failed, 2 usage, 3 environment, 4 parity,
 5 validator, 6 golden, 7 contract, 8 RT safety, 9 clean room, 10 internal.
 
 ## Definition of done
 - Every behaviour (B1, B2...) in the spec has a test named after it (`b2_...`).
-- `cargo auricle wp check <id>` exits 0.
+- `cargo syrp wp check <id>` exits 0.
 - Every public item has a rustdoc comment with an example that compiles.
 - New error codes are in `errors/<domain>.toml`. The crate's `AGENTS.md` is current.
 - A `changes/<id>-<n>.json` entry: `{"wp": "<id>", "kind": "added|changed|fixed", "summary": "..."}`.
 
 ## Conventions
 - Naming: Rust API guidelines. JUCE names go in `#[doc(alias = "JuceName")]`.
-- Errors: every error type implements `auricle_error::Diagnostic` (once WP-0.1-03 lands) and carries a code.
+- Errors: every error type implements `syrp_error::Diagnostic` (once WP-0.1-03 lands) and carries a code.
 - Threads: message-thread APIs take `&MessageThread`; audio code never allocates, locks or does I/O.
 - `unsafe`: only with a `// SAFETY:` comment, and declare `unsafe_count` in the PR front matter.
 - Files: at most 1,200 lines. Macros: none without a written justification in the PR.

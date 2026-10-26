@@ -1,10 +1,10 @@
 id = "WP-0.2-06"
-title = "auricle-plugin-api: Processor, ParamSpec, Editor, PluginDescriptor, state traits"
+title = "syrp-plugin-api: Processor, ParamSpec, Editor, PluginDescriptor, state traits"
 crate = "crates/contracts/plugin-api"
 depends_on = ["WP-0.2-02", "WP-0.2-03", "WP-0.1-04"]
 spec = "work/specs/WP-0.2-06.md"
 risk = ["public-api", "contract-change"]
-acceptance = "cargo auricle wp check WP-0.2-06 --json"
+acceptance = "cargo syrp wp check WP-0.2-06 --json"
 platforms = ["linux", "macos", "windows"]
 role = "implementer"
 status = "planned"

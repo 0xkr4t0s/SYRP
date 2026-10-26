@@ -25,7 +25,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: Swatinem/rust-cache@v2
-      - run: cargo auricle check --json
+      - run: cargo syrp check --json
 
   test:
     name: test (${{ matrix.os }})
@@ -37,7 +37,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: Swatinem/rust-cache@v2
-      - run: cargo auricle test --json
+      - run: cargo syrp test --json
 
   docs:
     name: docs (rustdoc, mdBook, agent side)
@@ -52,7 +52,7 @@ jobs:
         env:
           RUSTDOCFLAGS: -D warnings
       - run: cargo test --workspace --doc
-      - run: cargo auricle docs build --json
+      - run: cargo syrp docs build --json
 
   deny:
     name: deny (licences, advisories, bans, sources)
@@ -76,4 +76,4 @@ jobs:
           BASE_REF: ${{ github.base_ref }}
         run: |
           wp="$(echo "${HEAD_REF#wp/}" | cut -d- -f1-3)"
-          cargo auricle wp check-paths "$wp" --base "origin/$BASE_REF" --json
+          cargo syrp wp check-paths "$wp" --base "origin/$BASE_REF" --json

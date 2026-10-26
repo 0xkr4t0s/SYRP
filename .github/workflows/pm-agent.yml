@@ -24,18 +24,18 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     env:
-      GH_TOKEN: ${{ secrets.AURICLE_BOT_TOKEN }}
+      GH_TOKEN: ${{ secrets.SYRP_BOT_TOKEN }}
       GH_REPO: ${{ github.repository }}
-      MODEL: ${{ vars.AURICLE_PR_MANAGER_MODEL || 'claude-opus-5-5' }}
+      MODEL: ${{ vars.SYRP_PR_MANAGER_MODEL || 'claude-opus-5-5' }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.AURICLE_BOT_TOKEN }}
+          token: ${{ secrets.SYRP_BOT_TOKEN }}
       - uses: Swatinem/rust-cache@v2
       - run: |
-          git config user.name "auricle-bot"
-          git config user.email "auricle-bot@users.noreply.github.com"
+          git config user.name "syrp-bot"
+          git config user.email "syrp-bot@users.noreply.github.com"
       - id: prompt
         run: |
           {
@@ -46,7 +46,7 @@ jobs:
       - uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          github_token: ${{ secrets.AURICLE_BOT_TOKEN }}
+          github_token: ${{ secrets.SYRP_BOT_TOKEN }}
           prompt: ${{ steps.prompt.outputs.text }}
           claude_args: >-
             --model ${{ env.MODEL }}

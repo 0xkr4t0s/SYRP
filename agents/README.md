@@ -2,7 +2,7 @@
 
 Prompts for the pipeline's LLM roles. Workflows in `.github/workflows/` fill the `{{...}}`
 placeholders and pass the result to Claude Code. The deterministic parts (scheduling, merge
-gates, review validation) are `cargo auricle conductor`, `pr gates` and `review validate`.
+gates, review validation) are `cargo syrp conductor`, `pr gates` and `review validate`.
 
 | Role | Prompt | Started by |
 |---|---|---|

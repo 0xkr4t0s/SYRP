@@ -3,8 +3,8 @@ License text copyright (c) 2017 MariaDB Corporation Ab, All Rights Reserved.
 
 Parameters
 
-Licensor:             The Auricle project steward (DRAFT: legal entity to be named, see LICENSE.md)
-Licensed Work:        Auricle, every version. The Licensed Work is (c) its authors.
+Licensor:             The Syrp project steward (DRAFT: legal entity to be named, see LICENSE.md)
+Licensed Work:        Syrp, every version. The Licensed Work is (c) its authors.
                       Crates whose Cargo.toml declares `license = "MIT OR Apache-2.0"`
                       are NOT part of the Licensed Work.
 Additional Use Grant: You may make production use of the Licensed Work, including

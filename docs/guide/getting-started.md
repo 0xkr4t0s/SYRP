@@ -1,6 +1,6 @@
 # Getting started
 
-Auricle has no usable framework crates yet (Phase 0). What you can run today is the tooling.
+Syrp has no usable framework crates yet (Phase 0). What you can run today is the tooling.
 
 ## Requirements
 
@@ -10,18 +10,18 @@ Auricle has no usable framework crates yet (Phase 0). What you can run today is 
 ## First commands
 
 ```sh
-git clone https://github.com/0xkr4t0s/auricle && cd auricle
-cargo auricle doctor          # what is installed, what is missing
-cargo auricle wp ready        # work packages that can start now
-cargo auricle explain AUR-WP-0005
-cargo auricle check           # the fast gate every change must pass
+git clone https://github.com/0xkr4t0s/SYRP && cd syrp
+cargo syrp doctor          # what is installed, what is missing
+cargo syrp wp ready        # work packages that can start now
+cargo syrp explain SYRP-WP-0005
+cargo syrp check           # the fast gate every change must pass
 ```
 
-Inside the repository `cargo auricle` runs through a cargo alias, so nothing needs installing.
+Inside the repository `cargo syrp` runs through a cargo alias, so nothing needs installing.
 Output is human-readable in a terminal and JSON when piped (or with `--json`).
 
 ## Building these docs
 
 ```sh
-cargo auricle docs build      # human site and agent side into target/site
+cargo syrp docs build      # human site and agent side into target/site
 ```

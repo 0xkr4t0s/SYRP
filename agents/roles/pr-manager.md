@@ -9,7 +9,7 @@ your job here: the deterministic gate step merges when every gate passes.
    or tests fail after the rebase for reasons inside the WP's code, abort, label the PR
    `review:changes-requested`, and comment `SEMANTIC CONFLICT:` with the failing output. The
    conductor sends it back to the implementer.
-3. `cargo auricle wp check <wp> --json` must exit 0. Push with `--force-with-lease`.
+3. `cargo syrp wp check <wp> --json` must exit 0. Push with `--force-with-lease`.
 
 ## TASK = ci-triage
 1. Read the failing jobs (`gh pr checks {{PR}}`, `gh run view <id> --log-failed`).

@@ -42,10 +42,10 @@ fn title_of(src: &str, fallback: &str) -> String {
 fn write(path: &Path, contents: &str, artifacts: &mut Vec<String>) -> Result<(), Diagnostic> {
     if let Some(dir) = path.parent() {
         fs::create_dir_all(dir)
-            .map_err(|e| Diagnostic::error("AUR-CLI-0401", format!("{}: {e}", dir.display())))?;
+            .map_err(|e| Diagnostic::error("SYRP-CLI-0401", format!("{}: {e}", dir.display())))?;
     }
     fs::write(path, contents)
-        .map_err(|e| Diagnostic::error("AUR-CLI-0401", format!("{}: {e}", path.display())))?;
+        .map_err(|e| Diagnostic::error("SYRP-CLI-0401", format!("{}: {e}", path.display())))?;
     artifacts.push(path.display().to_string());
     Ok(())
 }
@@ -70,14 +70,14 @@ pub fn build(root: &Path, out: &Path, skip_book: bool) -> Outcome {
             }
             Ok(r) => {
                 o.diagnostics.push(Diagnostic::error(
-                    "AUR-CLI-0402",
+                    "SYRP-CLI-0402",
                     format!("mdbook failed: {}", String::from_utf8_lossy(&r.stderr)),
                 ));
                 o.exit = Some(ExitCode::Failed);
             }
             Err(_) => o.diagnostics.push(
                 Diagnostic::warning(
-                    "AUR-CLI-0101",
+                    "SYRP-CLI-0101",
                     "mdbook is missing; built the agent side only",
                 )
                 .hint("cargo install mdbook, or pass --skip-book"),
@@ -89,16 +89,16 @@ pub fn build(root: &Path, out: &Path, skip_book: bool) -> Outcome {
     let result = (|| -> Result<Value, Diagnostic> {
         let srcs = sources(root);
         let mut index = String::from(
-            "# Auricle\n\n> A Rust reimplementation of JUCE, built and used agent-first. Every \
-             command emits one JSON envelope with stable exit codes; run `cargo auricle doctor` \
-             first and `cargo auricle explain <AUR-code>` on any error.\n\n",
+            "# Syrp\n\n> A Rust reimplementation of JUCE, built and used agent-first. Every \
+             command emits one JSON envelope with stable exit codes; run `cargo syrp doctor` \
+             first and `cargo syrp explain <SYRP-code>` on any error.\n\n",
         );
         let mut full = String::new();
         let mut sections: std::collections::BTreeMap<&str, Vec<String>> = Default::default();
         for p in &srcs {
             let rel = repo::rel(root, p);
             let text = fs::read_to_string(p)
-                .map_err(|e| Diagnostic::error("AUR-CLI-0401", format!("{rel}: {e}")))?;
+                .map_err(|e| Diagnostic::error("SYRP-CLI-0401", format!("{rel}: {e}")))?;
             let title = title_of(&text, &rel);
             write(&agents.join("md").join(&rel), &text, &mut artifacts)?;
             full.push_str(&format!("\n\n<!-- source: {rel} -->\n\n{text}"));

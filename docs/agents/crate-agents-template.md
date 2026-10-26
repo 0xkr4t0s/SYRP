@@ -1,6 +1,6 @@
 # Crate AGENTS.md template
 
-Every crate has an `AGENTS.md` with these headings (checked by `cargo auricle check`, which
+Every crate has an `AGENTS.md` with these headings (checked by `cargo syrp check`, which
 requires the file; heading checks arrive with WP-0.1-12). Keep it under about 1,500 tokens: it
 becomes the crate's agent brief.
 

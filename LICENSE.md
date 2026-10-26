@@ -4,13 +4,13 @@
 > [docs/design/0002-open-decisions.md](docs/design/0002-open-decisions.md)). They have not
 > been reviewed by counsel. Do not rely on them for a commercial decision yet.
 
-Auricle uses two licence tiers.
+Syrp uses two licence tiers.
 
 ## Interface crates: `MIT OR Apache-2.0`
 
 The foundation (L0) and contract (L1) crates are permissively licensed so that third-party
-libraries can target Auricle's interfaces freely:
-`auricle-error`, `auricle-rt`, `auricle-geom`, every `auricle-*-api` crate and `auricle-midi`.
+libraries can target Syrp's interfaces freely:
+`syrp-error`, `syrp-rt`, `syrp-geom`, every `syrp-*-api` crate and `syrp-midi`.
 Each of these declares `license = "MIT OR Apache-2.0"` in its `Cargo.toml`.
 Texts: [LICENSES/MIT.txt](LICENSES/MIT.txt), [LICENSES/Apache-2.0.txt](LICENSES/Apache-2.0.txt).
 
@@ -27,7 +27,7 @@ You may choose either licence.
 - **Commercial licence**: organisations above the threshold that do not want the AGPL buy
   one. Pricing is not set yet.
 
-`cargo auricle license attest` (planned) writes a local self-attestation file. No
+`cargo syrp license attest` (planned) writes a local self-attestation file. No
 registration or telemetry is ever required.
 
 ## Contributions

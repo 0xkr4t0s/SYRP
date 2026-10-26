@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/0xkr4t0s/auricle/docs/agents/envelope.schema.json",
-  "title": "cargo auricle result envelope",
-  "description": "Every cargo auricle command prints exactly one of these on stdout when output is JSON.",
+  "$id": "https://github.com/0xkr4t0s/SYRP/docs/agents/envelope.schema.json",
+  "title": "cargo syrp result envelope",
+  "description": "Every cargo syrp command prints exactly one of these on stdout when output is JSON.",
   "type": "object",
   "required": ["schema", "command", "ok", "exit_code", "duration_ms", "results", "diagnostics", "artifacts"],
   "additionalProperties": false,
   "properties": {
-    "schema": { "const": "auricle.envelope/v1" },
+    "schema": { "const": "syrp.envelope/v1" },
     "command": { "type": "string", "description": "For example \"wp show\"." },
     "ok": { "type": "boolean", "description": "True exactly when exit_code is 0." },
     "exit_code": {
@@ -24,7 +24,7 @@
         "required": ["code", "severity", "message", "docs"],
         "additionalProperties": false,
         "properties": {
-          "code": { "type": "string", "pattern": "^AUR-[A-Z]+-[0-9]{4}$" },
+          "code": { "type": "string", "pattern": "^SYRP-[A-Z]+-[0-9]{4}$" },
           "severity": { "enum": ["error", "warning", "info"] },
           "message": { "type": "string" },
           "location": { "type": "string" },

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Auricle work package (work/packages/<id>.toml)",
-  "description": "Parsed and enforced by `cargo auricle wp validate`; this schema documents the same rules for editors and agents.",
+  "title": "Syrp work package (work/packages/<id>.toml)",
+  "description": "Parsed and enforced by `cargo syrp wp validate`; this schema documents the same rules for editors and agents.",
   "type": "object",
   "required": ["id", "title", "spec", "acceptance"],
   "additionalProperties": false,

@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 
 use crate::envelope::Diagnostic;
 
-/// Finds the Auricle repository root: the nearest ancestor holding both `ownership.toml`
+/// Finds the Syrp repository root: the nearest ancestor holding both `ownership.toml`
 /// and a workspace `Cargo.toml`.
 pub fn find_root(start: &Path) -> Result<PathBuf, Diagnostic> {
     let mut dir = Some(start);
@@ -16,13 +16,10 @@ pub fn find_root(start: &Path) -> Result<PathBuf, Diagnostic> {
         dir = d.parent();
     }
     Err(Diagnostic::error(
-        "AUR-CLI-0001",
-        format!(
-            "no Auricle repository found at or above {}",
-            start.display()
-        ),
+        "SYRP-CLI-0001",
+        format!("no Syrp repository found at or above {}", start.display()),
     )
-    .hint("run inside the auricle checkout, or pass --root <path>"))
+    .hint("run inside the syrp checkout, or pass --root <path>"))
 }
 
 /// Lists files under `dir` (recursively) whose names end with `suffix`, sorted.

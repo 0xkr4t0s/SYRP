@@ -22,16 +22,16 @@ permissions:
 
 jobs:
   gates:
-    if: vars.AURICLE_PIPELINE_ENABLED == 'true'
+    if: vars.SYRP_PIPELINE_ENABLED == 'true'
     runs-on: ubuntu-24.04
     env:
       # The bot token merges, so the push to main triggers CI and the conductor.
-      GH_TOKEN: ${{ secrets.AURICLE_BOT_TOKEN }}
+      GH_TOKEN: ${{ secrets.SYRP_BOT_TOKEN }}
       GH_REPO: ${{ github.repository }}
     steps:
       - uses: actions/checkout@v4
       - uses: Swatinem/rust-cache@v2
-      - run: cargo build --quiet -p auricle-cli
+      - run: cargo build --quiet -p syrp-cli
       - name: Evaluate and act
         run: |
           set -uo pipefail
@@ -39,7 +39,7 @@ jobs:
           gh label create pm:rebasing --force >/dev/null
           for pr in $(gh pr list --state open --limit 200 --json number,isDraft --jq '.[] | select(.isDraft|not) | .number'); do
             gh pr view "$pr" --json number,body,labels,files,commits,statusCheckRollup,mergeable,isDraft > pr.json
-            cargo auricle pr gates --pr pr.json --json > gates.json
+            cargo syrp pr gates --pr pr.json --json > gates.json
             verdict="$(jq -r '.results[0].verdict' gates.json)"
             labels="$(jq -r '.labels[].name' pr.json)"
             echo "::group::PR #$pr: $verdict"; jq -c '.results[0].gates[]' gates.json; echo "::endgroup::"

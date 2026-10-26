@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Auricle parity ledger",
+  "title": "Syrp parity ledger",
   "description": "One row per JUCE public class and per tooling feature (master plan §9.10). Statuses change only from CI evidence.",
   "type": "object",
   "required": ["baseline", "rows"],
@@ -23,7 +23,7 @@
               "doc_url": { "type": "string" }
             }
           },
-          "auricle": { "type": "array", "items": { "type": "string" }, "description": "Rust paths implementing it." },
+          "syrp": { "type": "array", "items": { "type": "string" }, "description": "Rust paths implementing it." },
           "status": { "enum": ["todo", "partial", "done", "mapped", "gap", "deviation"] },
           "owner_wp": { "type": "string" },
           "reason": { "type": "string", "description": "Required for gap and deviation." },

@@ -1,10 +1,10 @@
 id = "WP-0.1-03"
-title = "auricle-error: ErrorCode, Diagnostic trait, catalogue generator"
+title = "syrp-error: ErrorCode, Diagnostic trait, catalogue generator"
 crate = "crates/foundation/error"
 depends_on = ["WP-0.1-01"]
 spec = "work/specs/WP-0.1-03.md"
 risk = ["public-api"]
-acceptance = "cargo auricle wp check WP-0.1-03 --json"
+acceptance = "cargo syrp wp check WP-0.1-03 --json"
 platforms = ["linux", "macos", "windows"]
 role = "implementer"
 status = "planned"

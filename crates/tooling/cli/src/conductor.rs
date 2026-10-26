@@ -3,11 +3,11 @@
 //! This is deterministic code, not an LLM. It is a pure function from the board (the
 //! `work/` files) plus a snapshot of GitHub state (issues and pull requests as printed by
 //! `gh ... --json`) to a list of actions. The `conductor.yml` workflow gathers the snapshot,
-//! runs `cargo auricle conductor tick`, and applies the actions with `gh`.
+//! runs `cargo syrp conductor tick`, and applies the actions with `gh`.
 //!
 //! Live WP state is kept on each WP's GitHub issue:
 //! - labels: `wp:<id>`, `status:{ready,in-progress,in-review}`, `needs-human`;
-//! - a lease marker in the issue body: `<!-- auricle-lease: {...} -->`.
+//! - a lease marker in the issue body: `<!-- syrp-lease: {...} -->`.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -17,7 +17,7 @@ use crate::wp::{Board, Role, SpecStatus};
 
 /// Label name prefix carrying a WP id.
 pub const WP_LABEL: &str = "wp:";
-const MARKER_OPEN: &str = "<!-- auricle-lease: ";
+const MARKER_OPEN: &str = "<!-- syrp-lease: ";
 const MARKER_CLOSE: &str = " -->";
 
 /// A GitHub label as `gh` prints it.
@@ -300,7 +300,7 @@ pub fn tick(board: &Board, issues: &[Issue], prs: &[PullRequest], cfg: Config) -
             actions.push(Action::Escalate {
                 wp: id.clone(),
                 issue: issue.number,
-                code: "AUR-COND-0001".into(),
+                code: "SYRP-COND-0001".into(),
                 reason: format!(
                     "{id} lost its lease {} times (limit {max}). It needs re-planning or a person.",
                     next.restarts
@@ -349,7 +349,7 @@ pub fn tick(board: &Board, issues: &[Issue], prs: &[PullRequest], cfg: Config) -
                 actions.push(Action::Escalate {
                     wp: id.clone(),
                     issue: issue.number,
-                    code: "AUR-COND-0002".into(),
+                    code: "SYRP-COND-0002".into(),
                     reason: format!(
                         "{id}: PR #{} still has changes requested after {} review rounds.",
                         pr.number, lease.round
@@ -376,7 +376,7 @@ pub fn tick(board: &Board, issues: &[Issue], prs: &[PullRequest], cfg: Config) -
             actions.push(Action::Escalate {
                 wp: id.clone(),
                 issue: issue.number,
-                code: "AUR-COND-0003".into(),
+                code: "SYRP-COND-0003".into(),
                 reason: format!(
                     "{id} is ready but its role is `{}`, which the pipeline cannot run.",
                     role_name(wp.role)
@@ -514,7 +514,7 @@ mod tests {
         };
         let body2 = l2.write_into(&body);
         assert_eq!(Lease::parse(&body2), l2);
-        assert_eq!(body2.matches("auricle-lease").count(), 1);
+        assert_eq!(body2.matches("syrp-lease").count(), 1);
         assert!(body2.ends_with("hello"));
         assert_eq!(Lease::parse("no marker"), Lease::default());
     }
@@ -592,7 +592,7 @@ mod tests {
         };
         let issues = vec![issue(1, "A", "OPEN", &["status:in-progress"], stale)];
         let a = tick(&b, &issues, &[], cfg());
-        assert!(matches!(&a[0], Action::Escalate { code, .. } if code == "AUR-COND-0001"));
+        assert!(matches!(&a[0], Action::Escalate { code, .. } if code == "SYRP-COND-0001"));
     }
 
     #[test]
@@ -634,7 +634,7 @@ mod tests {
             },
         )];
         let a = tick(&b, &issues, &[pr], cfg());
-        assert!(matches!(&a[0], Action::Escalate { code, .. } if code == "AUR-COND-0002"));
+        assert!(matches!(&a[0], Action::Escalate { code, .. } if code == "SYRP-COND-0002"));
     }
 
     #[test]
@@ -668,7 +668,7 @@ mod tests {
         let b = board(vec![w]);
         let issues = vec![issue(1, "A", "OPEN", &["status:ready"], Lease::default())];
         let a = tick(&b, &issues, &[], cfg());
-        assert!(matches!(&a[0], Action::Escalate { code, .. } if code == "AUR-COND-0003"));
+        assert!(matches!(&a[0], Action::Escalate { code, .. } if code == "SYRP-COND-0003"));
         let issues = vec![issue(
             1,
             "A",

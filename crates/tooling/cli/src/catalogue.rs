@@ -1,4 +1,4 @@
-//! The error-code catalogue (`errors/*.toml`) and `cargo auricle explain`.
+//! The error-code catalogue (`errors/*.toml`) and `cargo syrp explain`.
 //!
 //! The catalogue files are embedded at build time so `explain` works anywhere, including
 //! outside a checkout.
@@ -21,7 +21,7 @@ const SOURCES: &[(&str, &str)] = &[
 /// One catalogue entry.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Entry {
-    /// `AUR-<DOMAIN>-<NNNN>`.
+    /// `SYRP-<DOMAIN>-<NNNN>`.
     pub code: String,
     /// Short title.
     pub title: String,
@@ -60,15 +60,14 @@ pub fn lookup(code: &str) -> Option<Entry> {
         .find(|e| e.code.eq_ignore_ascii_case(code))
 }
 
-/// `cargo auricle explain <code>`.
+/// `cargo syrp explain <code>`.
 pub fn explain(code: &str) -> Outcome {
     match lookup(code) {
         Some(entry) => Outcome::result(serde_json::to_value(entry).expect("entry serialises")),
         None => Outcome {
             diagnostics: vec![
-                Diagnostic::error("AUR-CLI-0002", format!("unknown error code {code}")).hint(
-                    "codes look like AUR-CLI-0203; `cargo auricle explain --list` lists them",
-                ),
+                Diagnostic::error("SYRP-CLI-0002", format!("unknown error code {code}"))
+                    .hint("codes look like SYRP-CLI-0203; `cargo syrp explain --list` lists them"),
             ],
             exit: Some(ExitCode::Usage),
             ..Default::default()
@@ -90,7 +89,7 @@ mod tests {
             assert!(seen.insert(e.code.clone()), "duplicate code {}", e.code);
             let parts: Vec<_> = e.code.split('-').collect();
             assert_eq!(parts.len(), 3, "bad code {}", e.code);
-            assert_eq!(parts[0], "AUR");
+            assert_eq!(parts[0], "SYRP");
             assert!(
                 parts[1].chars().all(|c| c.is_ascii_uppercase()),
                 "bad domain {}",
@@ -103,9 +102,9 @@ mod tests {
 
     #[test]
     fn explain_is_case_insensitive() {
-        assert!(lookup("aur-cli-0001").is_some());
+        assert!(lookup("syrp-cli-0001").is_some());
         assert_eq!(
-            explain(&format!("AUR-{}-0000", "NOPE")).exit_code(),
+            explain(&format!("SYRP-{}-0000", "NOPE")).exit_code(),
             ExitCode::Usage
         );
     }

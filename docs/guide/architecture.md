@@ -6,7 +6,7 @@ The full design is in the [master plan](../design/master-plan.md) (§5). In shor
   crates) sit at the bottom. Core runtime (L2), audio, graphics and platform peers (L3), UI (L4),
   plugins and extras (L5), tooling and the facade (L6), and language bindings (L7) build on them.
   A crate may only depend on lower layers, and leaf crates in the same group never depend on each
-  other. `cargo auricle check` enforces both.
+  other. `cargo syrp check` enforces both.
 - **Contracts first.** Every boundary that several work packages touch is a small trait-and-type
   crate, frozen as a public-API snapshot in `contracts/` before implementations start. This is
   what lets 10 to 15 agents build leaves in parallel.
@@ -27,6 +27,6 @@ The full design is in the [master plan](../design/master-plan.md) (§5). In shor
 | `parity/` | Parity ledger and scenarios |
 | `contracts/` | Frozen public-API snapshots |
 | `docs/` | This site's sources |
-| `skills/auricle/` | The Agent Skill |
+| `skills/syrp/` | The Agent Skill |
 | `agents/` | Role prompts for the pipeline's agents |
 | `.github/workflows/` | CI and the pipeline (conductor, reviewer, PR manager) |

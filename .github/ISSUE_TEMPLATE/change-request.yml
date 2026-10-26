@@ -28,6 +28,6 @@ body:
       label: Payload (JSON)
       description: Exactly what to change.
       render: json
-      placeholder: '{"workspace.dependencies": {"rtrb": "0.3"}, "reason": "SPSC queue for auricle-rt (spec B3)"}'
+      placeholder: '{"workspace.dependencies": {"rtrb": "0.3"}, "reason": "SPSC queue for syrp-rt (spec B3)"}'
     validations:
       required: true

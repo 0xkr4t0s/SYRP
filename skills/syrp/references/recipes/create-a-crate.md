@@ -1,13 +1,13 @@
 # Create a crate
 
-**Goal:** a new workspace crate that passes `cargo auricle check`.
+**Goal:** a new workspace crate that passes `cargo syrp check`.
 
 **Steps**
 1. Directory `crates/<group>/<name>/` (members are globbed: no root edit).
 2. `Cargo.toml`:
    ```toml
    [package]
-   name = "auricle-<name>"
+   name = "syrp-<name>"
    description = "<one line>"
    version.workspace = true
    edition.workspace = true
@@ -16,7 +16,7 @@
    authors.workspace = true
    license = "MIT OR Apache-2.0"        # L0/L1 crates; others use license.workspace = true
 
-   [package.metadata.auricle]
+   [package.metadata.syrp]
    layer = "L0"                          # L0..L7, see docs/guide/architecture.md
    wp = "<WP id>"
 
@@ -26,4 +26,4 @@
 3. `AGENTS.md` with the headings from `docs/agents/crate-agents-template.md`.
 4. `src/lib.rs` with a crate-level doc comment.
 
-**Verification:** `cargo auricle check --lints-only` reports no `AUR-CLI-0206` or `AUR-CLI-0203`.
+**Verification:** `cargo syrp check --lints-only` reports no `SYRP-CLI-0206` or `SYRP-CLI-0203`.

@@ -1,6 +1,6 @@
 # Plan: a native Rust, agentic-first reimplementation of JUCE
 
-*Prepared 2026-10-26. Working codename: **Auricle**. The crate prefix is `auricle-` and the CLI is `cargo auricle`. The codename is a placeholder. The only check done on it was that `auricle` was unclaimed on crates.io on 2026-10-26; no trademark search has been made. Raw sources are in `research-notes.md` next to this file. Anything marked **UNVERIFIED** could not be confirmed from a primary source.*
+*Prepared 2026-10-26 under the placeholder codename Auricle; renamed to **Syrp** the same day by the project owner. The crate prefix is `syrp-` and the CLI is `cargo syrp`. No trademark search has been made yet. Raw sources are in `research-notes.md` in the project files. Anything marked **UNVERIFIED** could not be confirmed from a primary source.*
 
 ## 1. Executive summary
 
@@ -25,7 +25,7 @@
    - The AAX SDK is "commercial or GPLv3", and retail Pro Tools requires PACE signing. AAX is therefore the one wrapper that gets a small C++ shim, with the SDK supplied by the user.
    - VST2 is excluded by default, because no SDK licences have been issued since about 2018.
 3. **Make the framework agentic-first through deliverables, not slogans.** Every item below ships in Phase 0 and grows each phase; §2 and §13 list them.
-   - One closed-loop CLI (`cargo auricle`) with JSON output and stable exit codes.
+   - One closed-loop CLI (`cargo syrp`) with JSON output and stable exit codes.
    - An MCP server and an Agent Skill that expose the same loop.
    - Deterministic headless audio and UI rendering with golden snapshots.
    - JSON introspection of component, accessibility, parameter and graph state.
@@ -67,7 +67,7 @@
 - verify behaviour headlessly and deterministically;
 - understand failures through structured, documented signals.
 
-Each property below is a concrete deliverable with an automated acceptance test. They serve both groups of agents: those building Auricle (§12) and those using it downstream.
+Each property below is a concrete deliverable with an automated acceptance test. They serve both groups of agents: those building Syrp (§12) and those using it downstream.
 
 | # | Deliverable | Concretely | Automated acceptance test |
 |---|---|---|---|
@@ -75,28 +75,28 @@ Each property below is a concrete deliverable with an automated acceptance test.
 | A2 | **Machine-readable API index** | `api-index.json` is generated from rustdoc JSON (docs.rs also serves rustdoc JSON: https://docs.rs/about/rustdoc-json). Per item it records the stable path, signature, summary, thread affinity (`message`/`rt`/`any`), RT-safety, error codes returned, the JUCE equivalent(s), example IDs, feature flags and platforms. | Regenerated in CI; the diff must be empty, otherwise the PR updates it. |
 | A3 | **llms.txt and Markdown mirrors** | `/llms.txt` follows the llmstxt.org v2 layout. `/llms-full.txt` holds the full concatenated docs, and every page has a `.md` mirror (https://llmstxt.org/). | Link check; a size budget per section; a freshness check. |
 | A4 | **Compiling examples everywhere** | `#![deny(missing_docs)]` plus a custom lint: every public fn, type and trait has at least one doctest or a linked `examples/` program. | `cargo test --doc` plus the lint. Doc coverage is 100% for stable crates. |
-| A5 | **Structured errors with stable codes** | Every crate error enum implements `Diagnostic { code(): ErrorCode, hint(): &str, docs_url() }`. Codes look like `AUR-AUDIO-0042`, are never reused, and are catalogued in `errors/*.toml` with cause, fix, and a minimal repro. | The catalogue is generated; a test asserts every variant has a catalogue entry and that `cargo auricle explain <code>` works. |
-| A6 | **Closed-loop CLI** | `cargo auricle` covers scaffold, build, test, render, snapshot, parity, validate, inspect, docs, explain and migrate (§13). Output is `--json`, with JSON Schemas published (schemars), stable exit codes, and no interactive prompts. | CLI contract tests against the schemas. |
-| A7 | **MCP server** | `auricle-mcp` exposes the CLI operations as MCP tools and the indices as MCP resources. It targets MCP spec 2026-07-28 and uses the Tasks extension for long renders and builds (https://blog.modelcontextprotocol.io/tags/protocol/; rmcp 3.7). | An MCP conformance test plus golden transcripts. |
-| A8 | **Agent Skill** | `skills/auricle/SKILL.md` follows the Agent Skills format (https://agentskills.io/home) and teaches the loop, recipes and failure triage. | A nightly agent-eval suite (A20) runs with the skill loaded. |
+| A5 | **Structured errors with stable codes** | Every crate error enum implements `Diagnostic { code(): ErrorCode, hint(): &str, docs_url() }`. Codes look like `SYRP-AUDIO-0042`, are never reused, and are catalogued in `errors/*.toml` with cause, fix, and a minimal repro. | The catalogue is generated; a test asserts every variant has a catalogue entry and that `cargo syrp explain <code>` works. |
+| A6 | **Closed-loop CLI** | `cargo syrp` covers scaffold, build, test, render, snapshot, parity, validate, inspect, docs, explain and migrate (§13). Output is `--json`, with JSON Schemas published (schemars), stable exit codes, and no interactive prompts. | CLI contract tests against the schemas. |
+| A7 | **MCP server** | `syrp-mcp` exposes the CLI operations as MCP tools and the indices as MCP resources. It targets MCP spec 2026-07-28 and uses the Tasks extension for long renders and builds (https://blog.modelcontextprotocol.io/tags/protocol/; rmcp 3.7). | An MCP conformance test plus golden transcripts. |
+| A8 | **Agent Skill** | `skills/syrp/SKILL.md` follows the Agent Skills format (https://agentskills.io/home) and teaches the loop, recipes and failure triage. | A nightly agent-eval suite (A20) runs with the skill loaded. |
 | A9 | **Deterministic headless audio** | Offline rendering of any processor or graph uses fixed block sizes, seeded RNG and a virtual transport. Results are bit-exact on the same target triple and within documented tolerances across targets. | Golden WAV and JSON comparisons in CI (§9). |
 | A10 | **Deterministic headless UI** | A `ManualLoop` virtual clock and the CPU renderer (vello_cpu) render any component tree to PNG at any scale factor. Input is scripted through the accessibility tree, as egui_kittest does (crates.io `egui_kittest` 0.37). | Golden image diffs with tolerances (§9). |
-| A11 | **Introspection** | `inspect` APIs and `cargo auricle inspect` dump, as JSON: the component tree (bounds, visibility, z-order, LookAndFeel and state), the accessibility tree, parameters (id, range, value, text, automation state), the processor graph, ValueTrees, device state and the timer and async-queue state. Running debug apps can open an opt-in local IPC port for live dumps. | Schema tests; snapshot tests of the dumps. |
-| A12 | **Declarative definitions** | `Auricle.toml` is the project manifest and replaces `.jucer` and CMake `juce_add_plugin`. Parameter specs can be TOML/JSON or a plain builder. There is an optional declarative UI description that compiles to ordinary component code. Generated code is checked in or viewable (`cargo auricle expand`). | Round-trip tests: manifest → code → manifest. |
+| A11 | **Introspection** | `inspect` APIs and `cargo syrp inspect` dump, as JSON: the component tree (bounds, visibility, z-order, LookAndFeel and state), the accessibility tree, parameters (id, range, value, text, automation state), the processor graph, ValueTrees, device state and the timer and async-queue state. Running debug apps can open an opt-in local IPC port for live dumps. | Schema tests; snapshot tests of the dumps. |
+| A12 | **Declarative definitions** | `Syrp.toml` is the project manifest and replaces `.jucer` and CMake `juce_add_plugin`. Parameter specs can be TOML/JSON or a plain builder. There is an optional declarative UI description that compiles to ordinary component code. Generated code is checked in or viewable (`cargo syrp expand`). | Round-trip tests: manifest → code → manifest. |
 | A13 | **Type-state and capability tokens** | Zero-sized tokens (`MessageThread`, `RtCtx`, `PrepareCtx`) gate APIs by thread, so misuse does not compile. Builders use type-state, so a plugin cannot be built without an ID, name, vendor and bus layout. | `trybuild` compile-fail tests for every documented misuse. |
 | A14 | **RT safety by construction** | The `process` signature only exposes RT-safe handles. Allocating or locking APIs require `PrepareCtx` or `MessageThread`. The allocator is guarded in debug builds (`assert_no_alloc`), and RTSan runs in CI. | RT test suite; RTSan job (§9). |
-| A15 | **Minimal macro magic** | Proc-macros are limited to optional derives such as `#[derive(Params)]`, and each has a hand-written equivalent shown in the docs. There are no DSL macros in core paths. | A lint caps macro use in public API examples; `cargo auricle expand` output is snapshot-tested. |
+| A15 | **Minimal macro magic** | Proc-macros are limited to optional derives such as `#[derive(Params)]`, and each has a hand-written equivalent shown in the docs. There are no DSL macros in core paths. | A lint caps macro use in public API examples; `cargo syrp expand` output is snapshot-tested. |
 | A16 | **Small focused files** | A soft limit of 400 lines and a hard limit of 800 per file, one primary type per file, module docs at the top, and a predictable layout (`src/<concept>.rs`, `tests/<concept>.rs`). | A size lint in CI. |
 | A17 | **JUCE-name discoverability** | Every Rust item that maps to a JUCE class or method carries `#[doc(alias = "JuceName")]`, so searching rustdoc or the index for `AudioProcessorValueTreeState` finds `ParamTree`. | The alias lint is cross-checked against the migration map. |
-| A18 | **JUCE→Rust migration map** | `migration-map.json` and human pages map each JUCE class, and its notable methods, to the Rust item, a pattern note, a snippet pair (JUCE idiom → Rust idiom, written fresh) and pitfalls. Exposed through `cargo auricle migrate lookup juce::Slider::setRange`. | Every ledger row with status `done` has a map entry. |
+| A18 | **JUCE→Rust migration map** | `migration-map.json` and human pages map each JUCE class, and its notable methods, to the Rust item, a pattern note, a snippet pair (JUCE idiom → Rust idiom, written fresh) and pitfalls. Exposed through `cargo syrp migrate lookup juce::Slider::setRange`. | Every ledger row with status `done` has a map entry. |
 | A19 | **Capability manifest** | `capabilities.json` lists, per feature and platform, whether it is supported, partial or a gap. Agents query it before coding. It is generated from the ledger. | Freshness check. |
 | A20 | **Agent usability evals** | About 60 benchmark tasks run nightly with a reference agent and the skill. Examples: "gain plugin with dB slider", "port JUCE tutorial X", "add an undoable property", "fix failing golden". Success rate, turn count and the first error code hit are tracked as KPIs. Regressions open doc or API issues automatically. | KPI thresholds gate releases. |
-| A21 | **Reproducibility** | Pinned `rust-toolchain.toml` (stable is 1.99.1 as of 2026-10-13), committed lockfiles, hermetic CI images, and `cargo auricle doctor` to diagnose the environment as JSON. | Doctor runs in CI on clean images. |
-| A22 | **Machine-readable change communication** | `CHANGELOG.md` plus `changes/*.json` entries, `BREAKING.md` with codemods (`cargo auricle migrate apply --from 1.3`), and semver checked by cargo-semver-checks. | Release gate. |
+| A21 | **Reproducibility** | Pinned `rust-toolchain.toml` (stable is 1.99.1 as of 2026-10-13), committed lockfiles, hermetic CI images, and `cargo syrp doctor` to diagnose the environment as JSON. | Doctor runs in CI on clean images. |
+| A22 | **Machine-readable change communication** | `CHANGELOG.md` plus `changes/*.json` entries, `BREAKING.md` with codemods (`cargo syrp migrate apply --from 1.3`), and semver checked by cargo-semver-checks. | Release gate. |
 
 Design rules that follow from these deliverables:
 - **One obvious way.** Each concept has one canonical API; no aliases in the API itself, only in docs.
-- **Explicit over clever.** No global singletons. Where JUCE uses a singleton (MessageManager, Desktop), Auricle passes context objects or tokens.
+- **Explicit over clever.** No global singletons. Where JUCE uses a singleton (MessageManager, Desktop), Syrp passes context objects or tokens.
 - **Errors are values.** Only `Result` is returned. Panics are reserved for violated invariants, with code-tagged messages.
 - **Everything observable.** Each subsystem has a JSON dump and a `tracing` span tree.
 
@@ -106,50 +106,50 @@ Design rules that follow from these deliverables:
 
 | JUCE module | What it covers / key classes | Rust crate(s) | Reuse candidates | Phase | Difficulty |
 |---|---|---|---|---|---|
-| `juce_core` | **Strings and data:** String, StringArray, Identifier, `var`, DynamicObject, NamedValueSet, JSON, XmlElement/XmlDocument, Base64, LocalisedStrings, TextDiff. **Containers:** Array, OwnedArray, HashMap, SortedSet, SparseSet, AbstractFifo, ListenerList, LruCache. **Files and streams:** File, Input/OutputStream, MemoryBlock, MemoryMappedFile, ZipFile, GZIP streams. **Threads:** Thread, ThreadPool, TimeSliceThread, HighResolutionTimer, WaitableEvent, locks, ChildProcess, InterProcessLock, DynamicLibrary. **Network:** URL, WebInputStream, sockets, IPAddress, MACAddress, NamedPipe. **Maths:** BigInteger, Expression, Random, Range, NormalisableRange, StatisticsAccumulator. **System:** Time, RelativeTime, SystemStats, Uuid, Logger, WindowsRegistry, RuntimePermissions. **Testing:** UnitTest. | `auricle-var`, `-io`, `-thread`, `-process`, `-net`, `-maths`, `-sys`, `-strings`, umbrella `auricle-core` | std, serde_json, quick-xml, flate2/miniz_oxide, zip, ureq+rustls, libloading, interprocess, memmap2 (not checked), num-bigint (not checked) | 1 | M (broad, shallow). Containers map to std and are recorded in the ledger as "mapped". |
-| `juce_events` | MessageManager, MessageManagerLock, `callAsync`/`callSync`, Timer, MultiTimer, AsyncUpdater, ChangeBroadcaster, ActionBroadcaster, InterprocessConnection(+Server), ChildProcessCoordinator/Worker, NetworkServiceDiscovery, JUCEApplicationBase, DeletedAtShutdown | `auricle-loop-api`, `auricle-events`, `auricle-ipc` | windows, objc2 (CFRunLoop), x11rb/rustix-style fd loops, interprocess | 1 | M–H. Integrating with host run loops in plugins is the hard part. |
-| `juce_data_structures` | ValueTree, Value, CachedValue, ValueTreePropertyWithDefault, UndoManager/UndoableAction, PropertiesFile, ApplicationProperties, ValueTreeSynchroniser | `auricle-state` | serde, quick-xml, rpds (optional persistent maps) | 1 | M. Byte-compatible state migration is H. |
-| `juce_cryptography` | MD5, SHA256, Whirlpool, BlowFish, RSAKey, Primes | `auricle-crypto` | RustCrypto (md-5 0.11, sha2 0.11, blowfish 0.10, whirlpool), num-bigint for JUCE-compatible raw RSA | 1 | L. The `rsa` crate carries an unpatched timing advisory, RUSTSEC-2023-0071 (https://rustsec.org/advisories/RUSTSEC-2023-0071.html). |
-| `juce_osc` | OSCSender, OSCReceiver, OSCMessage, OSCBundle, OSCAddress(Pattern), OSCArgument, OSCTimeTag | `auricle-osc` | rosc 0.11.4 (wrap) | 1 | L |
-| `juce_audio_basics` | AudioBuffer, FloatVectorOperations, AudioData converters, AudioChannelSet, AudioPlayHead, AudioProcessLoadMeasurer, **AudioWorkgroup**. **MIDI:** MidiMessage, MidiBuffer, MidiMessageSequence, MidiFile, MidiKeyboardState, MidiRPN. **MIDI 2.0 UMP:** packets, views, iterators, MIDI1↔2 translation, dispatcher, SysEx7. **MPE:** MPEInstrument, MPESynthesiser, MPEZoneLayout. **Sources:** the AudioSource family (Buffering, Mixer, Resampling, ChannelRemapping, ToneGenerator, Memory, IIR, Reverb). **Synthesis and DSP helpers:** Synthesiser/Voice, ADSR, SmoothedValue, Decibels, interpolators, IIRFilter, Reverb. | `auricle-audio-api`, `auricle-audio-basics`, `auricle-midi`, `auricle-mpe` | midi2 0.11 (UMP cross-check), rubato (optional high-quality resampler), audio_thread_priority (MPL-2.0) | 2 | M |
-| `juce_audio_devices` | AudioDeviceManager, AudioIODevice, AudioIODeviceType. **Backends:** WASAPI, ASIO, DirectSound, CoreAudio (aggregate-device based in 9.0), ALSA, JACK, Oboe/OpenSL, iOS. **MIDI:** MidiInput/MidiOutput, **UMP endpoints, sessions and virtual endpoints**, disconnection listener (9.0.4), MidiMessageCollector. **Playback:** AudioSourcePlayer, AudioTransportSource. SystemAudioVolume. | `auricle-device-api`, `auricle-devices`, `auricle-audio-{coreaudio,wasapi,asio,alsa,jack,pipewire,aaudio,ios,web}`, `auricle-midi-io`, `auricle-midi-{coremidi,windows,alsa,android,web}` | cpal 0.18 (wrapped first), wasapi, alsa, jack, pipewire, objc2-core-audio, coremidi, midir (MIDI 1.0 fallback), windows (WinRT for Windows MIDI Services) | 2 (desktop), 6 (mobile and web) | H |
-| `juce_audio_formats` | AudioFormat, AudioFormatManager, AudioFormatReader/Writer(+Options), ReaderSource, SubsectionReader, BufferingReader, MemoryMappedReader. **Codecs:** WAV (BWF, metadata, 32-bit int), AIFF, FLAC, Ogg Vorbis, MP3 (default since 9.0.2), **Opus** (9.0.3), CoreAudioFormat, WindowsMediaAudioFormat, LAME encoder (external exe). **Other:** SamplerSound/Voice, ARA readers. | `auricle-formats`, `auricle-format-{wav,aiff,flac,ogg,mp3,opus,platform}` | symphonia 0.6 (MPL-2.0, decode), claxon, lewton, flacenc, vorbis_rs, opus (libopus) | 2 | M. Metadata-chunk parity is tedious. |
-| `juce_audio_processors_headless` (new in 8.0.11) | AudioProcessor, AudioPluginInstance, the parameter hierarchy (WithID, Ranged, Float/Int/Bool/Choice, Group, Hosted, Legacy), **AudioProcessorGraph**, AudioPluginFormat(Manager), PluginDescription, headless hosting of VST3/VST/AU/LV2/LADSPA, **ARA hosting**, VST2/VST3/AAX client extensions | `auricle-plugin-api`, `auricle-processors`, `auricle-host-{clap,vst3,au,lv2,ladspa,ara}` | clack-host 0.2, vst3 0.3, objc2-audio-toolbox, livi/lilv (wrap), ARA headers via bindgen | 2 | H |
-| `juce_audio_processors` | AudioProcessorEditor, GenericAudioProcessorEditor, **AudioProcessorValueTreeState**, ParameterAttachments, KnownPluginList, PluginDirectoryScanner, PluginListComponent, PluginHostType, NSViewComponentWithParent | `auricle-processors` (ParamTree, scanner), `auricle-processors-ui` | none directly | 2 (headless), 4 (UI) | M–H |
-| `juce_audio_plugin_client` | Wrappers for **VST3, AU v2, AUv3, AAX, LV2, Unity, Standalone** (StandaloneFilterWindow), VST2 and the ARA plugin side; VST3 moduleinfo; scale-factor utilities | `auricle-plugin`, `auricle-wrap-{clap,vst3,auv2,auv3,lv2,aax,unity,standalone,ara}`, `auricle-bundler` | clack-plugin 0.2, vst3 0.3, objc2, LV2 headers (bindgen), AAX SDK via a `cxx` shim; nice-plug and clap-wrapper as permissive design references | 4 | VH |
-| `juce_audio_utils` | AudioThumbnail(+Cache), AudioVisualiserComponent, MidiKeyboardComponent, MPEKeyboardComponent, AudioDeviceSelectorComponent, AudioAppComponent, AudioProcessorPlayer, SoundPlayer, BluetoothMidiDevicePairingDialogue, AudioCDReader/Burner | `auricle-audio-utils` | none | 4 | M. CD reading and burning are a deliberate gap. |
-| `juce_dsp` | AudioBlock, ProcessSpec/Context, ProcessorChain/Duplicator/Wrapper, SIMDRegister, FFT, WindowingFunction, **Convolution**, FIR/IIR + FilterDesign, SVF/TPT, LinkwitzRiley, Ladder, Ballistics, Oscillator, DelayLine, **Oversampling**, Gain, Bias, Panner, Phaser, Chorus, Compressor, Limiter, NoiseGate, Reverb, WaveShaper, DryWetMixer, LookupTable, FastMathApproximations, Matrix, Polynomial, SpecialFunctions | `auricle-dsp-{core,filters,fx,conv}`, umbrella `auricle-dsp` | rustfft 6.4 / realfft 3.5; fundsp as a reference only | 2 | M. Convolution and Oversampling latency parity is H. |
-| `juce_midi_ci` | ci::Device, DeviceOptions/Features, profiles (ProfileHost/Delegate/States), Property Exchange (PropertyHost/Delegate, cache, subscriptions), Parser, Messages, encodings, MUID | `auricle-midi-ci` | midi2 (message types, cross-check only) | 2 | H. Spec-heavy; needs interop tests with real CI peers. |
-| `juce_graphics` | Graphics, LowLevelGraphicsContext, software, CoreGraphics and **Direct2D** renderers. Colour, gradients (incl. two-point conical), FillType, Path, PathStrokeType, StrokeOptions, EdgeTable. Geometry (AffineTransform, Rectangle(List), Point, Line, Parallelogram, BorderSize, Justification, RectanglePlacement). Image, ImageCache, codecs (PNG, JPEG, GIF, **WebP** 9.0.3), effects. Font, FontOptions, **FontFeatures**, **variable fonts** (9.0), Typeface, AttributedString, TextLayout, GlyphArrangement, ShapedText/JustifiedText (HarfBuzz and SheenBidi). Drawable* plus a **new SVG parser** (9.0). | `auricle-geom`, `auricle-gfx-api`, `auricle-gfx`, `auricle-image`, `auricle-text`, `auricle-drawable`, `auricle-render-cpu`, `auricle-render-gpu` | kurbo, peniko, vello_cpu/vello_gpu 0.3, wgpu 30, parley/fontique 0.12, harfrust 0.15, skrifa 0.49, usvg 0.49, image, png, zune-jpeg, image-webp | 3 | VH |
-| `juce_gui_basics` | **Component tree:** Component, ComponentPeer, Desktop, Displays, CachedComponentImage. **Windows:** Top-level, Resizable, Document, Dialog, Alert, CallOut, Tooltip, NativeMessageBox, ScopedMessageBox. **LookAndFeel V1–V4.** **Widgets:** Button family, Slider, ComboBox, Label, TextEditor, ListBox, TableListBox, TreeView, Toolbar, ProgressBar. **Menus:** PopupMenu, MenuBar, BurgerMenu. **Layout:** FlexBox, Grid, StretchableLayout, Concertina, Tabbed, Viewport, ScrollBar, SidePanel, MDI, constrainers, resizers, ComponentAnimator. **Input:** Mouse/Key/Touch events, MouseInputSource, KeyPress, TextInputTarget, focus traversers. **Drag and drop**; **Commands:** ApplicationCommandManager, KeyPressMappingSet. **File browser:** FileChooser, FileBrowserComponent. **Properties:** PropertyPanel. **Accessibility:** handlers, roles, actions, interfaces. **Other:** ContentSharer, SystemClipboard, MouseCursor, VBlankAttachment, JUCEApplication, RelativeCoordinate (legacy). | `auricle-peer-api`, `auricle-peer-{win32,appkit,x11,wayland,uikit,android,web}`, `auricle-ui`, `auricle-ui-layout`, `auricle-a11y`, `auricle-commands`, `auricle-laf`, `auricle-widgets-{buttons,slider,text,lists,menus,panels}`, `auricle-windows`, `auricle-filebrowser`, `auricle-app` | taffy 0.15 (Flex/Grid), accesskit 0.25, raw-window-handle, keyboard-types, cursor-icon, smithay-client-toolkit, x11rb; baseview and winit as references | 3 | VH |
-| `juce_gui_extra` | CodeEditorComponent, CodeDocument, tokenisers (C++, Lua, XML). **WebBrowserComponent** with relays (Slider/Toggle/ComboBox), WebControlParameterIndexReceiver, resource provider, native functions, npm `@juce-framework/webview`. ColourSelector, KeyMappingEditor, PreferencesPanel, RecentlyOpenedFilesList, SplashScreen, SystemTrayIcon, PushNotifications, AnimatedAppComponent, BubbleMessage, LiveConstantEditor, FileBasedDocument. **Native embedding:** HWND, NSView, UIView, XEmbed, AndroidView, ActiveX. AppleRemote. | `auricle-ui-extra`, `auricle-code-editor`, `auricle-webview`, `auricle-embed` | wry 0.57, webview2-com, webkit2gtk | 5 | H. WebView inside plugins, especially on Linux, is the hard case. |
-| `juce_opengl` | OpenGLContext (attached to a Component, own render thread), OpenGLRenderer, OpenGLAppComponent, FrameBuffer, Image, GraphicsContext, ShaderProgram, Texture, PixelFormat, Matrix3D, Quaternion, Vector3D, Draggable3DOrientation, GL/GLES loaders | `auricle-opengl` | glow 0.18, glutin 0.32 (apps), own child-window context creation | 3 (desktop), 6 (mobile) | M–H. OpenGL is deprecated on macOS. |
-| `juce_video` | VideoComponent (playback), CameraDevice (capture, preview, recording) | `auricle-video` | objc2-av-foundation, windows (Media Foundation), gstreamer (LGPL runtime), JNI; nokhwa as a reference | 5–6 | M–H |
-| `juce_box2d` | Bundled Box2D 2.x world plus Box2DRenderer | `auricle-physics2d` | rapier2d 0.36 (Apache) | 5 | L–M. Documented deviation: the physics engine's API differs from Box2D's. |
-| `juce_product_unlocking` | OnlineUnlockStatus, OnlineUnlockForm, KeyFileGeneration, TracktionMarketplaceStatus, **InAppPurchases** | `auricle-unlock`, `auricle-unlock-ui` | num-bigint, objc2 (StoreKit 2), JNI (Play Billing) | 1 (key files), 5–6 | M |
-| `juce_analytics` | Analytics, AnalyticsDestination, ThreadedAnalyticsDestination, ButtonTracker | `auricle-analytics` | ureq | 1 (headless core), 5 (destinations) | L |
-| `juce_animation` | Animator, ValueAnimatorBuilder, AnimatorSetBuilder, AnimatorUpdater, VBlankAnimatorUpdater, Easings (incl. cubic Bézier) | `auricle-animation` | none (kurbo for Bézier maths) | 3 | L–M |
-| `juce_javascript` | JavascriptEngine (QuickJS via CHOC since 8.0.4), JSObject, JSCursor | `auricle-js` | rquickjs 0.14 (MIT); boa_engine as a pure-Rust option | 5 | L–M |
+| `juce_core` | **Strings and data:** String, StringArray, Identifier, `var`, DynamicObject, NamedValueSet, JSON, XmlElement/XmlDocument, Base64, LocalisedStrings, TextDiff. **Containers:** Array, OwnedArray, HashMap, SortedSet, SparseSet, AbstractFifo, ListenerList, LruCache. **Files and streams:** File, Input/OutputStream, MemoryBlock, MemoryMappedFile, ZipFile, GZIP streams. **Threads:** Thread, ThreadPool, TimeSliceThread, HighResolutionTimer, WaitableEvent, locks, ChildProcess, InterProcessLock, DynamicLibrary. **Network:** URL, WebInputStream, sockets, IPAddress, MACAddress, NamedPipe. **Maths:** BigInteger, Expression, Random, Range, NormalisableRange, StatisticsAccumulator. **System:** Time, RelativeTime, SystemStats, Uuid, Logger, WindowsRegistry, RuntimePermissions. **Testing:** UnitTest. | `syrp-var`, `-io`, `-thread`, `-process`, `-net`, `-maths`, `-sys`, `-strings`, umbrella `syrp-core` | std, serde_json, quick-xml, flate2/miniz_oxide, zip, ureq+rustls, libloading, interprocess, memmap2 (not checked), num-bigint (not checked) | 1 | M (broad, shallow). Containers map to std and are recorded in the ledger as "mapped". |
+| `juce_events` | MessageManager, MessageManagerLock, `callAsync`/`callSync`, Timer, MultiTimer, AsyncUpdater, ChangeBroadcaster, ActionBroadcaster, InterprocessConnection(+Server), ChildProcessCoordinator/Worker, NetworkServiceDiscovery, JUCEApplicationBase, DeletedAtShutdown | `syrp-loop-api`, `syrp-events`, `syrp-ipc` | windows, objc2 (CFRunLoop), x11rb/rustix-style fd loops, interprocess | 1 | M–H. Integrating with host run loops in plugins is the hard part. |
+| `juce_data_structures` | ValueTree, Value, CachedValue, ValueTreePropertyWithDefault, UndoManager/UndoableAction, PropertiesFile, ApplicationProperties, ValueTreeSynchroniser | `syrp-state` | serde, quick-xml, rpds (optional persistent maps) | 1 | M. Byte-compatible state migration is H. |
+| `juce_cryptography` | MD5, SHA256, Whirlpool, BlowFish, RSAKey, Primes | `syrp-crypto` | RustCrypto (md-5 0.11, sha2 0.11, blowfish 0.10, whirlpool), num-bigint for JUCE-compatible raw RSA | 1 | L. The `rsa` crate carries an unpatched timing advisory, RUSTSEC-2023-0071 (https://rustsec.org/advisories/RUSTSEC-2023-0071.html). |
+| `juce_osc` | OSCSender, OSCReceiver, OSCMessage, OSCBundle, OSCAddress(Pattern), OSCArgument, OSCTimeTag | `syrp-osc` | rosc 0.11.4 (wrap) | 1 | L |
+| `juce_audio_basics` | AudioBuffer, FloatVectorOperations, AudioData converters, AudioChannelSet, AudioPlayHead, AudioProcessLoadMeasurer, **AudioWorkgroup**. **MIDI:** MidiMessage, MidiBuffer, MidiMessageSequence, MidiFile, MidiKeyboardState, MidiRPN. **MIDI 2.0 UMP:** packets, views, iterators, MIDI1↔2 translation, dispatcher, SysEx7. **MPE:** MPEInstrument, MPESynthesiser, MPEZoneLayout. **Sources:** the AudioSource family (Buffering, Mixer, Resampling, ChannelRemapping, ToneGenerator, Memory, IIR, Reverb). **Synthesis and DSP helpers:** Synthesiser/Voice, ADSR, SmoothedValue, Decibels, interpolators, IIRFilter, Reverb. | `syrp-audio-api`, `syrp-audio-basics`, `syrp-midi`, `syrp-mpe` | midi2 0.11 (UMP cross-check), rubato (optional high-quality resampler), audio_thread_priority (MPL-2.0) | 2 | M |
+| `juce_audio_devices` | AudioDeviceManager, AudioIODevice, AudioIODeviceType. **Backends:** WASAPI, ASIO, DirectSound, CoreAudio (aggregate-device based in 9.0), ALSA, JACK, Oboe/OpenSL, iOS. **MIDI:** MidiInput/MidiOutput, **UMP endpoints, sessions and virtual endpoints**, disconnection listener (9.0.4), MidiMessageCollector. **Playback:** AudioSourcePlayer, AudioTransportSource. SystemAudioVolume. | `syrp-device-api`, `syrp-devices`, `syrp-audio-{coreaudio,wasapi,asio,alsa,jack,pipewire,aaudio,ios,web}`, `syrp-midi-io`, `syrp-midi-{coremidi,windows,alsa,android,web}` | cpal 0.18 (wrapped first), wasapi, alsa, jack, pipewire, objc2-core-audio, coremidi, midir (MIDI 1.0 fallback), windows (WinRT for Windows MIDI Services) | 2 (desktop), 6 (mobile and web) | H |
+| `juce_audio_formats` | AudioFormat, AudioFormatManager, AudioFormatReader/Writer(+Options), ReaderSource, SubsectionReader, BufferingReader, MemoryMappedReader. **Codecs:** WAV (BWF, metadata, 32-bit int), AIFF, FLAC, Ogg Vorbis, MP3 (default since 9.0.2), **Opus** (9.0.3), CoreAudioFormat, WindowsMediaAudioFormat, LAME encoder (external exe). **Other:** SamplerSound/Voice, ARA readers. | `syrp-formats`, `syrp-format-{wav,aiff,flac,ogg,mp3,opus,platform}` | symphonia 0.6 (MPL-2.0, decode), claxon, lewton, flacenc, vorbis_rs, opus (libopus) | 2 | M. Metadata-chunk parity is tedious. |
+| `juce_audio_processors_headless` (new in 8.0.11) | AudioProcessor, AudioPluginInstance, the parameter hierarchy (WithID, Ranged, Float/Int/Bool/Choice, Group, Hosted, Legacy), **AudioProcessorGraph**, AudioPluginFormat(Manager), PluginDescription, headless hosting of VST3/VST/AU/LV2/LADSPA, **ARA hosting**, VST2/VST3/AAX client extensions | `syrp-plugin-api`, `syrp-processors`, `syrp-host-{clap,vst3,au,lv2,ladspa,ara}` | clack-host 0.2, vst3 0.3, objc2-audio-toolbox, livi/lilv (wrap), ARA headers via bindgen | 2 | H |
+| `juce_audio_processors` | AudioProcessorEditor, GenericAudioProcessorEditor, **AudioProcessorValueTreeState**, ParameterAttachments, KnownPluginList, PluginDirectoryScanner, PluginListComponent, PluginHostType, NSViewComponentWithParent | `syrp-processors` (ParamTree, scanner), `syrp-processors-ui` | none directly | 2 (headless), 4 (UI) | M–H |
+| `juce_audio_plugin_client` | Wrappers for **VST3, AU v2, AUv3, AAX, LV2, Unity, Standalone** (StandaloneFilterWindow), VST2 and the ARA plugin side; VST3 moduleinfo; scale-factor utilities | `syrp-plugin`, `syrp-wrap-{clap,vst3,auv2,auv3,lv2,aax,unity,standalone,ara}`, `syrp-bundler` | clack-plugin 0.2, vst3 0.3, objc2, LV2 headers (bindgen), AAX SDK via a `cxx` shim; nice-plug and clap-wrapper as permissive design references | 4 | VH |
+| `juce_audio_utils` | AudioThumbnail(+Cache), AudioVisualiserComponent, MidiKeyboardComponent, MPEKeyboardComponent, AudioDeviceSelectorComponent, AudioAppComponent, AudioProcessorPlayer, SoundPlayer, BluetoothMidiDevicePairingDialogue, AudioCDReader/Burner | `syrp-audio-utils` | none | 4 | M. CD reading and burning are a deliberate gap. |
+| `juce_dsp` | AudioBlock, ProcessSpec/Context, ProcessorChain/Duplicator/Wrapper, SIMDRegister, FFT, WindowingFunction, **Convolution**, FIR/IIR + FilterDesign, SVF/TPT, LinkwitzRiley, Ladder, Ballistics, Oscillator, DelayLine, **Oversampling**, Gain, Bias, Panner, Phaser, Chorus, Compressor, Limiter, NoiseGate, Reverb, WaveShaper, DryWetMixer, LookupTable, FastMathApproximations, Matrix, Polynomial, SpecialFunctions | `syrp-dsp-{core,filters,fx,conv}`, umbrella `syrp-dsp` | rustfft 6.4 / realfft 3.5; fundsp as a reference only | 2 | M. Convolution and Oversampling latency parity is H. |
+| `juce_midi_ci` | ci::Device, DeviceOptions/Features, profiles (ProfileHost/Delegate/States), Property Exchange (PropertyHost/Delegate, cache, subscriptions), Parser, Messages, encodings, MUID | `syrp-midi-ci` | midi2 (message types, cross-check only) | 2 | H. Spec-heavy; needs interop tests with real CI peers. |
+| `juce_graphics` | Graphics, LowLevelGraphicsContext, software, CoreGraphics and **Direct2D** renderers. Colour, gradients (incl. two-point conical), FillType, Path, PathStrokeType, StrokeOptions, EdgeTable. Geometry (AffineTransform, Rectangle(List), Point, Line, Parallelogram, BorderSize, Justification, RectanglePlacement). Image, ImageCache, codecs (PNG, JPEG, GIF, **WebP** 9.0.3), effects. Font, FontOptions, **FontFeatures**, **variable fonts** (9.0), Typeface, AttributedString, TextLayout, GlyphArrangement, ShapedText/JustifiedText (HarfBuzz and SheenBidi). Drawable* plus a **new SVG parser** (9.0). | `syrp-geom`, `syrp-gfx-api`, `syrp-gfx`, `syrp-image`, `syrp-text`, `syrp-drawable`, `syrp-render-cpu`, `syrp-render-gpu` | kurbo, peniko, vello_cpu/vello_gpu 0.3, wgpu 30, parley/fontique 0.12, harfrust 0.15, skrifa 0.49, usvg 0.49, image, png, zune-jpeg, image-webp | 3 | VH |
+| `juce_gui_basics` | **Component tree:** Component, ComponentPeer, Desktop, Displays, CachedComponentImage. **Windows:** Top-level, Resizable, Document, Dialog, Alert, CallOut, Tooltip, NativeMessageBox, ScopedMessageBox. **LookAndFeel V1–V4.** **Widgets:** Button family, Slider, ComboBox, Label, TextEditor, ListBox, TableListBox, TreeView, Toolbar, ProgressBar. **Menus:** PopupMenu, MenuBar, BurgerMenu. **Layout:** FlexBox, Grid, StretchableLayout, Concertina, Tabbed, Viewport, ScrollBar, SidePanel, MDI, constrainers, resizers, ComponentAnimator. **Input:** Mouse/Key/Touch events, MouseInputSource, KeyPress, TextInputTarget, focus traversers. **Drag and drop**; **Commands:** ApplicationCommandManager, KeyPressMappingSet. **File browser:** FileChooser, FileBrowserComponent. **Properties:** PropertyPanel. **Accessibility:** handlers, roles, actions, interfaces. **Other:** ContentSharer, SystemClipboard, MouseCursor, VBlankAttachment, JUCEApplication, RelativeCoordinate (legacy). | `syrp-peer-api`, `syrp-peer-{win32,appkit,x11,wayland,uikit,android,web}`, `syrp-ui`, `syrp-ui-layout`, `syrp-a11y`, `syrp-commands`, `syrp-laf`, `syrp-widgets-{buttons,slider,text,lists,menus,panels}`, `syrp-windows`, `syrp-filebrowser`, `syrp-app` | taffy 0.15 (Flex/Grid), accesskit 0.25, raw-window-handle, keyboard-types, cursor-icon, smithay-client-toolkit, x11rb; baseview and winit as references | 3 | VH |
+| `juce_gui_extra` | CodeEditorComponent, CodeDocument, tokenisers (C++, Lua, XML). **WebBrowserComponent** with relays (Slider/Toggle/ComboBox), WebControlParameterIndexReceiver, resource provider, native functions, npm `@juce-framework/webview`. ColourSelector, KeyMappingEditor, PreferencesPanel, RecentlyOpenedFilesList, SplashScreen, SystemTrayIcon, PushNotifications, AnimatedAppComponent, BubbleMessage, LiveConstantEditor, FileBasedDocument. **Native embedding:** HWND, NSView, UIView, XEmbed, AndroidView, ActiveX. AppleRemote. | `syrp-ui-extra`, `syrp-code-editor`, `syrp-webview`, `syrp-embed` | wry 0.57, webview2-com, webkit2gtk | 5 | H. WebView inside plugins, especially on Linux, is the hard case. |
+| `juce_opengl` | OpenGLContext (attached to a Component, own render thread), OpenGLRenderer, OpenGLAppComponent, FrameBuffer, Image, GraphicsContext, ShaderProgram, Texture, PixelFormat, Matrix3D, Quaternion, Vector3D, Draggable3DOrientation, GL/GLES loaders | `syrp-opengl` | glow 0.18, glutin 0.32 (apps), own child-window context creation | 3 (desktop), 6 (mobile) | M–H. OpenGL is deprecated on macOS. |
+| `juce_video` | VideoComponent (playback), CameraDevice (capture, preview, recording) | `syrp-video` | objc2-av-foundation, windows (Media Foundation), gstreamer (LGPL runtime), JNI; nokhwa as a reference | 5–6 | M–H |
+| `juce_box2d` | Bundled Box2D 2.x world plus Box2DRenderer | `syrp-physics2d` | rapier2d 0.36 (Apache) | 5 | L–M. Documented deviation: the physics engine's API differs from Box2D's. |
+| `juce_product_unlocking` | OnlineUnlockStatus, OnlineUnlockForm, KeyFileGeneration, TracktionMarketplaceStatus, **InAppPurchases** | `syrp-unlock`, `syrp-unlock-ui` | num-bigint, objc2 (StoreKit 2), JNI (Play Billing) | 1 (key files), 5–6 | M |
+| `juce_analytics` | Analytics, AnalyticsDestination, ThreadedAnalyticsDestination, ButtonTracker | `syrp-analytics` | ureq | 1 (headless core), 5 (destinations) | L |
+| `juce_animation` | Animator, ValueAnimatorBuilder, AnimatorSetBuilder, AnimatorUpdater, VBlankAnimatorUpdater, Easings (incl. cubic Bézier) | `syrp-animation` | none (kurbo for Bézier maths) | 3 | L–M |
+| `juce_javascript` | JavascriptEngine (QuickJS via CHOC since 8.0.4), JSObject, JSCursor | `syrp-js` | rquickjs 0.14 (MIT); boa_engine as a pure-Rust option | 5 | L–M |
 
 **Tooling parity.** These are not modules, but they are part of what JUCE users get.
 
-| JUCE tool | Auricle equivalent | Phase |
+| JUCE tool | Syrp equivalent | Phase |
 |---|---|---|
-| Projucer (project generator, exporters, editor) | `Auricle.toml` plus `cargo auricle new/add/build/bundle`. Exporters are unnecessary because Cargo is the build system. The GUI is replaced by CLI and MCP (deliberate gap). | 0 → 4 |
-| CMake API (`juce_add_plugin`, `juce_add_gui_app`, `juce_add_binary_data`, `juce_add_pip`, …) and juceaide | Manifest keys plus a `build.rs` helper crate `auricle-resources` (BinaryBuilder equivalent). The VST3 manifest step, plist and entitlements are handled by `auricle-bundler`. | 0, 4 |
-| AudioPluginHost | `auricle-host-app` (GUI plus headless mode) | 4 |
-| DemoRunner (about 90 demos) | `auricle-demos`; each demo doubles as a golden test | 3–6 |
-| UnitTest / UnitTestRunner | `cargo test`/nextest plus `auricle-testkit` | 0 |
-| AudioPerformanceTest, NetworkGraphicsDemo | `auricle-perf` (benchmarks); NetworkGraphicsDemo is a low-priority demo | 5 |
+| Projucer (project generator, exporters, editor) | `Syrp.toml` plus `cargo syrp new/add/build/bundle`. Exporters are unnecessary because Cargo is the build system. The GUI is replaced by CLI and MCP (deliberate gap). | 0 → 4 |
+| CMake API (`juce_add_plugin`, `juce_add_gui_app`, `juce_add_binary_data`, `juce_add_pip`, …) and juceaide | Manifest keys plus a `build.rs` helper crate `syrp-resources` (BinaryBuilder equivalent). The VST3 manifest step, plist and entitlements are handled by `syrp-bundler`. | 0, 4 |
+| AudioPluginHost | `syrp-host-app` (GUI plus headless mode) | 4 |
+| DemoRunner (about 90 demos) | `syrp-demos`; each demo doubles as a golden test | 3–6 |
+| UnitTest / UnitTestRunner | `cargo test`/nextest plus `syrp-testkit` | 0 |
+| AudioPerformanceTest, NetworkGraphicsDemo | `syrp-perf` (benchmarks); NetworkGraphicsDemo is a low-priority demo | 5 |
 
 **Hardest parity items, in rough order of risk**
 1. **Text layout and TextEditor.**
-   - JUCE 8 and 9 shape text with HarfBuzz and SheenBidi and add font features and variable fonts. Auricle uses harfrust, the Rust port of HarfBuzz matching HarfBuzz 15.0.0 (https://github.com/harfbuzz/harfrust).
+   - JUCE 8 and 9 shape text with HarfBuzz and SheenBidi and add font features and variable fonts. Syrp uses harfrust, the Rust port of HarfBuzz matching HarfBuzz 15.0.0 (https://github.com/harfbuzz/harfrust).
    - With the same font and features, glyph IDs and advances should match exactly. That is an objective test.
    - Line breaking, justification, caret and selection behaviour, IME, and TextEditor's undo and paste behaviour have to be specified from observation.
 2. **Rendering fidelity.**
    - JUCE's software renderer antialiases with edge tables, and its Direct2D and CoreGraphics backends each differ slightly.
-   - Auricle targets "visually equivalent within tolerance", not pixel-identical output (§9). Hairlines, pixel snapping at fractional scale factors, and gradients need careful specs.
+   - Syrp targets "visually equivalent within tolerance", not pixel-identical output (§9). Hairlines, pixel snapping at fractional scale factors, and gradients need careful specs.
 3. **Component semantics.** Mouse-event ordering (enter, exit, drag and double-click timing), focus and keyboard routing, modal handling and repaint coalescing all need specs. JUCE's blocking `runModalLoop` is replaced by async modals, a deliberate deviation.
 4. **Plugin wrapper edge cases.**
    - VST3: parameter threading and bus arrangement negotiation. AU: property listeners and parameter-tree updates.
@@ -157,11 +157,11 @@ Design rules that follow from these deliverables:
    - Every quirk has to be discovered by testing in real DAWs.
 5. **State compatibility.**
    - Users porting a JUCE plugin need old sessions to load. That means reading JUCE-produced plugin state blobs, which carry ValueTree XML and binary formats inside format-specific wrappers.
-   - Auricle learns these formats as black boxes: it generates blobs with the harness and fits a reader to the output. It never reads JUCE's serializer source (§10).
-6. **AudioProcessorGraph.** This covers rebuild semantics under live audio, latency compensation and MIDI routing. Auricle adds an RT-safe graph swap.
+   - Syrp learns these formats as black boxes: it generates blobs with the harness and fits a reader to the output. It never reads JUCE's serializer source (§10).
+6. **AudioProcessorGraph.** This covers rebuild semantics under live audio, latency compensation and MIDI routing. Syrp adds an RT-safe graph swap.
 7. **CoreAudio aggregate devices** (9.0), **WASAPI low-latency and exclusive modes**, **ASIO**, and **Windows MIDI Services**. Windows MIDI Services has been generally available in Windows 11 since 2026-02-17, rolling out in phases (https://blogs.windows.com/windowsexperience/2026/02/17/making-music-with-midi-just-got-a-real-boost-in-windows-11/).
 8. **MIDI-CI** profiles and property exchange, which need interoperability with Apple, Windows and hardware peers.
-9. **WebView inside plugins.** On Linux, JUCE runs WebKitGTK through a subprocess helper (CMake `juce_link_with_embedded_linux_subprocess`). Auricle needs the same design.
+9. **WebView inside plugins.** On Linux, JUCE runs WebKitGTK through a subprocess helper (CMake `juce_link_with_embedded_linux_subprocess`). Syrp needs the same design.
 10. **AAX** (C++ SDK, PACE signing), **ARA**, **AUv3** packaging, and mobile app lifecycles.
 11. **Wayland.** JUCE only has a preview branch (9.0.3). Embedding plugin UIs under Wayland has no cross-host standard (UNVERIFIED), so plugin UIs on Linux target X11/XWayland first.
 
@@ -172,7 +172,7 @@ Design rules that follow from these deliverables:
 | Decision | Meaning |
 |---|---|
 | **Reuse** | Depend on the crate directly. |
-| **Wrap** | Depend on it behind an Auricle trait so it can be replaced later. |
+| **Wrap** | Depend on it behind an Syrp trait so it can be replaced later. |
 | **Fork** | Vendor the code into the workspace and own it, keeping attribution. Used only for permissive licences. |
 | **Build** | Write from scratch. |
 | **Reference** | Read the code for design ideas only. Permissive licences only. |
@@ -195,7 +195,7 @@ All data below comes from the crates.io API on 2026-10-26: version, last publish
 | Candidates | Maturity / licence | Decision | Rationale |
 |---|---|---|---|
 | **cpal** 0.18.2 (Aug 2026; main branch active Oct 2026) | Very mature; Apache-2.0. Hosts: WASAPI, ASIO, JACK, CoreAudio, ALSA, PipeWire, PulseAudio, AAudio, WebAudio and AudioWorklet. Duplex support is unreleased on main. | **Wrap** first, then replace per backend | It gets audio running on every platform by Phase 2. It does not expose JUCE-level controls: exclusive or low-latency WASAPI, aggregate devices, channel names, iOS session routing. The README lists a **macOS 14.2 minimum** for its CoreAudio backend, which conflicts with a broad macOS target. The reason for that floor is UNVERIFIED. |
-| wasapi 0.26, alsa 0.12, jack 0.13, pipewire 0.10, objc2-core-audio / objc2-audio-toolbox 0.3.2, coreaudio-rs 0.14, asio-sys 0.4 | Maintained; MIT or Apache | **Reuse** as the low-level bindings under native Auricle backends | Building blocks for the parity backends. |
+| wasapi 0.26, alsa 0.12, jack 0.13, pipewire 0.10, objc2-core-audio / objc2-audio-toolbox 0.3.2, coreaudio-rs 0.14, asio-sys 0.4 | Maintained; MIT or Apache | **Reuse** as the low-level bindings under native Syrp backends | Building blocks for the parity backends. |
 | interflow (git only, Jun 2026) | Early; WASAPI, ALSA, PipeWire, CoreAudio | **Reference** | Good design ideas for duplex and separate input/output devices. Not published to crates.io and missing ASIO and JACK. |
 | oboe 0.6.1 (2024) | Stale | **Avoid**. Build an AAudio backend on `ndk`. | No releases since 2024. |
 | audio_thread_priority 0.38 | MPL-2.0 | **Reuse** | RT thread promotion. Apple workgroup joining is implemented separately with objc2. |
@@ -204,10 +204,10 @@ All data below comes from the crates.io API on 2026-10-26: version, last publish
 | Candidates | Maturity / licence | Decision | Rationale |
 |---|---|---|---|
 | midir 0.11.1 (Oct 2026) | Mature; MIT; MIDI 1.0 only | **Wrap** as a Phase 2 fallback | Lets MIDI 1.0 I/O work early. It has no UMP or MIDI 2.0. |
-| coremidi 0.9.2, objc2-core-midi, alsa (seq and UMP), windows (WinRT projection for Windows MIDI Services), ndk (AMidi) | Maintained | **Reuse** under a native `auricle-midi-io` | Gets UMP endpoints, virtual ports and disconnection events in line with JUCE 9. |
-| midi2 0.11.1 (bl-midi2-rs) | MIT/Apache, active | **Reference** and cross-check tests | Typed UMP and CI messages. Auricle's `auricle-midi` owns its types so it can control RT-safety and its API. |
-| wmidi 4.0, midly 0.5 (2023), midi-msg 0.9 | Various | **Reference** only (midly as a MidiFile fuzz oracle) | Behaviour must match JUCE's MidiFile, so Auricle builds its own. |
-| (none found) | No Rust MIDI-CI device stack | **Build** `auricle-midi-ci` | A gap in the ecosystem. |
+| coremidi 0.9.2, objc2-core-midi, alsa (seq and UMP), windows (WinRT projection for Windows MIDI Services), ndk (AMidi) | Maintained | **Reuse** under a native `syrp-midi-io` | Gets UMP endpoints, virtual ports and disconnection events in line with JUCE 9. |
+| midi2 0.11.1 (bl-midi2-rs) | MIT/Apache, active | **Reference** and cross-check tests | Typed UMP and CI messages. Syrp's `syrp-midi` owns its types so it can control RT-safety and its API. |
+| wmidi 4.0, midly 0.5 (2023), midi-msg 0.9 | Various | **Reference** only (midly as a MidiFile fuzz oracle) | Behaviour must match JUCE's MidiFile, so Syrp builds its own. |
+| (none found) | No Rust MIDI-CI device stack | **Build** `syrp-midi-ci` | A gap in the ecosystem. |
 
 ### 4.3 Plugin formats and frameworks
 | Candidates | Maturity / licence | Decision | Rationale |
@@ -230,35 +230,35 @@ All data below comes from the crates.io API on 2026-10-26: version, last publish
 ### 4.4 Windowing
 | Candidates | Maturity / licence | Decision | Rationale |
 |---|---|---|---|
-| baseview 0.4.1 (Oct 2026) | Plugin-oriented: embeds in a host parent on Win32, Cocoa and X11. MIT/Apache. The RustAudio AI policy applies to contributions. | **Fork** ideas and code into `auricle-peer-{win32,appkit,x11}` | Plugin embedding is mandatory and the peer layer is JUCE's ComponentPeer. Auricle must own it fully: IME, DPI, cursors, drag and drop, multi-touch, VBlank, accessibility hooks. |
-| winit 0.30.13 (Oct 2026) | Very mature; Apache-2.0 | **Wrap** for `auricle-peer-{uikit,android,web}` app lifecycles; **Reference** for desktop | It owns the event loop, which cannot coexist with a host-owned run loop in plugins, so it is not suitable for desktop plugin peers. Good for mobile and web standalone apps. |
+| baseview 0.4.1 (Oct 2026) | Plugin-oriented: embeds in a host parent on Win32, Cocoa and X11. MIT/Apache. The RustAudio AI policy applies to contributions. | **Fork** ideas and code into `syrp-peer-{win32,appkit,x11}` | Plugin embedding is mandatory and the peer layer is JUCE's ComponentPeer. Syrp must own it fully: IME, DPI, cursors, drag and drop, multi-touch, VBlank, accessibility hooks. |
+| winit 0.30.13 (Oct 2026) | Very mature; Apache-2.0 | **Wrap** for `syrp-peer-{uikit,android,web}` app lifecycles; **Reference** for desktop | It owns the event loop, which cannot coexist with a host-owned run loop in plugins, so it is not suitable for desktop plugin peers. Good for mobile and web standalone apps. |
 | raw-window-handle 0.6, softbuffer 0.4, smithay-client-toolkit 0.21, x11rb 0.14, windows 0.62, objc2-app-kit / ui-kit 0.3.2, android-activity 0.6, jni 0.22, web-sys | Mature | **Reuse** | Platform bindings. |
 | keyboard-types 0.8, cursor-icon 1.2, ui-events 0.3 | Mature or early | **Reuse** (keyboard-types, cursor-icon); **Reference** (ui-events) | Shared vocabulary types. |
 
 ### 4.5 GUI toolkits
 | Candidates | Maturity / licence | Decision | Rationale |
 |---|---|---|---|
-| egui 0.37 (MIT/Apache), iced 0.14 (MIT), vizia 0.4 (MIT), xilem/masonry 0.4 (Apache), floem 0.2 (MIT), dioxus 0.7 | Varied maturity | **Build** a JUCE-semantics component model. **Reference** masonry (retained widget tree plus testing harness), vizia (plugin GUI) and egui_kittest (AccessKit-driven tests). Offer optional adapters such as "host an egui UI in an Auricle editor" in Phase 5. | None of them provides JUCE's Component, LookAndFeel and Graphics paint model, which is the part users and agents port. Parity requires owning that model. |
+| egui 0.37 (MIT/Apache), iced 0.14 (MIT), vizia 0.4 (MIT), xilem/masonry 0.4 (Apache), floem 0.2 (MIT), dioxus 0.7 | Varied maturity | **Build** a JUCE-semantics component model. **Reference** masonry (retained widget tree plus testing harness), vizia (plugin GUI) and egui_kittest (AccessKit-driven tests). Offer optional adapters such as "host an egui UI in an Syrp editor" in Phase 5. | None of them provides JUCE's Component, LookAndFeel and Graphics paint model, which is the part users and agents port. Parity requires owning that model. |
 | slint 1.18 | GPL-3.0 or royalty-free or commercial | **Avoid** in core | Licence. |
-| **taffy** 0.15.1 (Oct 2026, MIT) | Mature flexbox and grid | **Reuse** inside `auricle-ui-layout` for FlexBox and Grid | Matching CSS-like semantics; JUCE's FlexBox and Grid follow CSS. |
+| **taffy** 0.15.1 (Oct 2026, MIT) | Mature flexbox and grid | **Reuse** inside `syrp-ui-layout` for FlexBox and Grid | Matching CSS-like semantics; JUCE's FlexBox and Grid follow CSS. |
 
 ### 4.6 2D graphics and GPU
 | Candidates | Maturity / licence | Decision | Rationale |
 |---|---|---|---|
-| **vello_cpu** 0.3.0 (Oct 2026) | Per Vello's README, "the most mature choice" for CPU rendering. Multithreaded with SIMD. Apache/MIT. | **Wrap** as `auricle-render-cpu`, the reference renderer used for goldens and as the fallback | Deterministic CPU output for headless tests. A single-threaded scalar mode is pinned for goldens (spike in Phase 0). |
-| **vello_gpu** 0.3.0 (formerly vello_hybrid) | Intended to become the primary GPU renderer. wgpu plus WebGL2, no compute shaders needed. | **Wrap** as `auricle-render-gpu` | Broad GPU compatibility, including web. |
+| **vello_cpu** 0.3.0 (Oct 2026) | Per Vello's README, "the most mature choice" for CPU rendering. Multithreaded with SIMD. Apache/MIT. | **Wrap** as `syrp-render-cpu`, the reference renderer used for goldens and as the fallback | Deterministic CPU output for headless tests. A single-threaded scalar mode is pinned for goldens (spike in Phase 0). |
+| **vello_gpu** 0.3.0 (formerly vello_hybrid) | Intended to become the primary GPU renderer. wgpu plus WebGL2, no compute shaders needed. | **Wrap** as `syrp-render-gpu` | Broad GPU compatibility, including web. |
 | vello 0.11 (compute renderer) | Described upstream as experimental | **Avoid** for now | Maturity. |
 | tiny-skia 0.12 (BSD-3) | Mature Skia subset | **Fallback** candidate, decided in the Phase 0 spike | Very stable. Used by resvg. Single-threaded. |
 | skia-safe 0.153 (MIT bindings to Skia) | Mature but heavy C++ | **Avoid** in core; possible optional backend | A large C++ dependency; against native-first. |
 | femtovg 0.27 | GL-based canvas | **Avoid** | Vello covers this. |
 | wgpu 30.0.1, kurbo 0.13, peniko 0.6, lyon 1.0 | Mature | **Reuse** (wgpu, kurbo, peniko); lyon as a reference | kurbo's Bézier paths map onto JUCE Path; peniko provides brushes. |
 | resvg/usvg 0.49 | Mature SVG | **Reuse** usvg to parse SVG into a Drawable tree | Matches JUCE 9's improved SVG coverage (gradients, clip paths, blend modes). |
-| image 0.25, png 0.18, zune-jpeg 0.5, image-webp 0.2 | Mature | **Reuse** in `auricle-image` | Codecs. |
+| image 0.25, png 0.18, zune-jpeg 0.5, image-webp 0.2 | Mature | **Reuse** in `syrp-image` | Codecs. |
 
 ### 4.7 Text
 | Candidates | Maturity / licence | Decision | Rationale |
 |---|---|---|---|
-| **parley** 0.12 + **fontique** 0.12 (Oct 2026) | Rich text layout and system font enumeration with fallback. Apache/MIT. Stack: Fontique, HarfRust, Skrifa, ICU4X. | **Wrap** in `auricle-text` | JUCE's AttributedString, TextLayout and GlyphArrangement APIs sit on top; Auricle owns line breaking where parity needs it. |
+| **parley** 0.12 + **fontique** 0.12 (Oct 2026) | Rich text layout and system font enumeration with fallback. Apache/MIT. Stack: Fontique, HarfRust, Skrifa, ICU4X. | **Wrap** in `syrp-text` | JUCE's AttributedString, TextLayout and GlyphArrangement APIs sit on top; Syrp owns line breaking where parity needs it. |
 | **harfrust** 0.15 (MIT, Oct 2026) | HarfBuzz port matching HarfBuzz 15.0.0 | **Reuse** (through parley) | Same shaping semantics as JUCE's embedded HarfBuzz. |
 | skrifa 0.49 / read-fonts 0.46 | Google Fonts "oxidize" stack | **Reuse** | Outlines, hinting, variable-font axes (JUCE 9 parity). |
 | rustybuzz 0.20 (2024), swash 0.2, cosmic-text 0.19, ttf-parser, fontdb | Varied | **Avoid** (rustybuzz is superseded); swash and cosmic-text as references | Keep a single font stack. |
@@ -268,15 +268,15 @@ All data below comes from the crates.io API on 2026-10-26: version, last publish
 | Candidates | Maturity / licence | Decision | Rationale |
 |---|---|---|---|
 | symphonia 0.6.1 (Aug 2026) | Mature decoders; **MPL-2.0** | **Wrap** for MP3, AAC and ALAC decoding | MPL is acceptable as a dependency. It sits behind the `AudioFormat` trait. |
-| hound 3.5 (2023), claxon 0.4 (2020), lewton 0.10 (2021) | Stable but old | **Build** WAV and AIFF (metadata parity: BWF, cue, smpl, acid, iXML); **Wrap** claxon and lewton for decoding initially | JUCE's WAV metadata surface is large, so Auricle needs to own it. |
+| hound 3.5 (2023), claxon 0.4 (2020), lewton 0.10 (2021) | Stable but old | **Build** WAV and AIFF (metadata parity: BWF, cue, smpl, acid, iXML); **Wrap** claxon and lewton for decoding initially | JUCE's WAV metadata surface is large, so Syrp needs to own it. |
 | flacenc 0.5 (Apache), vorbis_rs 0.5 (BSD-3, libvorbis), opus 0.4 (libopus) | Maintained | **Wrap** for encoders | Pure-Rust Vorbis and Opus encoders are immature, so C libraries are accepted here as a documented exception. |
 | mp3lame-encoder 0.2 | **LGPL-3.0** | **Avoid** linking. Mirror JUCE: LAME runs as an external executable. | Licence. |
-| CoreAudio / Media Foundation decoders | Platform | **Build** `auricle-format-platform` | Parity for CoreAudioFormat and WindowsMediaAudioFormat. |
+| CoreAudio / Media Foundation decoders | Platform | **Build** `syrp-format-platform` | Parity for CoreAudioFormat and WindowsMediaAudioFormat. |
 
 ### 4.9 DSP
 | Candidates | Maturity / licence | Decision | Rationale |
 |---|---|---|---|
-| rustfft 6.4 / realfft 3.5 | Mature | **Wrap** inside `auricle-dsp-core::Fft` | The FFT is a solved problem. Auricle wraps it to match JUCE's API for scaling and ordering. |
+| rustfft 6.4 / realfft 3.5 | Mature | **Wrap** inside `syrp-dsp-core::Fft` | The FFT is a solved problem. Syrp wraps it to match JUCE's API for scaling and ordering. |
 | rubato 5.0 (Oct 2026) | Mature resampling | **Reuse** for the high-quality resampler option | JUCE's ResamplingAudioSource and interpolators are rebuilt to their documented behaviour. |
 | fundsp 0.23, dasp 0.11 (2020), biquad 0.6, idsp 0.23 | Varied | **Reference** only | The filters, oscillators and effects are rebuilt from public-domain DSP literature (RBJ cookbook, Zavalishin's TPT, and so on) to match JUCE's documented responses. |
 | SIMD | `std::simd` is still unstable (UNVERIFIED for 1.99); `wide` / `pulp` were not checked | **Build** `SimdRegister<T>` over `core::arch` with a scalar fallback; evaluate `wide` in Phase 0 | Needed for SIMDRegister parity and FloatVectorOperations speed. |
@@ -285,8 +285,8 @@ All data below comes from the crates.io API on 2026-10-26: version, last publish
 | Candidates | Maturity / licence | Decision | Rationale |
 |---|---|---|---|
 | rtrb 0.4.1 (Oct 2026), ringbuf 0.5 | Mature SPSC queues | **Reuse** rtrb | Event and message queues between threads. |
-| basedrop 0.1.3 | Small, stable | **Fork** into `auricle-rt` (deferred drop collector) | A core RT pattern; Auricle needs to own it. |
-| assert_no_alloc 1.1.2 (2021) | Stable, tiny | **Fork** into `auricle-rt` (debug allocator guard) | Unmaintained but trivial. |
+| basedrop 0.1.3 | Small, stable | **Fork** into `syrp-rt` (deferred drop collector) | A core RT pattern; Syrp needs to own it. |
+| assert_no_alloc 1.1.2 (2021) | Stable, tiny | **Fork** into `syrp-rt` (debug allocator guard) | Unmaintained but trivial. |
 | rtsan-standalone 0.3 (Apache); rustc RTSan (rust-lang/rust#147935; nightly status UNVERIFIED) | New | **Reuse** in CI | Catches blocking calls the type system cannot see. |
 | crossbeam 0.8.5, arc-swap 1.9, triple_buffer 9.0 (MPL-2.0), atomic_float 1.1, loom 0.7.2 | Mature | **Reuse**. arc-swap is used only with deferred reclamation; loom is used in tests. | |
 
@@ -302,8 +302,8 @@ All data below comes from the crates.io API on 2026-10-26: version, last publish
 |---|---|---|---|
 | ureq 3.5 + rustls 0.23 | Mature, synchronous | **Reuse** for URL and WebInputStream | Matches JUCE's blocking-stream model without needing tokio in the core. |
 | reqwest 0.13 / tokio 1.54 | Mature async | **Optional** feature | Available to async users. Not pulled into the core. |
-| rosc 0.11.4 (Mar 2025) | Mature | **Wrap** | OSC packet codec. Auricle builds the sender, receiver and pattern matching to match JUCE semantics. |
-| interprocess 2.4, mdns-sd 0.21 | Mature | **Reuse** interprocess; **Reference** mdns-sd | NamedPipe and InterprocessConnection. JUCE's docs describe NetworkServiceDiscovery as repeatedly broadcasting a service's existence (UDP broadcast is assumed; UNVERIFIED). Auricle builds its own. |
+| rosc 0.11.4 (Mar 2025) | Mature | **Wrap** | OSC packet codec. Syrp builds the sender, receiver and pattern matching to match JUCE semantics. |
+| interprocess 2.4, mdns-sd 0.21 | Mature | **Reuse** interprocess; **Reference** mdns-sd | NamedPipe and InterprocessConnection. JUCE's docs describe NetworkServiceDiscovery as repeatedly broadcasting a service's existence (UDP broadcast is assumed; UNVERIFIED). Syrp builds its own. |
 
 ### 4.13 Crypto
 | Candidates | Maturity / licence | Decision | Rationale |
@@ -315,14 +315,14 @@ All data below comes from the crates.io API on 2026-10-26: version, last publish
 ### 4.14 Physics
 | Candidates | Maturity / licence | Decision | Rationale |
 |---|---|---|---|
-| rapier2d 0.36.1 (Oct 2026, Apache) | Mature | **Wrap** in `auricle-physics2d` with a Box2DRenderer-style debug renderer | box2d-rs is dead (2023). Parity here means equivalent capability; Box2D's API is not reproduced. |
+| rapier2d 0.36.1 (Oct 2026, Apache) | Mature | **Wrap** in `syrp-physics2d` with a Box2DRenderer-style debug renderer | box2d-rs is dead (2023). Parity here means equivalent capability; Box2D's API is not reproduced. |
 
 ### 4.15 WebView and JavaScript
 | Candidates | Maturity / licence | Decision | Rationale |
 |---|---|---|---|
-| **wry** 0.57.1 (Oct 2026) | Mature (Tauri). Backends: WebView2, WKWebView, WebKitGTK, Android WebView. Apache/MIT. | **Wrap** in `auricle-webview` | Covers every JUCE WebBrowserComponent backend. Child-window embedding goes through raw-window-handle. On Linux the plugin case runs in a subprocess, as JUCE does. |
+| **wry** 0.57.1 (Oct 2026) | Mature (Tauri). Backends: WebView2, WKWebView, WebKitGTK, Android WebView. Apache/MIT. | **Wrap** in `syrp-webview` | Covers every JUCE WebBrowserComponent backend. Child-window embedding goes through raw-window-handle. On Linux the plugin case runs in a subprocess, as JUCE does. |
 | webview2-com 0.39, webkit2gtk 2.0 | Mature | **Reuse** for features wry does not expose (resource interception, native function bridges) | Parity for JUCE 8's ResourceProvider and native functions. |
-| rquickjs 0.14 (MIT, QuickJS) | Mature | **Wrap** in `auricle-js` | Same engine family as JUCE's QuickJS-via-CHOC. |
+| rquickjs 0.14 (MIT, QuickJS) | Mature | **Wrap** in `syrp-js` | Same engine family as JUCE's QuickJS-via-CHOC. |
 | boa_engine 0.22 (pure Rust) | Maturing | Optional backend | A pure-Rust option. |
 
 ### 4.16 Video and camera
@@ -341,7 +341,7 @@ All data below comes from the crates.io API on 2026-10-26: version, last publish
 ### 4.18 Accessibility
 | Candidates | Maturity / licence | Decision | Rationale |
 |---|---|---|---|
-| **AccessKit** 0.25.2 (Oct 2026) | Adapters: Windows UIA, macOS, Unix AT-SPI, Android, iOS. Web planned. MIT/Apache. | **Reuse** via `auricle-a11y` | Matches JUCE's AccessibilityHandler model: roles, actions, value, text and table interfaces. Its tree also drives Auricle's UI test scripting. |
+| **AccessKit** 0.25.2 (Oct 2026) | Adapters: Windows UIA, macOS, Unix AT-SPI, Android, iOS. Web planned. MIT/Apache. | **Reuse** via `syrp-a11y` | Matches JUCE's AccessibilityHandler model: roles, actions, value, text and table interfaces. Its tree also drives Syrp's UI test scripting. |
 
 ### 4.19 Tooling (tests, docs, release, agents)
 | Candidates | Decision | Rationale |
@@ -363,18 +363,18 @@ All data below comes from the crates.io API on 2026-10-26: version, last publish
    - CI fails on any diff unless the PR is a contract-change work package approved by the adversarial reviewer (§12).
 2. **Leaves implement contracts, not each other.** Each codec, audio backend, MIDI backend, window peer, host format and plugin wrapper depends only on contract crates, plus foundation and core. The 7 codecs, 9 audio backends, 7 peers and 9 wrappers can therefore be built simultaneously.
 3. **One crate per work package owner.** Crates are small, typically 2–8k lines. That keeps work packages reviewable and makes agent ownership unambiguous.
-4. **The umbrella facade** `auricle` re-exports everything behind cargo features named after JUCE modules (`core`, `events`, `audio-basics`, `gui-basics`, …). This keeps the migration map simple.
+4. **The umbrella facade** `syrp` re-exports everything behind cargo features named after JUCE modules (`core`, `events`, `audio-basics`, `gui-basics`, …). This keeps the migration map simple.
 
 ### 5.2 Workspace layout
 ```text
-auricle/
+syrp/
   Cargo.toml  rust-toolchain.toml  deny.toml  ownership.toml   # shared files: PR manager only
   AGENTS.md  CLAUDE.md  BREAKING.md  CHANGELOG.md
   contracts/<crate>.public-api.txt     # frozen API snapshots
   parity/{ledger.json, ledger.schema.json, scenarios/}       # parity ledger + differential scenarios
   errors/<domain>.toml                 # error-code catalogue (single source)
   docs/{guide,cookbook,migration,design}/ + book.toml        # human docs source (mdBook)
-  skills/auricle/{SKILL.md, references/, scripts/}           # Agent Skill
+  skills/syrp/{SKILL.md, references/, scripts/}           # Agent Skill
   work/{packages/WP-*.toml, waves/*.toml}                    # machine-readable work packages
   crates/<group>/<crate>/{Cargo.toml, AGENTS.md, src/, tests/, examples/, benches/}
   apps/{host-app, demos, perf}
@@ -383,109 +383,109 @@ auricle/
 
 | Layer | Crates (one-line purpose) |
 |---|---|
-| **L0 Foundation** | `auricle-error`: `ErrorCode`, the `Diagnostic` trait, hints and docs URLs. `auricle-rt`: RT tokens, `RtSafe` marker, SPSC queues (rtrb), deferred-drop collector, `AtomicF32`/`AtomicF64`, allocation guard. `auricle-geom`: Point, Rect, RectList, AffineTransform, BorderSize, Line, Parallelogram, Justification, RectanglePlacement (kurbo inside). |
-| **L1 Contracts** (frozen in Phase 0) | `auricle-loop-api`: MessageLoop trait, tasks, timers, VBlank source. `auricle-audio-api`: buffer views, ChannelSet, BusLayout, ProcessConfig, PlayHead and transport. `auricle-midi`: MidiMessage, MidiBuffer, UMP packet types (data types plus codecs). `auricle-format-api`: AudioFormat, Reader and Writer traits, metadata model. `auricle-device-api`: audio and MIDI device backend traits. `auricle-plugin-api`: Processor, ParamSpec, Editor, PluginDescriptor, state traits. `auricle-gfx-api`: Graphics ops, DisplayList, Brush, Path, Image and Font handles, Renderer trait. `auricle-peer-api`: window peer, input events, IME, clipboard, cursors, displays, drag and drop, native dialogs. |
-| **L2 Core** | `auricle-strings` (LocalisedStrings, TextDiff, Base64, StringPool). `auricle-maths` (BigInteger, Expression, Range, NormalisableRange, Random, statistics). `auricle-sys` (SystemStats, Time, Uuid, Logger, registry, permissions). `auricle-var` (`Var`, DynamicObject, NamedValueSet, Identifier, JSON, XmlElement). `auricle-io` (streams, File, MemoryBlock, mmap, zip/gzip, MIME). `auricle-thread` (Thread, ThreadPool, TimeSliceThread, HighResolutionTimer, WaitableEvent). `auricle-process` (ChildProcess, InterProcessLock, DynamicLibrary). `auricle-net` (URL, WebInputStream, sockets, IP and MAC addresses, NamedPipe). Umbrella: `auricle-core`. |
-| **L2 Events and state** | `auricle-events`: desktop MessageLoop implementations, ManualLoop, Timer, AsyncUpdater, broadcasters. `auricle-ipc`: InterprocessConnection, child-process coordinator, service discovery. `auricle-state`: ValueTree, Value, CachedValue, UndoManager, PropertiesFile, synchroniser, compat formats. |
-| **L2 Headless extras** | `auricle-crypto`, `auricle-osc`, `auricle-analytics`, `auricle-unlock`, `auricle-js`. |
-| **L3 Audio** | `auricle-audio-basics`: AudioBuffer, vector ops, SmoothedValue, ADSR, sources, Synthesiser, AudioWorkgroup. `auricle-mpe`. `auricle-midi-ci`. `auricle-dsp-{core,filters,fx,conv}` plus umbrella `auricle-dsp`. `auricle-formats`: manager, sources, sampler, buffering. `auricle-format-{wav,aiff,flac,ogg,mp3,opus,platform}`. `auricle-devices`: AudioDeviceManager, transport source, player. `auricle-audio-{coreaudio,wasapi,asio,alsa,jack,pipewire,aaudio,ios,web}`. `auricle-midi-io` plus `auricle-midi-{coremidi,windows,alsa,android,web}`. `auricle-processors`: processor runtime, ParamTree, ProcessorGraph, scanning, KnownPluginList. `auricle-host-{clap,vst3,au,lv2,ladspa,ara}`. |
-| **L3 Graphics** | `auricle-gfx`: Graphics front-end, path ops, colour, gradients, effects. `auricle-image`: Image, codecs, cache, convolution. `auricle-text`: fonts, fallback, shaping, layout, AttributedString, GlyphArrangement. `auricle-drawable`: Drawable tree and SVG. `auricle-render-cpu` (vello_cpu). `auricle-render-gpu` (vello_gpu on wgpu). |
-| **L3 Peers** | `auricle-peer-{win32,appkit,x11,wayland,uikit,android,web}`. `auricle-a11y`: bridge to the AccessKit adapters. |
-| **L4 UI** | `auricle-ui`: component tree, events, focus, painting, modal, Desktop. `auricle-ui-layout`: FlexBox, Grid, stretchable, constrainers. `auricle-commands`. `auricle-laf`: LookAndFeel framework plus V1–V4 themes. `auricle-widgets-{buttons,slider,text,lists,menus,panels}`. `auricle-windows`. `auricle-filebrowser`. `auricle-app`. `auricle-animation`. `auricle-opengl`. |
-| **L5 UI extras and audio UI** | `auricle-ui-extra`, `auricle-code-editor`, `auricle-webview`, `auricle-embed`, `auricle-audio-utils`, `auricle-processors-ui`, `auricle-unlock-ui`, `auricle-physics2d`, `auricle-video`. |
-| **L5 Plugins** | `auricle-plugin`: format-neutral wrapper runtime and `export_plugin!`. `auricle-wrap-{clap,vst3,auv2,auv3,lv2,aax,unity,standalone,ara}`. `auricle-bundler`: bundles, plists, moduleinfo.json, LV2 TTL, signing hooks. |
-| **L6 Tooling** | `auricle-testkit`: offline render, ManualLoop harness, golden comparators, fake host, UI driver. `auricle-inspect`: JSON dumps. `auricle-parity`: ledger schema and tools. `auricle-docgen`: API index, llms.txt, briefs, migration map. `auricle-resources`: binary-data `build.rs` helper. `auricle-cli`: the `cargo auricle` binary. `auricle-mcp`: MCP server. |
-| **L6 Facade and apps** | `auricle`: feature-gated umbrella. `apps/host-app` (AudioPluginHost). `apps/demos` (DemoRunner). `apps/perf`. |
-| **L7 Interop** (Phase 8) | `auricle-capi`, `auricle-cxx`, `auricle-py`, `auricle-uniffi`, `auricle-wasm`, `auricle-dotnet`. |
+| **L0 Foundation** | `syrp-error`: `ErrorCode`, the `Diagnostic` trait, hints and docs URLs. `syrp-rt`: RT tokens, `RtSafe` marker, SPSC queues (rtrb), deferred-drop collector, `AtomicF32`/`AtomicF64`, allocation guard. `syrp-geom`: Point, Rect, RectList, AffineTransform, BorderSize, Line, Parallelogram, Justification, RectanglePlacement (kurbo inside). |
+| **L1 Contracts** (frozen in Phase 0) | `syrp-loop-api`: MessageLoop trait, tasks, timers, VBlank source. `syrp-audio-api`: buffer views, ChannelSet, BusLayout, ProcessConfig, PlayHead and transport. `syrp-midi`: MidiMessage, MidiBuffer, UMP packet types (data types plus codecs). `syrp-format-api`: AudioFormat, Reader and Writer traits, metadata model. `syrp-device-api`: audio and MIDI device backend traits. `syrp-plugin-api`: Processor, ParamSpec, Editor, PluginDescriptor, state traits. `syrp-gfx-api`: Graphics ops, DisplayList, Brush, Path, Image and Font handles, Renderer trait. `syrp-peer-api`: window peer, input events, IME, clipboard, cursors, displays, drag and drop, native dialogs. |
+| **L2 Core** | `syrp-strings` (LocalisedStrings, TextDiff, Base64, StringPool). `syrp-maths` (BigInteger, Expression, Range, NormalisableRange, Random, statistics). `syrp-sys` (SystemStats, Time, Uuid, Logger, registry, permissions). `syrp-var` (`Var`, DynamicObject, NamedValueSet, Identifier, JSON, XmlElement). `syrp-io` (streams, File, MemoryBlock, mmap, zip/gzip, MIME). `syrp-thread` (Thread, ThreadPool, TimeSliceThread, HighResolutionTimer, WaitableEvent). `syrp-process` (ChildProcess, InterProcessLock, DynamicLibrary). `syrp-net` (URL, WebInputStream, sockets, IP and MAC addresses, NamedPipe). Umbrella: `syrp-core`. |
+| **L2 Events and state** | `syrp-events`: desktop MessageLoop implementations, ManualLoop, Timer, AsyncUpdater, broadcasters. `syrp-ipc`: InterprocessConnection, child-process coordinator, service discovery. `syrp-state`: ValueTree, Value, CachedValue, UndoManager, PropertiesFile, synchroniser, compat formats. |
+| **L2 Headless extras** | `syrp-crypto`, `syrp-osc`, `syrp-analytics`, `syrp-unlock`, `syrp-js`. |
+| **L3 Audio** | `syrp-audio-basics`: AudioBuffer, vector ops, SmoothedValue, ADSR, sources, Synthesiser, AudioWorkgroup. `syrp-mpe`. `syrp-midi-ci`. `syrp-dsp-{core,filters,fx,conv}` plus umbrella `syrp-dsp`. `syrp-formats`: manager, sources, sampler, buffering. `syrp-format-{wav,aiff,flac,ogg,mp3,opus,platform}`. `syrp-devices`: AudioDeviceManager, transport source, player. `syrp-audio-{coreaudio,wasapi,asio,alsa,jack,pipewire,aaudio,ios,web}`. `syrp-midi-io` plus `syrp-midi-{coremidi,windows,alsa,android,web}`. `syrp-processors`: processor runtime, ParamTree, ProcessorGraph, scanning, KnownPluginList. `syrp-host-{clap,vst3,au,lv2,ladspa,ara}`. |
+| **L3 Graphics** | `syrp-gfx`: Graphics front-end, path ops, colour, gradients, effects. `syrp-image`: Image, codecs, cache, convolution. `syrp-text`: fonts, fallback, shaping, layout, AttributedString, GlyphArrangement. `syrp-drawable`: Drawable tree and SVG. `syrp-render-cpu` (vello_cpu). `syrp-render-gpu` (vello_gpu on wgpu). |
+| **L3 Peers** | `syrp-peer-{win32,appkit,x11,wayland,uikit,android,web}`. `syrp-a11y`: bridge to the AccessKit adapters. |
+| **L4 UI** | `syrp-ui`: component tree, events, focus, painting, modal, Desktop. `syrp-ui-layout`: FlexBox, Grid, stretchable, constrainers. `syrp-commands`. `syrp-laf`: LookAndFeel framework plus V1–V4 themes. `syrp-widgets-{buttons,slider,text,lists,menus,panels}`. `syrp-windows`. `syrp-filebrowser`. `syrp-app`. `syrp-animation`. `syrp-opengl`. |
+| **L5 UI extras and audio UI** | `syrp-ui-extra`, `syrp-code-editor`, `syrp-webview`, `syrp-embed`, `syrp-audio-utils`, `syrp-processors-ui`, `syrp-unlock-ui`, `syrp-physics2d`, `syrp-video`. |
+| **L5 Plugins** | `syrp-plugin`: format-neutral wrapper runtime and `export_plugin!`. `syrp-wrap-{clap,vst3,auv2,auv3,lv2,aax,unity,standalone,ara}`. `syrp-bundler`: bundles, plists, moduleinfo.json, LV2 TTL, signing hooks. |
+| **L6 Tooling** | `syrp-testkit`: offline render, ManualLoop harness, golden comparators, fake host, UI driver. `syrp-inspect`: JSON dumps. `syrp-parity`: ledger schema and tools. `syrp-docgen`: API index, llms.txt, briefs, migration map. `syrp-resources`: binary-data `build.rs` helper. `syrp-cli`: the `cargo syrp` binary. `syrp-mcp`: MCP server. |
+| **L6 Facade and apps** | `syrp`: feature-gated umbrella. `apps/host-app` (AudioPluginHost). `apps/demos` (DemoRunner). `apps/perf`. |
+| **L7 Interop** (Phase 8) | `syrp-capi`, `syrp-cxx`, `syrp-py`, `syrp-uniffi`, `syrp-wasm`, `syrp-dotnet`. |
 
 ### 5.3 Layered dependency list
 Arrows read "depends on". Third-party crates are shown in brackets. No crate may depend on a crate in a higher layer, and siblings within a group never depend on each other. `xtask lint-layers` enforces both rules.
 
 ```text
 // L0
-auricle-error      -> (none)
-auricle-rt         -> error [rtrb]
-auricle-geom       -> (none) [kurbo]
+syrp-error      -> (none)
+syrp-rt         -> error [rtrb]
+syrp-geom       -> (none) [kurbo]
 // L1 contracts
-auricle-loop-api   -> error
-auricle-audio-api  -> error, rt
-auricle-midi       -> error, rt
-auricle-format-api -> audio-api
-auricle-device-api -> audio-api, midi, loop-api
-auricle-plugin-api -> audio-api, midi, rt
-auricle-gfx-api    -> error, geom [peniko]
-auricle-peer-api   -> geom, gfx-api, loop-api [raw-window-handle, accesskit, keyboard-types, cursor-icon]
+syrp-loop-api   -> error
+syrp-audio-api  -> error, rt
+syrp-midi       -> error, rt
+syrp-format-api -> audio-api
+syrp-device-api -> audio-api, midi, loop-api
+syrp-plugin-api -> audio-api, midi, rt
+syrp-gfx-api    -> error, geom [peniko]
+syrp-peer-api   -> geom, gfx-api, loop-api [raw-window-handle, accesskit, keyboard-types, cursor-icon]
 // L2
-auricle-strings, auricle-maths, auricle-sys -> error
-auricle-var        -> error, strings [serde, serde_json, quick-xml]
-auricle-io         -> error, sys [flate2, zip]
-auricle-thread     -> error, rt, sys
-auricle-process    -> thread, io
-auricle-net        -> io, thread [ureq, rustls]
-auricle-core       -> var, io, thread, process, net, maths, sys, strings      (umbrella)
-auricle-events     -> loop-api, thread
-auricle-ipc        -> events, net, process [interprocess]
-auricle-state      -> var, events, io [rpds]
-auricle-crypto     -> maths, io [md-5, sha2, blowfish, whirlpool, num-bigint]
-auricle-osc        -> net, events [rosc]
-auricle-analytics  -> net, events
-auricle-unlock     -> crypto, net, var
-auricle-js         -> var [rquickjs]
+syrp-strings, syrp-maths, syrp-sys -> error
+syrp-var        -> error, strings [serde, serde_json, quick-xml]
+syrp-io         -> error, sys [flate2, zip]
+syrp-thread     -> error, rt, sys
+syrp-process    -> thread, io
+syrp-net        -> io, thread [ureq, rustls]
+syrp-core       -> var, io, thread, process, net, maths, sys, strings      (umbrella)
+syrp-events     -> loop-api, thread
+syrp-ipc        -> events, net, process [interprocess]
+syrp-state      -> var, events, io [rpds]
+syrp-crypto     -> maths, io [md-5, sha2, blowfish, whirlpool, num-bigint]
+syrp-osc        -> net, events [rosc]
+syrp-analytics  -> net, events
+syrp-unlock     -> crypto, net, var
+syrp-js         -> var [rquickjs]
 // L3 audio
-auricle-audio-basics -> audio-api, rt, maths
-auricle-mpe          -> midi, audio-basics
-auricle-midi-ci      -> midi
-auricle-dsp-core     -> audio-basics [rustfft, realfft]
-auricle-dsp-{filters,fx,conv} -> dsp-core            ; auricle-dsp -> all dsp-*
-auricle-format-{wav,aiff,flac,ogg,mp3,opus,platform} -> format-api, io   (parallel leaves)
-auricle-formats      -> format-api, audio-basics, io
-auricle-audio-{coreaudio,wasapi,asio,alsa,jack,pipewire,aaudio,ios,web} -> device-api, rt   (parallel leaves)
-auricle-midi-{coremidi,windows,alsa,android,web} -> device-api, midi                          (parallel leaves)
-auricle-devices      -> device-api, audio-basics, events
-auricle-midi-io      -> device-api, midi, events
-auricle-processors   -> plugin-api, audio-basics, midi, state
-auricle-host-{clap,vst3,au,lv2,ladspa,ara} -> processors, plugin-api   (parallel leaves)
+syrp-audio-basics -> audio-api, rt, maths
+syrp-mpe          -> midi, audio-basics
+syrp-midi-ci      -> midi
+syrp-dsp-core     -> audio-basics [rustfft, realfft]
+syrp-dsp-{filters,fx,conv} -> dsp-core            ; syrp-dsp -> all dsp-*
+syrp-format-{wav,aiff,flac,ogg,mp3,opus,platform} -> format-api, io   (parallel leaves)
+syrp-formats      -> format-api, audio-basics, io
+syrp-audio-{coreaudio,wasapi,asio,alsa,jack,pipewire,aaudio,ios,web} -> device-api, rt   (parallel leaves)
+syrp-midi-{coremidi,windows,alsa,android,web} -> device-api, midi                          (parallel leaves)
+syrp-devices      -> device-api, audio-basics, events
+syrp-midi-io      -> device-api, midi, events
+syrp-processors   -> plugin-api, audio-basics, midi, state
+syrp-host-{clap,vst3,au,lv2,ladspa,ara} -> processors, plugin-api   (parallel leaves)
 // L3 graphics and peers
-auricle-gfx          -> gfx-api, geom
-auricle-image        -> gfx-api, io [image, png, zune-jpeg, image-webp]
-auricle-text         -> gfx-api, io [parley, fontique, harfrust, skrifa, icu_segmenter]
-auricle-drawable     -> gfx, image, text [usvg]
-auricle-render-cpu   -> gfx-api [vello_cpu]
-auricle-render-gpu   -> gfx-api, peer-api [vello_gpu, wgpu]
-auricle-a11y         -> peer-api [accesskit_*]
-auricle-peer-{win32,appkit,x11,wayland,uikit,android,web} -> peer-api, loop-api, a11y   (parallel leaves)
+syrp-gfx          -> gfx-api, geom
+syrp-image        -> gfx-api, io [image, png, zune-jpeg, image-webp]
+syrp-text         -> gfx-api, io [parley, fontique, harfrust, skrifa, icu_segmenter]
+syrp-drawable     -> gfx, image, text [usvg]
+syrp-render-cpu   -> gfx-api [vello_cpu]
+syrp-render-gpu   -> gfx-api, peer-api [vello_gpu, wgpu]
+syrp-a11y         -> peer-api [accesskit_*]
+syrp-peer-{win32,appkit,x11,wayland,uikit,android,web} -> peer-api, loop-api, a11y   (parallel leaves)
 // L4 UI
-auricle-ui           -> gfx, text, image, peer-api, events, state, a11y
-auricle-ui-layout, auricle-commands -> ui [taffy]
-auricle-laf          -> ui, gfx, text, drawable
-auricle-widgets-{buttons,slider,text,lists,menus,panels} -> ui, laf, ui-layout   (parallel leaves)
-auricle-windows      -> ui, laf, widgets-buttons, widgets-text
-auricle-filebrowser  -> windows, widgets-lists, io
-auricle-app          -> ui, windows, events
-auricle-animation    -> ui, events
-auricle-opengl       -> ui, peer-api [glow]
+syrp-ui           -> gfx, text, image, peer-api, events, state, a11y
+syrp-ui-layout, syrp-commands -> ui [taffy]
+syrp-laf          -> ui, gfx, text, drawable
+syrp-widgets-{buttons,slider,text,lists,menus,panels} -> ui, laf, ui-layout   (parallel leaves)
+syrp-windows      -> ui, laf, widgets-buttons, widgets-text
+syrp-filebrowser  -> windows, widgets-lists, io
+syrp-app          -> ui, windows, events
+syrp-animation    -> ui, events
+syrp-opengl       -> ui, peer-api [glow]
 // L5
-auricle-ui-extra     -> windows, widgets-*
-auricle-code-editor  -> widgets-text
-auricle-webview      -> ui, peer-api, var, ipc [wry, webview2-com, webkit2gtk]
-auricle-embed        -> ui, peer-api
-auricle-processors-ui-> processors, windows, widgets-*
-auricle-audio-utils  -> ui, widgets-*, devices, formats, processors
-auricle-unlock-ui    -> unlock, windows
-auricle-physics2d    -> gfx [rapier2d]
-auricle-video        -> ui, peer-api
-auricle-plugin       -> plugin-api, processors, (feature "editor": ui, peer-api)
-auricle-wrap-{clap,vst3,auv2,auv3,lv2,aax,unity,standalone,ara} -> plugin   (parallel leaves)
+syrp-ui-extra     -> windows, widgets-*
+syrp-code-editor  -> widgets-text
+syrp-webview      -> ui, peer-api, var, ipc [wry, webview2-com, webkit2gtk]
+syrp-embed        -> ui, peer-api
+syrp-processors-ui-> processors, windows, widgets-*
+syrp-audio-utils  -> ui, widgets-*, devices, formats, processors
+syrp-unlock-ui    -> unlock, windows
+syrp-physics2d    -> gfx [rapier2d]
+syrp-video        -> ui, peer-api
+syrp-plugin       -> plugin-api, processors, (feature "editor": ui, peer-api)
+syrp-wrap-{clap,vst3,auv2,auv3,lv2,aax,unity,standalone,ara} -> plugin   (parallel leaves)
                        [clack-plugin | vst3 | objc2-audio-toolbox | lv2 headers | cxx+AAX SDK | ARA headers]
-auricle-wrap-standalone -> plugin, devices, midi-io, windows
-auricle-bundler      -> io, var
+syrp-wrap-standalone -> plugin, devices, midi-io, windows
+syrp-bundler      -> io, var
 // L6
-auricle-testkit      -> events, processors, render-cpu, ui, a11y, formats
-auricle-inspect      -> ui, processors, state, devices
-auricle-parity, auricle-docgen -> var, io [rustdoc-types, schemars]
-auricle-cli          -> testkit, inspect, parity, docgen, bundler [clap]
-auricle-mcp          -> cli (library API) [rmcp]
-auricle              -> (all, feature-gated)
+syrp-testkit      -> events, processors, render-cpu, ui, a11y, formats
+syrp-inspect      -> ui, processors, state, devices
+syrp-parity, syrp-docgen -> var, io [rustdoc-types, schemars]
+syrp-cli          -> testkit, inspect, parity, docgen, bundler [clap]
+syrp-mcp          -> cli (library API) [rmcp]
+syrp              -> (all, feature-gated)
 ```
 
 ### 5.4 Threading and real-time model
@@ -510,7 +510,7 @@ auricle              -> (all, feature-gated)
 - Configuration swaps: an `RtHandoff<T>`, which publishes atomically and reclaims the old value through the deferred-drop collector, never on the audio thread.
 
 **Runtime verification**
-- The debug allocator guard (forked from assert_no_alloc) aborts with `AUR-RT-0001` on any allocation inside `RtCtx` scopes.
+- The debug allocator guard (forked from assert_no_alloc) aborts with `SYRP-RT-0001` on any allocation inside `RtCtx` scopes.
 - An RTSan CI job uses rtsan-standalone, plus nightly rustc RTSan once available.
 - loom models cover every lock-free primitive.
 
@@ -530,7 +530,7 @@ pub trait Processor: Send + 'static {
 ```
 
 ### 5.5 Event loop and message-thread design
-`MessageLoop` (from `auricle-loop-api`) is a trait with three kinds of implementation:
+`MessageLoop` (from `syrp-loop-api`) is a trait with three kinds of implementation:
 
 1. **Owned loops** for apps:
    - Win32: a hidden message window.
@@ -547,7 +547,7 @@ pub trait Processor: Send + 'static {
 
 JUCE features map as follows:
 
-| JUCE | Auricle |
+| JUCE | Syrp |
 |---|---|
 | `callAsync` | `post(task)` |
 | `callSync` | `post_and_wait` (forbidden on the message thread itself) |
@@ -578,7 +578,7 @@ lp.advance(Duration::from_millis(100));          // fires exactly 3 times
 
 **Events.**
 - The mouse, touch and pen pipeline mirrors JUCE's MouseInputSource semantics: enter, exit, drag thresholds, double-click timing and capture.
-- Keyboard focus covers traversal order, focus containers and modal stacks. Commands are handled by `auricle-commands`.
+- Keyboard focus covers traversal order, focus containers and modal stacks. Commands are handled by `syrp-commands`.
 - IME goes through `TextInputTarget`.
 
 **Painting.**
@@ -590,7 +590,7 @@ lp.advance(Duration::from_millis(100));          // fires exactly 3 times
 - A trait with one method per drawable widget part, such as `draw_rotary_slider` and `draw_button_background`, plus colour IDs as typed theme tokens.
 - V1–V4 are provided as implementations. LookAndFeel is resolved up the tree, as in JUCE.
 
-**Layout.** `resized` hooks, plus `auricle-ui-layout`: FlexBox and Grid via taffy, StretchableLayout and constrainers.
+**Layout.** `resized` hooks, plus `syrp-ui-layout`: FlexBox and Grid via taffy, StretchableLayout and constrainers.
 
 **Accessibility.** Each node contributes an AccessKit node through `accessibility()`. Defaults come from the widget's role. The same tree drives screen readers, `inspect` and test scripting.
 
@@ -612,10 +612,10 @@ let png = testkit::render(&ui, Scale(2.0))?;        // headless golden
 ```
 
 ### 5.7 Graphics abstraction
-**`Graphics` front-end** (in `auricle-gfx`). JUCE-like immediate calls are recorded into a `DisplayList` defined in `auricle-gfx-api`. The calls include:
+**`Graphics` front-end** (in `syrp-gfx`). JUCE-like immediate calls are recorded into a `DisplayList` defined in `syrp-gfx-api`. The calls include:
 - `fill_rect`, `fill_path`, `stroke_path`;
 - `draw_image` with RectanglePlacement and resampling quality;
-- `draw_text` and `draw_glyphs` (glyph runs from `auricle-text`);
+- `draw_text` and `draw_glyphs` (glyph runs from `syrp-text`);
 - `reduce_clip` (rect, path, image mask), `add_transform`;
 - `begin_transparency_layer`, blend modes, and gradients (linear, radial, two-point conical).
 
@@ -623,14 +623,14 @@ let png = testkit::render(&ui, Scale(2.0))?;        // headless golden
 
 | Renderer | Built on | Role |
 |---|---|---|
-| `auricle-render-cpu` | vello_cpu | The reference renderer. Deterministic mode for goldens, software fallback, headless. |
-| `auricle-render-gpu` | vello_gpu on wgpu: Metal, D3D12, Vulkan, GLES, WebGPU, WebGL2 | The default for windows once validated per platform. |
+| `syrp-render-cpu` | vello_cpu | The reference renderer. Deterministic mode for goldens, software fallback, headless. |
+| `syrp-render-gpu` | vello_gpu on wgpu: Metal, D3D12, Vulkan, GLES, WebGPU, WebGL2 | The default for windows once validated per platform. |
 
 Optional native backends (Direct2D, CoreGraphics) are deferred. They would only be added if parity testing shows that text or AA fidelity requires them (§11).
 
 **Images.** `Image` is backed by CPU pixels with lazy GPU upload. `ImageCache`, convolution kernels and effects (DropShadow, Glow) are implemented as DisplayList filters.
 
-**Text.** `auricle-text` wraps parley, fontique and harfrust and provides JUCE's Font/FontOptions, FontFeatures, variable-font axes, AttributedString, TextLayout, GlyphArrangement and justified text. Glyph outlines come from skrifa, so the CPU and GPU renderers draw identical outlines.
+**Text.** `syrp-text` wraps parley, fontique and harfrust and provides JUCE's Font/FontOptions, FontFeatures, variable-font axes, AttributedString, TextLayout, GlyphArrangement and justified text. Glyph outlines come from skrifa, so the CPU and GPU renderers draw identical outlines.
 
 **Scale factors.** Logical-to-physical scaling is explicit in `RenderTarget`. Golden tests run at 1x, 1.25x, 1.5x and 2x.
 
@@ -646,7 +646,7 @@ Optional native backends (Direct2D, CoreGraphics) are deferred. They would only 
 **Parameters.**
 - A `ParamSpec` is declared by builder, by TOML, or by an optional derive. Each parameter has an ID, name, range (NormalisableRange semantics), default, unit, text conversion, smoothing, automation flags and group.
 - At runtime, `Params` provides atomics and sample-accurate change iterators.
-- `ParamTree` in `auricle-processors` is the AudioProcessorValueTreeState equivalent: atomics plus a ValueTree mirror for persistence and undo.
+- `ParamTree` in `syrp-processors` is the AudioProcessorValueTreeState equivalent: atomics plus a ValueTree mirror for persistence and undo.
 
 **Editor.** `trait Editor { fn create(&mut self, ui: &mut Ui, params: &ParamHandles, mt: MessageThread) -> ComponentId; fn constraints(&self) -> SizeConstraints; }`. It is created and destroyed on the message thread and never touches the audio state directly.
 
@@ -656,19 +656,19 @@ Optional native backends (Direct2D, CoreGraphics) are deferred. They would only 
 - The plan is published to the audio thread through `RtHandoff`, and old plans are reclaimed through deferred drop.
 - Graph I/O nodes mirror JUCE's AudioGraphIOProcessor.
 
-**Wrapper runtime** (`auricle-plugin`).
+**Wrapper runtime** (`syrp-plugin`).
 - A format-neutral `PluginInstance` handles:
   - parameter bridging (host ↔ atomics ↔ UI), with gesture begin and end;
   - state chunks, with versioned envelopes and an optional reader for JUCE-compatible blobs;
   - bus negotiation;
   - transport and PlayHead mapping;
-  - the editor lifecycle in host-provided parent windows (via `auricle-peer-*` child mode);
+  - the editor lifecycle in host-provided parent windows (via `syrp-peer-*` child mode);
   - scale-factor changes;
   - host-quirk tables, recorded as data in the ledger.
-- Each `auricle-wrap-*` translates one host API to `PluginInstance`.
+- Each `syrp-wrap-*` translates one host API to `PluginInstance`.
 - `export_plugin!(MyPlugin)` is the single sanctioned macro, because FFI entry symbols must be generated. It is fully documented, with an `expand` snapshot.
 
-**Hosting.** `auricle-host-*` implement a `HostedPlugin` that is itself a `Processor`. Hosted plugins can therefore sit in a ProcessorGraph, as in AudioPluginHost. Scanning runs out of process, as JUCE's AudioPluginHost can be configured to do, so a crashing plugin cannot take the host down.
+**Hosting.** `syrp-host-*` implement a `HostedPlugin` that is itself a `Processor`. Hosted plugins can therefore sit in a ProcessorGraph, as in AudioPluginHost. Scanning runs out of process, as JUCE's AudioPluginHost can be configured to do, so a crashing plugin cannot take the host down.
 
 ```rust
 let mut g = ProcessorGraph::new(mt);
@@ -708,7 +708,7 @@ let mut undo = UndoManager::new();
 tree.set_property(mt, id("cutoff"), Var::from(1200.0), Some(&mut undo))?;
 tree.on_property_changed(mt, |ev| tracing::info!(prop = %ev.property, "changed"));
 undo.undo(mt)?;
-let bytes = tree.to_binary(BinaryFormat::Auricle)?;        // or BinaryFormat::JuceCompat
+let bytes = tree.to_binary(BinaryFormat::Syrp)?;        // or BinaryFormat::JuceCompat
 ```
 
 ## 6. Platform backends
@@ -723,7 +723,7 @@ The table below gives the chosen backend for each subsystem on each platform. In
 | **Graphics** | vello_gpu on wgpu D3D12 (Vulkan fallback); vello_cpu fallback | vello_gpu on wgpu Metal; vello_cpu | vello_gpu on wgpu Vulkan or GL; vello_cpu | vello_gpu on Metal | vello_gpu on Vulkan or GLES | vello_gpu on WebGPU or WebGL2; vello_cpu into a canvas ImageData |
 | **Fonts** | fontique (DirectWrite enumeration) + harfrust + skrifa | fontique (CoreText enumeration) | fontique (fontconfig) | fontique (CoreText) | fontique (Android system fonts) | Bundled fonts only; a manifest is required |
 | **WebView** | WebView2 via wry and webview2-com | WKWebView via wry | WebKitGTK via wry; for plugins, an **out-of-process helper**, as JUCE does | WKWebView via wry | Android WebView via wry | Native DOM `<iframe>` / overlay (an extension beyond parity) |
-| **Plugin formats** (built with Auricle) | CLAP, VST3, AAX (shim), Unity, Standalone; VST2 is a gap | CLAP, VST3, AUv2, AUv3, AAX, Unity, Standalone | CLAP, VST3, LV2, Unity (UNVERIFIED: does JUCE support Unity on Linux?), Standalone | AUv3 (app extension), Standalone | Standalone only. There is no Android plugin standard, and JUCE has none either. | Standalone wasm app. Web Audio Modules would be an optional extension (UNVERIFIED maturity). |
+| **Plugin formats** (built with Syrp) | CLAP, VST3, AAX (shim), Unity, Standalone; VST2 is a gap | CLAP, VST3, AUv2, AUv3, AAX, Unity, Standalone | CLAP, VST3, LV2, Unity (UNVERIFIED: does JUCE support Unity on Linux?), Standalone | AUv3 (app extension), Standalone | Standalone only. There is no Android plugin standard, and JUCE has none either. | Standalone wasm app. Web Audio Modules would be an optional extension (UNVERIFIED maturity). |
 | **Plugin hosting** | CLAP, VST3, ARA | CLAP, VST3, AU, ARA | CLAP, VST3, LV2, LADSPA | AUv3 | none | none |
 | **Accessibility** | AccessKit UI Automation | AccessKit NSAccessibility | AccessKit AT-SPI (zbus) | AccessKit UIAccessibility | AccessKit Android | DOM/ARIA mirror (the AccessKit web adapter is planned upstream) |
 
@@ -781,7 +781,7 @@ Each target that differs from JUCE is a ledger "deviation" row.
 
 **Result.** About **16–20 months to Rust feature parity** (Phases 0–7) and about **3–4 more months for interop** (Phase 8).
 
-**Critical path:** contracts → `auricle-ui` core → widgets → plugin editors → AU/VST3 host validation.
+**Critical path:** contracts → `syrp-ui` core → widgets → plugin editors → AU/VST3 host validation.
 
 **Why the phases are longer than throughput alone suggests.** About 233 WPs are listed below. At 6–9 per week, that is only 26–39 weeks of pure throughput. The phases add up to about 76 weeks for three reasons:
 - **Waves inside a phase form chains.** For example, 2.1 → 2.2 → 2.3, and 3.1 → 3.2 → 3.3.
@@ -797,69 +797,69 @@ The binding constraint is therefore the critical path, not agent count. Adding m
 **Wave 0.1, bootstrap (12 WPs):**
 1. Repo scaffolding: workspace, toolchain pin, lints, `deny.toml`, AGENTS.md/CLAUDE.md, PR and issue templates, `ownership.toml`. Done by the PR manager.
 2. CI skeleton: Linux, macOS and Windows; fmt, clippy, nextest, doc, deny.
-3. `auricle-error` and the error-catalogue generator.
-4. `auricle-rt`.
-5. `auricle-geom`.
+3. `syrp-error` and the error-catalogue generator.
+4. `syrp-rt`.
+5. `syrp-geom`.
 6. Parity ledger schema plus a seeded inventory of every JUCE 9.0.4 class from public docs (spec room).
 7. WP spec schema plus orchestrator bootstrap: task board sync, claim and lease, agent spawning.
-8. `cargo auricle` skeleton: JSON envelope, exit codes, `doctor`, `explain`, `wp`.
-9. `auricle-testkit` v0: offline audio render and numeric comparators.
+8. `cargo syrp` skeleton: JSON envelope, exit codes, `doctor`, `explain`, `wp`.
+9. `syrp-testkit` v0: offline audio render and numeric comparators.
 10. Docs pipeline v0: mdBook, rustdoc JSON → `api-index.json`, llms.txt.
 11. `juce-oracle` differential harness, a separate AGPL repository (§9).
 12. Clean-room contamination scanner (quarantined job) and provenance headers.
 
 **Wave 0.2, contracts and the loop (13 WPs):**
-1. `auricle-loop-api` plus `ManualLoop`.
-2. `auricle-audio-api`.
-3. `auricle-midi` (types and UMP).
-4. `auricle-format-api`.
-5. `auricle-device-api`.
-6. `auricle-plugin-api`.
-7. `auricle-gfx-api`.
-8. `auricle-peer-api`.
+1. `syrp-loop-api` plus `ManualLoop`.
+2. `syrp-audio-api`.
+3. `syrp-midi` (types and UMP).
+4. `syrp-format-api`.
+5. `syrp-device-api`.
+6. `syrp-plugin-api`.
+7. `syrp-gfx-api`.
+8. `syrp-peer-api`.
 9. Renderer spike: vello_cpu deterministic mode vs tiny-skia, and the golden comparator.
-10. `auricle-mcp` v0.
+10. `syrp-mcp` v0.
 11. Agent Skill v0.
 12. Docs generator v1 (crate briefs, migration-map scaffold, error catalogue pages).
 13. Agent-eval harness v0 (10 tasks).
 
 **Exit criteria (testable):**
 - All 8 contract crates are frozen as `contracts/*.public-api.txt`.
-- `cargo auricle test`, `parity`, `explain` and `docs` run with JSON output that validates against the published schemas.
+- `cargo syrp test`, `parity`, `explain` and `docs` run with JSON output that validates against the published schemas.
 - An implementer agent completes a toy WP end to end through CLI, MCP, the reviewer and the PR manager with no human input.
 - The ledger covers 100% of the JUCE 9.0.4 public classes.
 
 **Phase 1: Core runtime (≈6–7 weeks).** Covers juce_core, juce_events, juce_data_structures, juce_cryptography and juce_osc.
 
 **Wave 1.1 (14 WPs):**
-1. `auricle-var`: Var, DynamicObject, Identifier.
-2. JSON and XML DOM (also in `auricle-var`).
-3. `auricle-io` streams and MemoryBlock.
+1. `syrp-var`: Var, DynamicObject, Identifier.
+2. JSON and XML DOM (also in `syrp-var`).
+3. `syrp-io` streams and MemoryBlock.
 4. File, special locations, directory iteration and mmap.
 5. zip and gzip.
-6. `auricle-thread`.
+6. `syrp-thread`.
 7. HighResolutionTimer and TimeSliceThread.
-8. `auricle-process`.
-9. `auricle-net`: URL and WebInputStream.
+8. `syrp-process`.
+9. `syrp-net`: URL and WebInputStream.
 10. Sockets, IP and MAC addresses, NamedPipe.
-11. `auricle-maths`.
-12. `auricle-sys`.
-13. `auricle-strings`.
+11. `syrp-maths`.
+12. `syrp-sys`.
+13. `syrp-strings`.
 14. Desktop owned MessageLoop implementations (Win32, CFRunLoop, epoll).
 
 **Wave 1.2 (12 WPs):**
 1. Timers, Coalescer and broadcasters.
-2. `auricle-ipc`.
+2. `syrp-ipc`.
 3. ValueTree core.
 4. UndoManager.
 5. Value and CachedValue.
 6. PropertiesFile and ApplicationProperties.
 7. ValueTreeSynchroniser.
 8. `juce-compat` state formats (black-box spec).
-9. `auricle-crypto`.
-10. `auricle-osc`.
+9. `syrp-crypto`.
+10. `syrp-osc`.
 11. Headless analytics.
-12. Key-file generation in `auricle-unlock`.
+12. Key-file generation in `syrp-unlock`.
 
 **Exit criteria:**
 - Differential suites pass: String/JSON/XML edge cases, BigInteger, Expression, ValueTree binary and XML round-trips against the harness, and the OSC wire format.
@@ -875,7 +875,7 @@ The binding constraint is therefore the critical path, not agent count. Adding m
 3. SmoothedValue, ADSR, Decibels and interpolators.
 4. The AudioSource family.
 5. Synthesiser.
-6. `auricle-mpe`.
+6. `syrp-mpe`.
 7. MidiMessage, MidiBuffer and MidiMessageSequence.
 8. MidiFile.
 9. UMP conversion and dispatcher.
@@ -891,8 +891,8 @@ The binding constraint is therefore the critical path, not agent count. Adding m
 2. `format-mp3`.
 3. `format-opus`.
 4. `format-platform`.
-5. `auricle-formats`: manager, sources, sampler.
-6. `auricle-devices`: manager, transport, player.
+5. `syrp-formats`: manager, sources, sampler.
+6. `syrp-devices`: manager, transport, player.
 7. CoreAudio backend.
 8. WASAPI backend.
 9. ASIO backend.
@@ -903,7 +903,7 @@ The binding constraint is therefore the critical path, not agent count. Adding m
 14. ALSA MIDI (sequencer and UMP).
 
 **Wave 2.3 (12 WPs):**
-1. `auricle-midi-ci`.
+1. `syrp-midi-ci`.
 2. Processor runtime and params.
 3. ParamTree (AudioProcessorValueTreeState).
 4. ProcessorGraph.
@@ -914,7 +914,7 @@ The binding constraint is therefore the critical path, not agent count. Adding m
 9. `host-lv2` and `host-ladspa`.
 10. `host-ara`.
 11. AudioWorkgroup and RT priority.
-12. `cargo auricle render-audio` / `inspect params|graph` / `host` (headless).
+12. `cargo syrp render-audio` / `inspect params|graph` / `host` (headless).
 
 **Exit criteria:**
 - DSP and codec differential suites pass within the §9 tolerances.
@@ -925,45 +925,45 @@ The binding constraint is therefore the critical path, not agent count. Adding m
 **Phase 3: Graphics, peers and GUI basics (≈12–14 weeks).**
 
 **Wave 3.1 (13 WPs):**
-1. `auricle-gfx` paths, strokes, clipping and transforms.
+1. `syrp-gfx` paths, strokes, clipping and transforms.
 2. Colours, gradients and fill types.
-3. `auricle-image` with codecs and effects.
-4. `auricle-text` fonts and fallback.
-5. `auricle-text` shaping and layout.
+3. `syrp-image` with codecs and effects.
+4. `syrp-text` fonts and fallback.
+5. `syrp-text` shaping and layout.
 6. AttributedString, TextLayout and GlyphArrangement.
 7. `render-cpu`.
 8. `render-gpu`.
-9. `auricle-drawable` and SVG.
+9. `syrp-drawable` and SVG.
 10. `peer-win32`.
 11. `peer-appkit`.
 12. `peer-x11`.
-13. `auricle-a11y`.
+13. `syrp-a11y`.
 
 **Wave 3.2 (15 WPs):**
-1. `auricle-ui` component tree and painting.
+1. `syrp-ui` component tree and painting.
 2. Mouse, touch and pen dispatch.
 3. Keyboard, focus and IME.
 4. `ui-layout`.
-5. `auricle-commands`.
-6. `auricle-laf` with the V4 theme.
+5. `syrp-commands`.
+6. `syrp-laf` with the V4 theme.
 7. `widgets-buttons`.
 8. `widgets-slider`.
 9. `widgets-text` (Label, TextEditor).
 10. `widgets-menus` (ComboBox, PopupMenu, MenuBar).
 11. `widgets-lists` (ListBox, Table, TreeView).
 12. `widgets-panels`.
-13. `auricle-windows`.
-14. `auricle-filebrowser` with native choosers.
+13. `syrp-windows`.
+14. `syrp-filebrowser` with native choosers.
 15. `peer-wayland` (standalone apps).
 
 **Wave 3.3 (12 WPs):**
 1. Drag and drop: internal and external.
 2. Desktop, Displays and scale factors.
-3. `auricle-animation`.
-4. `auricle-app` lifecycle.
+3. `syrp-animation`.
+4. `syrp-app` lifecycle.
 5. ComponentAnimator and VBlank.
 6. LookAndFeel V1–V3.
-7. `auricle-opengl`.
+7. `syrp-opengl`.
 8. `inspect tree|a11y` and `render-ui` in the CLI.
 9. GUI demo ports (DemoRunner GUI set) as goldens.
 10. Accessibility parity suite.
@@ -979,17 +979,17 @@ The binding constraint is therefore the critical path, not agent count. Adding m
 **Phase 4: Plugins (≈12–14 weeks).**
 
 **Wave 4.1 (13 WPs):**
-1. `auricle-plugin` runtime.
+1. `syrp-plugin` runtime.
 2. `wrap-clap`.
 3. `wrap-vst3`.
 4. `wrap-auv2`.
 5. `wrap-lv2`.
 6. `wrap-standalone`.
-7. `auricle-bundler` (plists, moduleinfo.json, TTL, codesign and notarise hooks).
-8. `auricle-processors-ui` (GenericEditor, attachments, PluginListComponent).
-9. `auricle-audio-utils`.
+7. `syrp-bundler` (plists, moduleinfo.json, TTL, codesign and notarise hooks).
+8. `syrp-processors-ui` (GenericEditor, attachments, PluginListComponent).
+9. `syrp-audio-utils`.
 10. `apps/host-app`.
-11. `cargo auricle bundle|validate|sign`.
+11. `cargo syrp bundle|validate|sign`.
 12. JUCE plugin-state import.
 13. Host-quirk table framework.
 
@@ -1009,31 +1009,31 @@ The binding constraint is therefore the critical path, not agent count. Adding m
 **Exit criteria:**
 - Ported example plugins pass pluginval at strictness 10, clap-validator, the Steinberg validator, `auval -strict`, lv2lint and aaxval (AAX in Pro Tools Developer).
 - They load and automate in the DAW smoke matrix (§9).
-- State saved by the JUCE-built twin loads in the Auricle build.
+- State saved by the JUCE-built twin loads in the Syrp build.
 
 **Phase 5: GUI extras and the remaining modules (≈8–10 weeks).**
 
 **Wave 5.1 (14 WPs):**
-1. `auricle-webview` core with wry.
+1. `syrp-webview` core with wry.
 2. WebView relays and the resource provider.
 3. The npm-compatible JS interop package.
 4. Linux WebView subprocess for plugins.
-5. `auricle-js`.
-6. `auricle-code-editor` with tokenisers.
-7. `auricle-ui-extra` part 1: ColourSelector, KeyMappingEditor, PreferencesPanel, RecentlyOpenedFilesList, SplashScreen, BubbleMessage.
+5. `syrp-js`.
+6. `syrp-code-editor` with tokenisers.
+7. `syrp-ui-extra` part 1: ColourSelector, KeyMappingEditor, PreferencesPanel, RecentlyOpenedFilesList, SplashScreen, BubbleMessage.
 8. System tray and local notifications.
-9. `auricle-embed` (HWND, NSView, XEmbed).
-10. `auricle-physics2d`.
-11. `auricle-video` desktop.
+9. `syrp-embed` (HWND, NSView, XEmbed).
+10. `syrp-physics2d`.
+11. `syrp-video` desktop.
 12. Camera desktop.
-13. `auricle-unlock` online flow plus `unlock-ui`.
+13. `syrp-unlock` online flow plus `unlock-ui`.
 14. Analytics destinations.
 
 **Wave 5.2 (10 WPs):**
 1. LiveConstantEditor equivalent.
 2. AnimatedAppComponent and FileBasedDocument.
 3. Optional egui-in-editor adapter.
-4. `auricle-perf`.
+4. `syrp-perf`.
 5. Remaining demo ports.
 6. Desktop push notifications.
 7. ContentSharer (desktop).
@@ -1059,7 +1059,7 @@ The binding constraint is therefore the critical path, not agent count. Adding m
 11. Mobile push notifications.
 12. In-app purchases (StoreKit 2 and Play Billing).
 13. Mobile accessibility.
-14. `cargo auricle run --device` packaging (via cargo-mobile2 / cargo-ndk).
+14. `cargo syrp run --device` packaging (via cargo-mobile2 / cargo-ndk).
 
 **Wave 6.2 (12 WPs):**
 1. AUv3 on iOS end to end.
@@ -1102,14 +1102,14 @@ The binding constraint is therefore the critical path, not agent count. Adding m
 **Phase 8: Interop (≈12–16 weeks; it starts only after the Phase 7 exit, as required). See §8.**
 
 **Wave 8.1 (12 WPs):**
-1. `auricle-capi` surface design (handles and error codes).
+1. `syrp-capi` surface design (handles and error codes).
 2. C ABI core and events.
 3. C ABI for audio and processors.
 4. C ABI for UI hosting.
 5. cbindgen pipeline and header tests.
-6. `auricle-cxx` (C++ RAII wrapper over the C ABI).
+6. `syrp-cxx` (C++ RAII wrapper over the C ABI).
 7. C++ plugin-authoring path.
-8. `auricle-py` (PyO3, numpy buffers, offline render).
+8. `syrp-py` (PyO3, numpy buffers, offline render).
 9. maturin wheels CI.
 10. UniFFI Swift and Kotlin.
 11. wasm/JS (wasm-bindgen).
@@ -1143,31 +1143,31 @@ Phase 8 starts only after the Rust parity exit (Phase 7). Interop cannot distort
 
 ### 8.1 Layering
 ```text
-Rust API (auricle-*)  ->  auricle-capi (curated C ABI, handles + error codes)  ->  generated bindings
+Rust API (syrp-*)  ->  syrp-capi (curated C ABI, handles + error codes)  ->  generated bindings
                                          |-> C header (cbindgen)
                                          |-> C++ RAII wrapper (generated; diplomat-style backend)
                                          |-> C# P/Invoke (csbindgen)
-Rust API  ->  auricle-py (PyO3/maturin, numpy-aware)        [direct, not via C ABI]
-Rust API  ->  auricle-uniffi (UniFFI -> Swift, Kotlin)       [app-level, non-RT]
-Rust API  ->  auricle-wasm (wasm-bindgen -> JS/TS)           [web apps]
+Rust API  ->  syrp-py (PyO3/maturin, numpy-aware)        [direct, not via C ABI]
+Rust API  ->  syrp-uniffi (UniFFI -> Swift, Kotlin)       [app-level, non-RT]
+Rust API  ->  syrp-wasm (wasm-bindgen -> JS/TS)           [web apps]
 ```
 
 ### 8.2 Per-language plan
 | Target | Tool (version, licence) | Scope | Notes |
 |---|---|---|---|
-| **C ABI** | cbindgen 0.29 (MPL-2.0 tool; generated headers carry Auricle's licence) | Opaque handles (`aur_ui_t*`, `aur_processor_t*`), `aur_status` error codes taken from the error catalogue, callbacks with `void* user`, explicit ownership functions, `AURICLE_ABI_VERSION`, and an `aur_` symbol prefix | Every exported function wraps `catch_unwind`. RT-safe functions are tagged `AUR_RT_SAFE` in the header, from api-index data. A C plugin can implement `aur_processor_vtable`. |
-| **C++** | Generated header-only C++17/20 RAII layer over the C ABI. Diplomat 0.17 (MIT/Apache) is evaluated as the generator, since it emits C, C++ and JS from one bridge. `cxx` 1.0 is used only where Rust must call C++ (the AAX shim) or for zero-copy shared types. | Classes such as `auricle::ui::Slider` and `auricle::audio::ProcessorGraph`, `std::span` buffer views, exception-free `expected<T, aur::Error>` | autocxx is not needed. Lifetime rules are documented per type and enforced by handle generations. |
-| **A JUCE-shaped C++ facade?** | — | **Recommendation: do not ship one by default.** | Copying JUCE's header API (class names, method names and signatures, hierarchy) is the riskiest legal item (§10), and it invites semantic mismatch bugs. Instead, ship a **migration kit**: the class-by-class migration map, `cargo auricle migrate` codemods for C++ (clang-tooling based) and Rust, and an Agent Skill that ports JUCE projects to the Auricle C++ or Rust APIs. A thin, opt-in `juce-compat` header could be considered later, only after counsel review (§11 decision). |
+| **C ABI** | cbindgen 0.29 (MPL-2.0 tool; generated headers carry Syrp's licence) | Opaque handles (`syrp_ui_t*`, `syrp_processor_t*`), `syrp_status` error codes taken from the error catalogue, callbacks with `void* user`, explicit ownership functions, `SYRP_ABI_VERSION`, and an `syrp_` symbol prefix | Every exported function wraps `catch_unwind`. RT-safe functions are tagged `SYRP_RT_SAFE` in the header, from api-index data. A C plugin can implement `syrp_processor_vtable`. |
+| **C++** | Generated header-only C++17/20 RAII layer over the C ABI. Diplomat 0.17 (MIT/Apache) is evaluated as the generator, since it emits C, C++ and JS from one bridge. `cxx` 1.0 is used only where Rust must call C++ (the AAX shim) or for zero-copy shared types. | Classes such as `syrp::ui::Slider` and `syrp::audio::ProcessorGraph`, `std::span` buffer views, exception-free `expected<T, syrp::Error>` | autocxx is not needed. Lifetime rules are documented per type and enforced by handle generations. |
+| **A JUCE-shaped C++ facade?** | — | **Recommendation: do not ship one by default.** | Copying JUCE's header API (class names, method names and signatures, hierarchy) is the riskiest legal item (§10), and it invites semantic mismatch bugs. Instead, ship a **migration kit**: the class-by-class migration map, `cargo syrp migrate` codemods for C++ (clang-tooling based) and Rust, and an Agent Skill that ports JUCE projects to the Syrp C++ or Rust APIs. A thin, opt-in `juce-compat` header could be considered later, only after counsel review (§11 decision). |
 | **Python** | PyO3 0.30 plus maturin 1.15 (MIT/Apache) | Offline rendering, DSP, file formats, MIDI and UMP, headless plugin hosting, ValueTree, the parity and inspect tools, buffers as numpy arrays (zero-copy) | Python is never called on the audio thread. Callbacks run on the message thread or offline. The GIL is released during renders. abi3 wheels are built for CPython 3.10 and later. |
 | **Swift / Kotlin** | UniFFI 0.32 (MPL-2.0 tool) | App-level APIs on iOS and Android: device management, file formats, UI hosting for native app shells, purchases | RT callbacks stay in Rust. UniFFI's async support covers long operations. |
 | **JS / wasm** | wasm-bindgen 0.2.129 plus TypeScript `.d.ts` | Web apps: audio engine, DSP and formats in wasm; UI on canvas | Separate from the Phase 5 WebView JS interop package, which is pure TS (npm). |
 | **C#** | csbindgen 1.9 (MIT); interoptopus as the alternative | .NET and Unity scripting over the C ABI | Pairs with the Unity plugin wrapper. Ships as NuGet packages. |
 
 ### 8.3 Keeping bindings generated, never hand-written
-- **One annotated source.** `auricle-capi` items carry structured doc comments and attributes recording ownership, threading, RT-safety and error codes. Every generator reads them. `api-index.json` records the per-language names.
-- **Drift gate.** CI regenerates every binding and fails on any diff. A semver-checks job runs on `auricle-capi`, and an ABI check (symbol and layout tests) catches breaking C ABI changes.
+- **One annotated source.** `syrp-capi` items carry structured doc comments and attributes recording ownership, threading, RT-safety and error codes. Every generator reads them. `api-index.json` records the per-language names.
+- **Drift gate.** CI regenerates every binding and fails on any diff. A semver-checks job runs on `syrp-capi`, and an ABI check (symbol and layout tests) catches breaking C ABI changes.
 - **Cross-language parity tests.** The parity scenarios carry a `bindings` subset. They run in Rust, C, C++, Python, Swift, Kotlin, JS and C#, and outputs are compared with the Rust goldens.
-- **Docs per language** are generated from the same doc comments, with per-language snippets compiled in CI. Agent Skills are published per language (`auricle-cpp`, `auricle-python`).
+- **Docs per language** are generated from the same doc comments, with per-language snippets compiled in CI. Agent Skills are published per language (`syrp-cpp`, `syrp-python`).
 - **Licensing.** Bindings carry the same terms as the Rust crates (§10.6).
 
 ## 9. Testing and parity verification
@@ -1178,7 +1178,7 @@ Rust API  ->  auricle-wasm (wasm-bindgen -> JS/TS)           [web apps]
 | Unit, property and doctests | nextest, proptest, `cargo test --doc` | Every PR (affected crates) |
 | Compile-fail misuse tests | trybuild | Every PR |
 | Contract checks | cargo-public-api snapshots, cargo-semver-checks | Every PR |
-| Differential vs JUCE | `juce-oracle` plus `cargo auricle parity` | Every PR (affected scenarios), nightly (all) |
+| Differential vs JUCE | `juce-oracle` plus `cargo syrp parity` | Every PR (affected scenarios), nightly (all) |
 | Golden audio and images | testkit comparators | Every PR (affected), nightly (all scales and OSes) |
 | Plugin validators | pluginval, clap-validator, Steinberg validator, auval, lv2lint, aaxval | Merge queue and nightly |
 | DAW smoke and device loopback | Self-hosted device lab | Nightly and pre-release |
@@ -1190,13 +1190,13 @@ Rust API  ->  auricle-wasm (wasm-bindgen -> JS/TS)           [web apps]
 
 ### 9.2 Differential testing against real JUCE
 - **`juce-oracle`** is a **separate repository licensed AGPL-3.0**. It builds JUCE at the ledger-pinned tag (9.0.4) from the official repo with CMake (headless builds were improved in JUCE 9). It exposes one CLI: `juce-oracle run <scenario.json> --out <dir>`. That command emits JSON, WAV and PNG.
-- Its C++ is written by a separate **"oracle" agent pool** that may read JUCE headers and docs in order to compile against them. These agents have no write access to the Auricle repository, and Auricle implementers never see oracle code (§10.4).
+- Its C++ is written by a separate **"oracle" agent pool** that may read JUCE headers and docs in order to compile against them. These agents have no write access to the Syrp repository, and Syrp implementers never see oracle code (§10.4).
 - **Scenarios** are language-neutral JSON, held in `parity/scenarios/`. Examples:
   - "construct a NormalisableRange(20, 20000, skew 0.25), map these 101 points";
   - "render a ProcessorChain of Gain → LadderFilter with these parameters for 48k samples";
   - "paint a Slider with LookAndFeel_V4 at scale 1.5 with value 0.3".
-- The same scenario runs through `cargo auricle parity run`, and the comparator applies the scenario's **tolerance profile**.
-- **Reference outputs** are produced by the oracle in CI and stored in a separate `auricle-goldens` data repository. Each output records the JUCE tag, platform and renderer used.
+- The same scenario runs through `cargo syrp parity run`, and the comparator applies the scenario's **tolerance profile**.
+- **Reference outputs** are produced by the oracle in CI and stored in a separate `syrp-goldens` data repository. Each output records the JUCE tag, platform and renderer used.
 - **Observation-only rule.** Scenarios describe inputs and observable outputs, never internals. This is the black-box half of the clean room.
 
 ### 9.3 Numeric tolerances for DSP and audio
@@ -1215,8 +1215,8 @@ Tolerances are per profile, stored in `parity/tolerances.toml`, and every scenar
 | `timing` | Timers, transport, PlayHead, tail and latency reporting | Exact sample positions in offline mode; ±1 ms jitter budget on the live device lab |
 
 ### 9.4 Golden images for graphics and UI
-- **Rendering.** References are rendered by the oracle with JUCE's software renderer, which is deterministic, and also captured per platform for the native renderers. Auricle renders with `render-cpu` in deterministic mode and, nightly, with `render-gpu`.
-- **Comparator.** The comparator in `auricle-testkit` checks four things:
+- **Rendering.** References are rendered by the oracle with JUCE's software renderer, which is deterministic, and also captured per platform for the native renderers. Syrp renders with `render-cpu` in deterministic mode and, nightly, with `render-gpu`.
+- **Comparator.** The comparator in `syrp-testkit` checks four things:
 
 | Check | Threshold |
 |---|---|
@@ -1238,7 +1238,7 @@ Tolerances are per profile, stored in `parity/tolerances.toml`, and every scenar
 | `auval -strict` (macOS built-in) | AUv2, AUv3 | macOS | Pass |
 | lv2lint (licence UNVERIFIED) | LV2 | Linux | No errors; warnings tracked in the ledger |
 | AAX validator (DigiShell `aaxval`, in the AAX SDK) | AAX | Windows, macOS (Pro Tools Developer) | Describe validation plus test suites pass. A user-supplied SDK and an Avid developer account are required. |
-| Wrapper fuzzing (Auricle's own host) | All | All | Random call sequences, threads and state blobs. No crash, no RT violation. |
+| Wrapper fuzzing (Syrp's own host) | All | All | Random call sequences, threads and state blobs. No crash, no RT violation. |
 
 **DAW smoke matrix** (device lab, nightly or pre-release):
 - **Reaper:** scriptable, with command-line rendering.
@@ -1269,7 +1269,7 @@ The toolchain is stable (pinned) plus nightly for sanitisers and Miri. MSRV is c
 - OSC packets and the Expression parser;
 - URL parsing, the SVG to Drawable path and image codecs (shallow, since those are delegated);
 - plugin state blobs and IPC messages;
-- CLAP, VST3 and AU wrapper call sequences, driven through the Auricle host.
+- CLAP, VST3 and AU wrapper call sequences, driven through the Syrp host.
 
 Corpora are seeded from the oracle's outputs and from public conformance vectors. Crash minimisation and regression tests are added automatically by the PR manager.
 
@@ -1299,7 +1299,7 @@ Corpora are seeded from the oracle's outputs and from public conformance vectors
   "id": "juce_gui_basics/Slider",
   "juce": { "module": "juce_gui_basics", "class": "Slider", "baseline": "9.0.4",
             "doc": "https://docs.juce.com/master/classSlider.html" },
-  "auricle": { "crate": "auricle-widgets-slider", "item": "auricle_widgets_slider::Slider" },
+  "syrp": { "crate": "syrp-widgets-slider", "item": "syrp_widgets_slider::Slider" },
   "status": "partial",
   "features": [
     { "id": "rotary-drag-modes", "status": "done", "scenarios": ["ui/slider/rotary_drag"] },
@@ -1345,8 +1345,8 @@ Corpora are seeded from the oracle's outputs and from public conformance vectors
 ### 10.2 Goal
 "More permissive than JUCE, but only large organisations pay." Concretely:
 - **Free for everyone, including closed-source commercial products,** when the developing organisation is under about **USD 100k** of annual revenue plus funding. JUCE's free closed-source tier stops at USD 20k, so this is five times higher.
-- **Never more restrictive than JUCE's AGPL path**: anyone can use Auricle free under a strong copyleft licence.
-- **End users of products built with Auricle never need a licence.**
+- **Never more restrictive than JUCE's AGPL path**: anyone can use Syrp free under a strong copyleft licence.
+- **End users of products built with Syrp never need a licence.**
 - **No splash screen, no telemetry, no phone-home.**
 - **Eventual open source**: each version becomes permissive after a fixed delay. JUCE has no equivalent.
 
@@ -1366,14 +1366,14 @@ License the framework as **`AGPL-3.0-only OR BUSL-1.1`**:
 - The BUSL instance has a **revenue-gated Additional Use Grant**, a **Change Date of 3 years after each version's release**, and a **Change License of `Apache-2.0 OR MIT`**. MIT satisfies BUSL's requirement that the Change License be GPLv2-or-later compatible.
 - Organisations above the threshold that do not want the AGPL take a **commercial licence**.
 
-**Rules for the AGPL option.** If Auricle is used under AGPL-3.0-only, two rules follow:
+**Rules for the AGPL option.** If Syrp is used under AGPL-3.0-only, two rules follow:
 - **The licence passes on.** The whole program, including all of its own source code, must be released under the AGPL-3.0 when it is distributed.
 - **Network use counts as distribution.** If users interact with the program over a network, they must be offered its source too. This network rule is what separates the AGPL from the GPL.
 
 Three further measures:
-- **Open interfaces.** The L0 and L1 crates are licensed **`MIT OR Apache-2.0`**: `auricle-error`, `-rt`, `-geom`, all `*-api` contracts, `auricle-midi`, plus the TypeScript WebView interop package. Third-party widget, DSP and plugin libraries can then target Auricle's interfaces without inheriting the revenue gate. Only implementations are gated.
+- **Open interfaces.** The L0 and L1 crates are licensed **`MIT OR Apache-2.0`**: `syrp-error`, `-rt`, `-geom`, all `*-api` contracts, `syrp-midi`, plus the TypeScript WebView interop package. Third-party widget, DSP and plugin libraries can then target Syrp's interfaces without inheriting the revenue gate. Only implementations are gated.
 - **A paid tier above the threshold.** Pricing is a user decision. A starting proposal is to undercut JUCE Pro (USD 175/user/month): per-seat pricing with an organisation cap, plus an enterprise tier with indemnity, an SLA and LTS.
-- **Why this combination.** It is a recognised template that legal teams can approve quickly. It is never more restrictive than JUCE: both offer an AGPL option, Auricle's free closed-source tier is 5× larger, and Auricle versions eventually become permissive. Large organisations still pay.
+- **Why this combination.** It is a recognised template that legal teams can approve quickly. It is never more restrictive than JUCE: both offer an AGPL option, Syrp's free closed-source tier is 5× larger, and Syrp versions eventually become permissive. Large organisations still pay.
 
 **Draft key terms of the Additional Use Grant** (for counsel to finalise):
 > **Additional Use Grant.** You may make production use of the Licensed Work, including incorporating it into and distributing Products, at no charge, if you are a **Qualifying User**.
@@ -1392,7 +1392,7 @@ Three further measures:
 >
 > **5. Non-production use.** Evaluation, testing, education and other non-production use are always permitted, as in BUSL's base grant.
 >
-> **6. No reporting.** No registration, telemetry or reporting is required. You may self-attest with `cargo auricle license attest`, which writes a local file only.
+> **6. No reporting.** No registration, telemetry or reporting is required. You may self-attest with `cargo syrp license attest`, which writes a local file only.
 
 ### 10.5 Contribution model when agents write most of the code
 - **Ownership of agent output.** Selling commercial licences requires the steward to hold, or be licensed, every protectable right in the code. For code generated by the steward's own agents, the steward is the "customer" under its AI providers' terms. Anthropic's Commercial Terms, Section B, say: "Anthropic hereby assigns to Customer its right, title and interest (if any) in and to Outputs" (https://www.anthropic.com/legal/commercial-terms). Other providers' terms must be checked for each provider used.
@@ -1425,7 +1425,7 @@ Three further measures:
    Humans write or substantially rewrite these, so they are protectable as human selection, arrangement and expression, and they show perceptibly in what agents build. Each human edit is logged (`Human-Edits:` trailer).
 2. **Human-written specs and examples.** These are expressive inputs that remain perceptible in outputs.
 3. **Compilation and arrangement.** The curated structure of the framework (crate decomposition, module organisation, catalogues) is a human-directed selection and arrangement. Its protection is thin but real.
-4. **Trademarks.** Register the name and logo (classes 9 and 42; US, EU, UK). Publish a trademark policy: forks may not use the name, and "Certified/Built with Auricle" badges are licensed. Trademarks do not depend on authorship.
+4. **Trademarks.** Register the name and logo (classes 9 and 42; US, EU, UK). Publish a trademark policy: forks may not use the name, and "Certified/Built with Syrp" badges are licensed. Trademarks do not depend on authorship.
 5. **Contracts.** The commercial licence is a contract and binds the licensee whatever the copyright status. Enterprise value is delivered through services rather than code:
    - indemnity and warranties;
    - an SLA, LTS branches and security backports;
@@ -1442,7 +1442,7 @@ Three further measures:
   - PyPI and npm accept SPDX expressions. Whether NuGet accepts non-OSI license expressions is UNVERIFIED; if not, ship a licence file.
 - **GPL/AGPL programs** use the AGPL option. GPLv3 and AGPLv3 combine under GPLv3 §13. GPLv2-only programs are incompatible until a version reaches its Change Date (then Apache-2.0 OR MIT).
 - **Proprietary programs** use the BUSL grant under the threshold, and a commercial licence above it. Dynamic linking does not change this: BUSL governs use, not linking mode.
-- **Plugin SDK constraints on plugins built with Auricle:**
+- **Plugin SDK constraints on plugins built with Syrp:**
 
 | Format | Constraint |
 |---|---|
@@ -1451,7 +1451,7 @@ Three further measures:
 | **AU** | Apple frameworks; the AudioUnitSDK is Apache-2.0. |
 | **LV2** | ISC. |
 | **ARA** | Apache-2.0. |
-| **AAX** | The SDK is "commercial or GPLv3" (Avid licence text in JUCE's bundled copy). Auricle **never redistributes it**: `auricle-wrap-aax` contains only Auricle's shim and builds against a user-supplied SDK path. AGPL-route developers may combine with the GPLv3 AAX option. Closed-source developers need Avid's commercial AAX agreement. Everyone shipping to retail Pro Tools needs PACE signing through an Avid developer account. |
+| **AAX** | The SDK is "commercial or GPLv3" (Avid licence text in JUCE's bundled copy). Syrp **never redistributes it**: `syrp-wrap-aax` contains only Syrp's shim and builds against a user-supplied SDK path. AGPL-route developers may combine with the GPLv3 AAX option. Closed-source developers need Avid's commercial AAX agreement. Everyone shipping to retail Pro Tools needs PACE signing through an Avid developer account. |
 | **ASIO** | GPLv3 or a Steinberg proprietary agreement. Also user-supplied. Closed-source apps need Steinberg's ASIO licence. |
 | **VST2** | Not offered. |
 | **Unity** | Terms of the native audio plugin SDK header are UNVERIFIED. |
@@ -1474,8 +1474,8 @@ Three further measures:
 
 | Room | Who | May do | May not do |
 |---|---|---|---|
-| **Spec room** | Spec agents and oracle agents | Read public JUCE documentation, tutorials and forum posts. Run JUCE binaries. Oracle agents may read JUCE headers in order to compile the harness. | Write to the Auricle repository. Spec agents may not open JUCE `.cpp` files or headers. |
-| **Clean room** | Implementers, reviewers and the PR manager | Read the WP specs (written in the spec room's own words), scenario outputs and Auricle's own code. | Access juce.com, docs.juce.com, github.com/juce-framework, forks and mirrors of JUCE, or the `aloe-*` crates. |
+| **Spec room** | Spec agents and oracle agents | Read public JUCE documentation, tutorials and forum posts. Run JUCE binaries. Oracle agents may read JUCE headers in order to compile the harness. | Write to the Syrp repository. Spec agents may not open JUCE `.cpp` files or headers. |
+| **Clean room** | Implementers, reviewers and the PR manager | Read the WP specs (written in the spec room's own words), scenario outputs and Syrp's own code. | Access juce.com, docs.juce.com, github.com/juce-framework, forks and mirrors of JUCE, or the `aloe-*` crates. |
 
 **Enforcement and evidence**
 - The clean room's web sandbox blocklists the JUCE domains listed above. Dependency bans are enforced by `cargo-deny`.
@@ -1485,10 +1485,10 @@ Three further measures:
 - **Audit trail.** Logs of rooms, specs, scanner results and provenance are retained for legal defensibility.
 
 ### 10.10 What testing against JUCE implies
-- `juce-oracle` links JUCE, so it is an AGPL-3.0 work. It lives in its own repository under AGPL-3.0. If it is ever distributed, its source is published. It is never shipped with Auricle.
+- `juce-oracle` links JUCE, so it is an AGPL-3.0 work. It lives in its own repository under AGPL-3.0. If it is ever distributed, its source is published. It is never shipped with Syrp.
 - Running JUCE under AGPLv3 avoids the commercial EULA's no-reverse-engineering clause. Observing program outputs is not decompilation.
-- **Reference outputs** (numbers, WAVs, PNGs) are machine outputs and probably not copyrightable. They are still kept in a separate `auricle-goldens` repository with a notice ("generated by a JUCE-based harness under AGPLv3"), and Auricle's tests fetch them as data.
-- Using real JUCE output as a *test oracle* does not make Auricle a derivative work, provided no JUCE code or expression enters Auricle. The clean-room evidence above supports that position.
+- **Reference outputs** (numbers, WAVs, PNGs) are machine outputs and probably not copyrightable. They are still kept in a separate `syrp-goldens` repository with a notice ("generated by a JUCE-based harness under AGPLv3"), and Syrp's tests fetch them as data.
+- Using real JUCE output as a *test oracle* does not make Syrp a derivative work, provided no JUCE code or expression enters Syrp. The clean-room evidence above supports that position.
 
 ## 11. Risks and open questions
 
@@ -1499,7 +1499,7 @@ Three further measures:
 | R3 | The plugin host-compatibility long tail | High | High | DAW smoke matrix; host-quirk tables as data; beta program with a real plugin vendor; validators at maximum strictness |
 | R4 | Clean-room contamination through model memorisation | Medium | Very high | Room separation; contamination scanner; provenance; re-implementation on a hit; counsel review |
 | R5 | Thin copyright undermines the revenue-gated licence | High | High | §10.6: human-authored spine, trademarks, contracts and services, trade secrets |
-| R6 | Adoption friction from a non-OSI licence (cargo-deny allow-lists, corporate policies, distros) | High | Medium | AGPL option; MIT/Apache interface crates; 3-year conversion; clear FAQ; `cargo auricle license` |
+| R6 | Adoption friction from a non-OSI licence (cargo-deny allow-lists, corporate policies, distros) | High | Medium | AGPL option; MIT/Apache interface crates; 3-year conversion; clear FAQ; `cargo syrp license` |
 | R7 | Churn in pre-1.0 dependencies (vello 0.x, parley 0.x, clack 0.2, vst3 0.3, accesskit 0.x, wgpu majors), with no route to upstream agent PRs (RustAudio AI policy) | High | Medium | Wrap at boundaries; pin; fork-and-own with attribution; human-authored upstream issues and patches only |
 | R8 | Platform churn: macOS/iOS 26+, the Windows MIDI Services rollout, Wayland, Android 16+ | Medium | Medium | Nightly upstream-delta jobs; peer-api isolation |
 | R9 | JUCE moves the target: APv2, CLAP, Wayland, multi-processor binaries | Medium | Medium | Ledger tracks upstream deltas; lead on CLAP, sample-accurate automation and UMP |
@@ -1520,7 +1520,7 @@ Three further measures:
 **Decisions the user needs to make**
 1. **Licence.** Adopt `AGPL-3.0-only OR BUSL-1.1`, with the AUG free under USD 100k of revenue plus funding, conversion to Apache-2.0 OR MIT after 3 years, MIT/Apache interface crates and a commercial tier above the threshold? Alternatives: BUSL-only (no AGPL option), PolyForm Small Business, or a bespoke community licence.
 2. **Threshold details.** Confirm: revenue *plus* funding; Affiliates included; trailing 12 months; a 90-day grace period; the end-user carve-out; free for education and small non-profits; commercial pricing.
-3. **Name and trademarks.** Pick the final name (Auricle is a placeholder) and approve trademark filings.
+3. **Name and trademarks.** Pick the final name (Syrp is a placeholder) and approve trademark filings.
 4. **Parity baseline.** JUCE 9.0.4, as recommended, or the user's original 8.x (8.0.15)?
 5. **Minimum OS targets** (§6), such as macOS 11 rather than JUCE's 10.11.
 6. **VST2.** Accept it as a deliberate gap?
@@ -1537,13 +1537,13 @@ Three further measures:
 ### 12.1 Roles
 | Role | Count | Inputs | Outputs | Tools | Permissions |
 |---|---|---|---|---|---|
-| **Orchestrator** ("conductor"). A deterministic service, not an LLM. | 1 | `work/waves/*.toml`, WP specs, GitHub state, CI results, ledger | Agent spawns, leases, restarts, wave and phase transitions, escalations | Agent runtime API (for example the Claude Agent SDK running agents headless in containers), GitHub API, `cargo auricle` library | Creates and destroys agent sandboxes; edits labels and assignees; cannot merge or push code |
-| **Planner / spec agents** (spec room) | 1–2 | Public JUCE docs, tutorials, forum; oracle outputs; ledger | WP specs (behaviour, in their own words), parity scenarios, wave plans, answers to implementer questions | Web (JUCE domains allowed), `juce-oracle` runner, `cargo auricle parity` | Write `work/` and `parity/scenarios/` through PRs only. **No JUCE source.** |
-| **Oracle agents** (spec room) | 0–1 | JUCE public headers and docs, scenarios | Harness code in the separate AGPL `juce-oracle` repo, reference outputs | C++ toolchain, CMake | No access to the Auricle repository |
-| **Implementer agents** | 10–15 per wave | One leased WP: spec, frozen contracts, scenarios, crate briefs | 1–4 PRs per WP, filled PR template JSON, tests, docs, `changes/*.json` | `cargo auricle` (check, test, render, parity, docs, explain, wp), MCP, Agent Skill, git | Write only to their WP's crate path (per `ownership.toml`) in a dedicated worktree and branch. No shared files, no `contracts/`, no goldens or ledger evidence. Web sandbox blocks JUCE domains. |
-| **Reviewer agents** | 2–4 (pool) | PR, WP spec, checklist, CI artefacts | Structured review JSON posted as a PR review (approve or request changes) | `cargo auricle review`, a fresh sandbox checkout, the full test tooling | Read the repository; comment and approve; cannot push to the PR branch or merge |
+| **Orchestrator** ("conductor"). A deterministic service, not an LLM. | 1 | `work/waves/*.toml`, WP specs, GitHub state, CI results, ledger | Agent spawns, leases, restarts, wave and phase transitions, escalations | Agent runtime API (for example the Claude Agent SDK running agents headless in containers), GitHub API, `cargo syrp` library | Creates and destroys agent sandboxes; edits labels and assignees; cannot merge or push code |
+| **Planner / spec agents** (spec room) | 1–2 | Public JUCE docs, tutorials, forum; oracle outputs; ledger | WP specs (behaviour, in their own words), parity scenarios, wave plans, answers to implementer questions | Web (JUCE domains allowed), `juce-oracle` runner, `cargo syrp parity` | Write `work/` and `parity/scenarios/` through PRs only. **No JUCE source.** |
+| **Oracle agents** (spec room) | 0–1 | JUCE public headers and docs, scenarios | Harness code in the separate AGPL `juce-oracle` repo, reference outputs | C++ toolchain, CMake | No access to the Syrp repository |
+| **Implementer agents** | 10–15 per wave | One leased WP: spec, frozen contracts, scenarios, crate briefs | 1–4 PRs per WP, filled PR template JSON, tests, docs, `changes/*.json` | `cargo syrp` (check, test, render, parity, docs, explain, wp), MCP, Agent Skill, git | Write only to their WP's crate path (per `ownership.toml`) in a dedicated worktree and branch. No shared files, no `contracts/`, no goldens or ledger evidence. Web sandbox blocks JUCE domains. |
+| **Reviewer agents** | 2–4 (pool) | PR, WP spec, checklist, CI artefacts | Structured review JSON posted as a PR review (approve or request changes) | `cargo syrp review`, a fresh sandbox checkout, the full test tooling | Read the repository; comment and approve; cannot push to the PR branch or merge |
 | **Adversarial verifier** | 1–2 (different model family or configuration from the primary reviewer) | High-risk PRs (§12.8) | A second independent review plus attack artefacts: extra tests, fuzz seeds, misuse cases | Same tools as reviewers, plus Miri, sanitisers, validators, the contamination report | Same as reviewer |
-| **PR manager agent** | 1 | All PRs, CI, merge queue, ledger, change requests | Merges (via the merge queue), rebases, labels, ledger updates from CI evidence, shared-file changes, release PRs, release notes | GitHub API, merge queue, `cargo auricle` (`parity status --update-from-ci`, `docs build`, `release`) | **Sole merger.** Sole editor of shared files: workspace `Cargo.toml`, CI config, `deny.toml`, `ownership.toml`, root AGENTS.md, the ledger schema |
+| **PR manager agent** | 1 | All PRs, CI, merge queue, ledger, change requests | Merges (via the merge queue), rebases, labels, ledger updates from CI evidence, shared-file changes, release PRs, release notes | GitHub API, merge queue, `cargo syrp` (`parity status --update-from-ci`, `docs build`, `release`) | **Sole merger.** Sole editor of shared files: workspace `Cargo.toml`, CI config, `deny.toml`, `ownership.toml`, root AGENTS.md, the ledger schema |
 | **Auditor agent** | 1 | Merged PRs (sampled) | Retrospective audits; follow-up WPs; reviewer-quality KPIs | Reviewer tools | Read and comment only |
 | **Humans** | About 0.5 FTE | Escalation issues | Decisions; account and credential actions | GitHub, chat | Admin. Normally passive. |
 
@@ -1555,16 +1555,16 @@ Three further measures:
 
 ```toml
 id          = "WP-3.2-08"
-title       = "auricle-widgets-slider: Slider (linear, rotary, two/three-value, velocity mode)"
+title       = "syrp-widgets-slider: Slider (linear, rotary, two/three-value, velocity mode)"
 crate       = "crates/ui/widgets-slider"
 depends_on  = ["WP-3.2-01", "WP-3.2-06"]            # ui core, laf
-contracts   = ["auricle-ui@3.2-freeze", "auricle-laf@3.2-freeze"]
+contracts   = ["syrp-ui@3.2-freeze", "syrp-laf@3.2-freeze"]
 ledger_rows = ["juce_gui_basics/Slider", "juce_gui_basics/SliderParameterAttachment"]
 spec        = "work/specs/WP-3.2-08.md"             # behaviour only, spec-room authored
 scenarios   = ["ui/slider/*"]                       # must pass at tolerance profile below
 tolerance   = "ui-default"
 risk        = ["public-api"]                        # triggers adversarial review
-acceptance  = "cargo auricle wp check WP-3.2-08 --json"
+acceptance  = "cargo syrp wp check WP-3.2-08 --json"
 platforms   = ["windows", "macos", "linux"]
 budget      = { agent_hours = 24, max_review_rounds = 3, max_restarts = 2 }
 ```
@@ -1589,7 +1589,7 @@ budget      = { agent_hours = 24, max_review_rounds = 3, max_restarts = 2 }
 - **Utilities.** Generic helpers may only live in foundation crates. An implementer who needs a new one files a change request instead of writing a local copy (§12.11).
 
 ### 12.5 Review protocol
-The reviewer **runs everything itself** in a fresh sandbox and never trusts the implementer's logs. `cargo auricle review <PR>` produces the checklist JSON. Each item is pass or fail with evidence attached:
+The reviewer **runs everything itself** in a fresh sandbox and never trusts the implementer's logs. `cargo syrp review <PR>` produces the checklist JSON. Each item is pass or fail with evidence attached:
 
 1. **Spec conformance.** Every behaviour statement in the WP spec maps to at least one test (traceability IDs in test names).
 2. **JUCE-semantics conformance.** All WP scenarios pass at the declared tolerance. The reviewer also runs a random 10% sample of the crate's other scenarios. Ledger rows are proposed correctly.
@@ -1650,7 +1650,7 @@ The reviewer **runs everything itself** in a fresh sandbox and never trusts the 
 - **Per-crate `AGENTS.md`**: purpose, JUCE ledger rows, invariants, thread affinity, stability level, how to test, known gaps. `CLAUDE.md` holds `@AGENTS.md` plus the skill path.
 - **Issue forms**: WP, bug, parity gap, change request, escalation, golden update. **PR template** with machine-readable front matter.
 - **Task board**: GitHub Projects with the fields Phase, Wave, WP, Crate, Status, Lease, Risk, Review round, Budget used. It is synced *from* the `work/` files, which are the source of truth.
-- **`CODEOWNERS`** maps `contracts/`, shared files and `.github/` to the bot teams `@auricle-bots/pr-manager` and `@auricle-bots/adversarial`. Together with `ownership.toml`, it drives the required reviews.
+- **`CODEOWNERS`** maps `contracts/`, shared files and `.github/` to the bot teams `@syrp-bots/pr-manager` and `@syrp-bots/adversarial`. Together with `ownership.toml`, it drives the required reviews.
 - **Branch protection**: main accepts merges only from the merge queue, with required checks G1–G11 (§12.8). The PR manager bot is the only identity allowed to enqueue.
 - **Contract and interface crates** (`*-api`) with frozen snapshots in `contracts/`.
 - **`xtask`** lints: layers, file size, ownership, AGENTS.md headings, provenance trailers, docs freshness.
@@ -1720,7 +1720,7 @@ A PR merges only when **all** applicable gates pass on the merge-queue candidate
   - docs versions generated;
   - SBOM (cargo-about, cargo-auditable) and cargo-vet complete.
 - **Publishing.** The PR manager publishes to crates.io in dependency order using CI-held tokens. crates.io trusted publishing via OIDC is preferred if available; its availability is UNVERIFIED in this research.
-- **Changelogs and tags.** git-cliff generates the changelog. Tags and GitHub releases are created automatically, and binaries (the `cargo-auricle` CLI, the MCP server) are built with cargo-dist.
+- **Changelogs and tags.** git-cliff generates the changelog. Tags and GitHub releases are created automatically, and binaries (the `cargo-syrp` CLI, the MCP server) are built with cargo-dist.
 - **Rollback.** An automatic yank happens only on a critical regression detected within 48 h, and it is always followed by a patch release.
 
 ### 12.11 Failure modes and mitigations
@@ -1730,7 +1730,7 @@ A PR merges only when **all** applicable gates pass on the merge-queue candidate
 | Duplicated utilities | The utility registry in the API index; `docs search` mandated before writing helpers; a repo-internal clone detector as a G9 sub-check; utilities only in foundation crates, via change request |
 | Rubber-stamp reviews | Reviewers rerun everything and attach logs; canary defects; audit sampling; adversarial reviewers from a different model family; reviewer KPIs |
 | Merge conflicts in shared files | The PR manager is the sole editor; globbed workspace members; generated files regenerated in the merge queue; batched change requests |
-| Hallucinated APIs | The compile and test loop; MCP and CLI docs queries against the real API index; `cargo auricle check-refs` validates that every symbol cited in docs and specs exists; reviewer verification |
+| Hallucinated APIs | The compile and test loop; MCP and CLI docs queries against the real API index; `cargo syrp check-refs` validates that every symbol cited in docs and specs exists; reviewer verification |
 | Drift from JUCE semantics | Behaviour specs plus mandatory differential scenarios for each WP; ledger evidence comes only from CI; nightly upstream-delta jobs; parity sweeps at phase exit |
 | Flaky CI | Deterministic ManualLoop and seeded RNG; hermetic images; nextest flake detection; quarantine plus auto-fix WPs; device-lab tests are nightly-only, never merge-gating |
 | Contract churn | Frozen snapshots; contract-change WPs with impact analysis; escalation above 5 affected WPs |
@@ -1752,9 +1752,9 @@ A PR merges only when **all** applicable gates pass on the merge-queue candidate
   - migration entries, as front matter in `docs/migration/*.md`;
   - recipes, as front matter plus code in `examples/recipes/`;
   - per-crate `AGENTS.md`.
-- `auricle-docgen` renders both sides from these sources in CI. Generated files carry a `GENERATED` header and are never hand-edited. A freshness gate fails CI if the regenerated output differs.
+- `syrp-docgen` renders both sides from these sources in CI. Generated files carry a `GENERATED` header and are never hand-edited. A freshness gate fails CI if the regenerated output differs.
 
-**Human side** (placeholder domain `docs.auricle.dev`):
+**Human side** (placeholder domain `docs.syrp.dev`):
 
 | Area | Content |
 |---|---|
@@ -1790,7 +1790,7 @@ A PR merges only when **all** applicable gates pass on the merge-queue candidate
 - Brief token budgets, and a structural validation of llms.txt.
 - `check-refs`, which fails if any doc or spec cites a non-existent item.
 
-### 13.2 The CLI: `cargo auricle`
+### 13.2 The CLI: `cargo syrp`
 **Output and errors**
 - Output is JSON by default when stdout is not a TTY, or with `--json`.
 - There are no interactive prompts. Every command has a published JSON Schema.
@@ -1816,10 +1816,10 @@ A PR merges only when **all** applicable gates pass on the merge-queue candidate
 
 | Command | What it does |
 |---|---|
-| `new <app\|plugin\|console\|lib> [--formats clap,vst3,au,lv2,aax]` | Scaffolds a project with `Auricle.toml`, tests, goldens and AGENTS.md |
+| `new <app\|plugin\|console\|lib> [--formats clap,vst3,au,lv2,aax]` | Scaffolds a project with `Syrp.toml`, tests, goldens and AGENTS.md |
 | `add <module\|param\|widget\|format>` | Adds a feature, parameter, widget or plugin format, with test stubs |
 | `doctor` | Diagnoses the toolchain, SDK paths (ASIO, AAX), signing identities, devices and validators |
-| `build [--format …] [--target …]` | Builds, with diagnostics mapped to AUR codes |
+| `build [--format …] [--target …]` | Builds, with diagnostics mapped to SYRP codes |
 | `check` | The fast gate: fmt, clippy, layer and size lints, contract diff, missing docs |
 | `test [--affected] [--crate X]` | nextest, doctests and compile-fail tests, with structured results |
 | `render-audio <processor\|graph\|plugin> --input --params --out` | Deterministic offline render to WAV plus JSON statistics |
@@ -1834,8 +1834,8 @@ A PR merges only when **all** applicable gates pass on the merge-queue candidate
 | `bench [--against baseline\|oracle]` | Benchmarks against baselines or oracle numbers |
 | `fuzz <target> [--time]` | Fuzzing with corpus management |
 | `docs search\|show\|brief\|recipe` | Offline queries of the API index, briefs and recipes |
-| `explain <AUR-code>` | Cause, fix and example for an error code |
-| `migrate lookup <juce::Symbol>\|plan <juce-project>\|apply` | JUCE → Auricle mapping and codemods |
+| `explain <SYRP-code>` | Cause, fix and example for an error code |
+| `migrate lookup <juce::Symbol>\|plan <juce-project>\|apply` | JUCE → Syrp mapping and codemods |
 | `expand <item>` | Shows code generated by derives or `build.rs` |
 | `license attest\|report` | Local self-attestation; dependency licence report |
 | `wp show\|claim\|check\|submit [--blocked]` | Work-package helpers (project agents only) |
@@ -1845,10 +1845,10 @@ A PR merges only when **all** applicable gates pass on the merge-queue candidate
 | `bindings gen\|check` | Bindings (Phase 8) |
 
 ### 13.3 Agent Skill and MCP server
-- **One implementation, three front-ends.** The CLI, the MCP server and the skill's scripts all call the `auricle-cli` library. Results and schemas are therefore identical everywhere.
+- **One implementation, three front-ends.** The CLI, the MCP server and the skill's scripts all call the `syrp-cli` library. Results and schemas are therefore identical everywhere.
 - **Same tools for everyone.** Implementer, reviewer and PR-manager agents use them, and so do downstream users' agents. Project-only commands are hidden from the public tool list by a feature flag.
 
-**MCP server (`auricle-mcp`)**
+**MCP server (`syrp-mcp`)**
 - Built on rmcp 3.7, targeting MCP 2026-07-28.
 - **Tools:**
 
@@ -1862,27 +1862,27 @@ A PR merges only when **all** applicable gates pass on the merge-queue candidate
 | Docs and migration | `docs_search`, `docs_get`, `explain`, `migrate_lookup` |
 | Project-internal | `wp_*`, `review` |
 
-- **Resources:** `auricle://api-index`, `auricle://ledger`, `auricle://capabilities`, `auricle://brief/{crate}`, `auricle://recipe/{id}`, `auricle://errors/{code}`, `auricle://migration/{juce_symbol}`.
+- **Resources:** `syrp://api-index`, `syrp://ledger`, `syrp://capabilities`, `syrp://brief/{crate}`, `syrp://recipe/{id}`, `syrp://errors/{code}`, `syrp://migration/{juce_symbol}`.
 - Long builds, renders and validator runs use the **Tasks** extension.
 
-**Agent Skill sketch** (`skills/auricle/`, Agent Skills format):
+**Agent Skill sketch** (`skills/syrp/`, Agent Skills format):
 
 ```markdown
 ---
-name: auricle
-description: Build, port, test and verify audio apps and plugins with the Auricle Rust framework
+name: syrp
+description: Build, port, test and verify audio apps and plugins with the Syrp Rust framework
   (a JUCE-equivalent). Use when writing JUCE-style code in Rust, porting JUCE projects, creating
-  CLAP/VST3/AU/LV2/AAX plugins, DSP or GUIs, or when a `cargo auricle` command or AUR-* error appears.
+  CLAP/VST3/AU/LV2/AAX plugins, DSP or GUIs, or when a `cargo syrp` command or SYRP-* error appears.
 ---
-### The Auricle closed loop
-1. Run `cargo auricle doctor --json` once per session; fix anything it reports first.
+### The Syrp closed loop
+1. Run `cargo syrp doctor --json` once per session; fix anything it reports first.
 2. Before coding, look things up instead of guessing:
-   `cargo auricle docs search "<concept>"`, `cargo auricle migrate lookup juce::<Symbol>`,
-   `cargo auricle docs brief <crate>`.
-3. After every edit: `cargo auricle check --json`, then `cargo auricle test --affected --json`.
+   `cargo syrp docs search "<concept>"`, `cargo syrp migrate lookup juce::<Symbol>`,
+   `cargo syrp docs brief <crate>`.
+3. After every edit: `cargo syrp check --json`, then `cargo syrp test --affected --json`.
 4. Audio work: `render-audio` and `parity check`. UI work: `render-ui` and `snapshot diff`.
    Plugins: `bundle` and `validate --all`.
-5. On any AUR-* code, run `cargo auricle explain <code>`, apply the fix, and rerun. Never suppress it.
+5. On any SYRP-* code, run `cargo syrp explain <code>`, apply the fix, and rerun. Never suppress it.
 #### Hard rules
 - Never allocate, lock or do I/O inside `process`. If you need memory, take it in `prepare`.
 - Message-thread APIs need a `MessageThread` token. Use `post()` from other threads.
@@ -1898,7 +1898,7 @@ references/capabilities.json
 scripts/loop.sh   # runs check → test → (render|parity) and prints one JSON summary
 ```
 
-**Distribution.** The skill is versioned with each release and published at `/agents/skill.zip`. It is also built into `cargo auricle new` projects (`.agents/skills/auricle`) and comes in per-language variants in Phase 8.
+**Distribution.** The skill is versioned with each release and published at `/agents/skill.zip`. It is also built into `cargo syrp new` projects (`.agents/skills/syrp`) and comes in per-language variants in Phase 8.
 
 ### 13.4 How the tooling drives the §12 loops
 **Implementer loop**

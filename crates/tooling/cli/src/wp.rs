@@ -171,7 +171,7 @@ impl Board {
                     if stem != wp.id {
                         diags.push(
                             Diagnostic::error(
-                                "AUR-WP-0001",
+                                "SYRP-WP-0001",
                                 format!("file name {stem} does not match id {}", wp.id),
                             )
                             .at(&rel),
@@ -179,7 +179,7 @@ impl Board {
                     }
                     board.packages.insert(wp.id.clone(), wp);
                 }
-                Err(e) => diags.push(Diagnostic::error("AUR-WP-0001", e).at(&rel)),
+                Err(e) => diags.push(Diagnostic::error("SYRP-WP-0001", e).at(&rel)),
             }
         }
         for path in repo::files_with_suffix(&root.join("work/waves"), ".toml") {
@@ -189,7 +189,7 @@ impl Board {
                 .and_then(|s| toml::from_str::<Wave>(&s).map_err(|e| e.to_string()))
             {
                 Ok(w) => board.waves.push(w),
-                Err(e) => diags.push(Diagnostic::error("AUR-WP-0001", e).at(&rel)),
+                Err(e) => diags.push(Diagnostic::error("SYRP-WP-0001", e).at(&rel)),
             }
         }
         board.waves.sort_by(|a, b| a.id.cmp(&b.id));
@@ -204,7 +204,7 @@ impl Board {
                 if !self.packages.contains_key(dep) {
                     diags.push(
                         Diagnostic::error(
-                            "AUR-WP-0003",
+                            "SYRP-WP-0003",
                             format!("{} depends on unknown {dep}", wp.id),
                         )
                         .at(format!("work/packages/{}.toml", wp.id)),
@@ -214,7 +214,7 @@ impl Board {
             if !root.join(&wp.spec).is_file() {
                 diags.push(
                     Diagnostic::error(
-                        "AUR-WP-0007",
+                        "SYRP-WP-0007",
                         format!("{}: spec {} is missing", wp.id, wp.spec),
                     )
                     .at(format!("work/packages/{}.toml", wp.id)),
@@ -223,7 +223,7 @@ impl Board {
         }
         if let Some(cycle) = self.find_cycle() {
             diags.push(Diagnostic::error(
-                "AUR-WP-0004",
+                "SYRP-WP-0004",
                 format!("dependency cycle: {}", cycle.join(" -> ")),
             ));
         }
@@ -246,7 +246,7 @@ impl Board {
                     && !self.depends_on_transitively(b_id, a_id)
                 {
                     diags.push(Diagnostic::error(
-                        "AUR-WP-0006",
+                        "SYRP-WP-0006",
                         format!("{a_id} and {b_id} both own {}", a.min(b)),
                     ));
                 }
@@ -257,7 +257,7 @@ impl Board {
                 if !self.packages.contains_key(id) {
                     diags.push(
                         Diagnostic::error(
-                            "AUR-WP-0002",
+                            "SYRP-WP-0002",
                             format!("wave {} lists unknown {id}", wave.id),
                         )
                         .at(format!("work/waves/{}.toml", wave.id)),
@@ -398,9 +398,9 @@ impl Ownership {
     /// Reads `ownership.toml`.
     pub fn load(root: &Path) -> Result<Ownership, Diagnostic> {
         let src = fs::read_to_string(root.join("ownership.toml"))
-            .map_err(|e| Diagnostic::error("AUR-WP-0001", format!("ownership.toml: {e}")))?;
+            .map_err(|e| Diagnostic::error("SYRP-WP-0001", format!("ownership.toml: {e}")))?;
         toml::from_str(&src)
-            .map_err(|e| Diagnostic::error("AUR-WP-0001", format!("ownership.toml: {e}")))
+            .map_err(|e| Diagnostic::error("SYRP-WP-0001", format!("ownership.toml: {e}")))
     }
 
     /// Checks that a change set stays inside what `wp` may edit. Implementer WPs may touch
@@ -428,7 +428,7 @@ impl Ownership {
                     .find(|(_, r)| r.paths.iter().any(|p| path_matches(p, f)))
                     .map(|(name, _)| format!(" (owned by role {name})"))
                     .unwrap_or_default();
-                Diagnostic::error("AUR-WP-0005", format!("{} may not edit {f}{owner}", wp.id))
+                Diagnostic::error("SYRP-WP-0005", format!("{} may not edit {f}{owner}", wp.id))
                     .at(f.clone())
                     .hint("file a change request issue for shared files instead of editing them")
             })
@@ -530,7 +530,7 @@ pub(crate) mod tests {
             w.crate_path = Some("crates/x/shared".into());
         }
         let diags = board(vec![a, b, c]).validate(Path::new("/nonexistent"));
-        let overlaps: Vec<_> = diags.iter().filter(|d| d.code == "AUR-WP-0006").collect();
+        let overlaps: Vec<_> = diags.iter().filter(|d| d.code == "SYRP-WP-0006").collect();
         // A-B is fine (B depends on A); A-C and B-C collide.
         assert_eq!(overlaps.len(), 2, "{overlaps:#?}");
     }
