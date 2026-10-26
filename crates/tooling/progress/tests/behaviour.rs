@@ -235,9 +235,11 @@ fn b4_page_embeds_data_and_cannot_be_broken_out_of() {
         .split("const D = ")
         .nth(1)
         .unwrap()
-        .split(";\n")
+        // One line of JSON; `lines` also copes with a CRLF checkout of page.html on Windows.
+        .lines()
         .next()
-        .unwrap();
+        .unwrap()
+        .trim_end_matches(';');
     assert!(!data.contains('<'), "raw < in embedded data: {data}");
     assert!(data.contains(r#"\u003cimg src=x onerror=\"alert(1)\">'"#));
     let back: serde_json::Value = serde_json::from_str(data).unwrap();
