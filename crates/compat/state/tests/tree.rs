@@ -243,26 +243,26 @@ fn b5_dependency_direction_is_compat_to_state_only() {
     assert!(own.contains("syrp-state"));
 }
 
-/// Builds `Root{name, n} -> [Voice{i: 0}, Voice{i: 1} -> [Osc{wave}]]` in `store`, setting the
-/// root's properties in the given order.
-fn build(
-    mt: &MessageThread<'_>,
-    store: &Rc<Store>,
-    props: &[(&str, Var)],
-    wave: &str,
-) -> ValueTree {
-    let root = ValueTree::new_in(mt, store, "Root");
+/// Builds `Root{props} -> [Voice{i: 0}, Voice{i: 1} -> [Osc{wave}]]` in `store`.
+fn build(mt: &MessageThread<'_>, s: &Rc<Store>, props: &[(&str, Var)], wave: &str) -> ValueTree {
+    let root = ValueTree::new_in(mt, s, "Root");
     for (k, v) in props {
         root.set_property(mt, *k, v.clone(), None).unwrap();
     }
     for i in 0..2 {
-        let voice = ValueTree::new_in(mt, store, "Voice");
-        voice.set_property(mt, "i", i, None).unwrap();
-        root.append_child(mt, &voice, None).unwrap();
+        root.append_child(mt, &ValueTree::new_in(mt, s, "Voice"), None)
+            .unwrap();
+        root.child(i)
+            .set_property(mt, "i", i32::try_from(i).unwrap(), None)
+            .unwrap();
     }
-    let osc = ValueTree::new_in(mt, store, "Osc");
-    osc.set_property(mt, "wave", wave, None).unwrap();
-    root.child(1).append_child(mt, &osc, None).unwrap();
+    root.child(1)
+        .append_child(mt, &ValueTree::new_in(mt, s, "Osc"), None)
+        .unwrap();
+    root.child(1)
+        .child(0)
+        .set_property(mt, "wave", wave, None)
+        .unwrap();
     root
 }
 
@@ -270,38 +270,24 @@ fn build(
 fn b1_is_equivalent_to_compares_content_across_stores() {
     ManualLoop::new().with_token(|mt| {
         let (s1, s2) = (Rc::new(Store::new()), Rc::new(Store::new()));
-        // The second store interns the identifiers in another order, so its property order differs.
+        // s2 interns the identifiers in another order, so its property order differs.
         ValueTree::new_in(mt, &s2, "Root")
             .set_property(mt, "n", 0, None)
             .unwrap();
-        let ab = [("name", Var::from("lead")), ("n", Var::from(2))];
-        let ba = [("n", Var::from(2)), ("name", Var::from("lead"))];
+        let p = |n: Var| [("name", Var::from("lead")), ("n", n)];
+        let ab = p(2.into());
         let a = build(mt, &s1, &ab, "saw");
-        let b = build(mt, &s2, &ba, "saw");
+        let b = build(mt, &s2, &[ab[1].clone(), ab[0].clone()], "saw");
         assert!(a.is_equivalent_to(&b) && b.is_equivalent_to(&a));
         assert!(a.is_equivalent_to(&a.deep_clone(mt)));
-
-        let deep_diff = build(mt, &s2, &ab, "sine");
         assert!(
-            !a.is_equivalent_to(&deep_diff),
-            "grandchild property differs"
+            !a.is_equivalent_to(&build(mt, &s2, &ab, "sine")),
+            "grandchild differs"
         );
-        let value_diff = build(
-            mt,
-            &s2,
-            &[("name", Var::from("lead")), ("n", Var::from(3))],
-            "saw",
-        );
-        assert!(!a.is_equivalent_to(&value_diff));
-        let type_diff = build(
-            mt,
-            &s2,
-            &[("name", Var::from("lead")), ("n", Var::from("2"))],
-            "saw",
-        );
+        assert!(!a.is_equivalent_to(&build(mt, &s2, &p(3.into()), "saw")));
         assert!(
-            !a.is_equivalent_to(&type_diff),
-            "strict Var ==: \"2\" is not 2"
+            !a.is_equivalent_to(&build(mt, &s2, &p("2".into()), "saw")),
+            "\"2\" is not 2"
         );
         let fewer = build(mt, &s2, &ab[..1], "saw");
         assert!(!a.is_equivalent_to(&fewer) && !fewer.is_equivalent_to(&a));
