@@ -4,8 +4,8 @@
 use syrp_audio_api::AudioBlock;
 use syrp_error::Diagnostic;
 use syrp_testkit::{
-    NoiseRng, WavFormat, assert_no_alloc, render_offline, render_offline_no_alloc, white_noise,
-    write_wav,
+    NoiseRng, Tolerance, WavFormat, assert_close, assert_no_alloc, compare, peak_dbfs,
+    render_offline, render_offline_no_alloc, white_noise, write_wav,
 };
 
 fn mono(samples: &[f32]) -> AudioBlock<'_, f32> {
@@ -176,6 +176,112 @@ fn b2_wav_writer_emits_float_and_pcm() {
 }
 
 #[test]
+fn b3_comparators_measure_errors() {
+    let c = compare(&[0.0_f32, 0.5, 1.0, 0.0], &[0.0_f32, 0.5, 0.5, 0.0]).unwrap();
+    assert_eq!(c.max_abs_error(), 0.5);
+    assert_eq!(c.max_abs_error_at(), Some((0, 2)));
+    assert_eq!(c.rms_error(), 0.25); // sqrt(0.25 / 4)
+    assert!((c.rms_error_dbfs() - 20.0 * 0.25_f64.log10()).abs() < 1e-12);
+    assert_eq!(c.peak_dbfs_actual(), 0.0);
+    assert!((c.peak_dbfs_difference() - 6.020_599_913).abs() < 1e-6);
+    assert_eq!(peak_dbfs(&[0.0_f32; 3]), f64::NEG_INFINITY);
+
+    let nan = compare(&[f32::NAN], &[0.0_f32]).unwrap();
+    assert_eq!(nan.max_abs_error(), f64::INFINITY);
+    // Identical NaNs are bit-exact but an infinite numeric error: a NaN golden can't lock in NaN.
+    let nan_nan = compare(&[0.0_f32, f32::NAN], &[0.0_f32, f32::NAN]).unwrap();
+    assert!(nan_nan.is_bit_exact());
+    assert_eq!(nan_nan.max_abs_error(), f64::INFINITY);
+    assert_eq!(nan_nan.max_abs_error_at(), Some((0, 1)));
+    assert!(nan_nan.judge(Tolerance::exact()).passed());
+    assert!(!nan_nan.judge(Tolerance::dsp_default()).passed());
+    assert!(!nan_nan.judge(Tolerance::dsp_loose()).passed());
+
+    let err = compare(&[0.0_f32; 2], &[0.0_f32; 3]).unwrap_err();
+    assert_eq!(err.code().as_str(), "SYRP-TESTKIT-0005");
+}
+
+#[test]
+fn b3_tolerance_profiles_judge_and_assert_close_panics() {
+    let base = white_noise(11, 4_800, 0.5).unwrap();
+    let shifted = |d: f32| -> Vec<f32> { base.iter().map(|s| s + d).collect() };
+    let judge = |other: &[f32], t: Tolerance| compare(&base, other).unwrap().judge(t).passed();
+
+    assert!(judge(&base, Tolerance::exact()));
+    let signed_zero = compare(&[0.0_f32], &[-0.0_f32]).unwrap();
+    assert!(!signed_zero.judge(Tolerance::exact()).passed());
+    assert!(signed_zero.judge(Tolerance::dsp_default()).passed());
+    assert!(!judge(&shifted(1e-3), Tolerance::exact()));
+    assert!(judge(&shifted(5e-7), Tolerance::dsp_default()));
+    assert!(!judge(&shifted(5e-6), Tolerance::dsp_default()));
+    // -96 dBFS is about 1.585e-5 RMS.
+    assert!(judge(&shifted(1.0e-5), Tolerance::dsp_loose()));
+    assert!(!judge(&shifted(3.0e-5), Tolerance::dsp_loose()));
+    assert!(!judge(&shifted(3.0e-5), Tolerance::max_abs(1e-5)));
+    assert!(judge(&shifted(3.0e-5), Tolerance::rms_dbfs(-80.0)));
+    for name in ["exact", "dsp-default", "dsp-loose"] {
+        assert_eq!(Tolerance::by_name(name).unwrap().name(), name);
+    }
+
+    let v = assert_close(&base, &shifted(1e-7), Tolerance::dsp_default());
+    assert!(v.passed() && v.tolerance() == Tolerance::dsp_default());
+    let msg = std::panic::catch_unwind(|| {
+        assert_close(&[0.0_f32, 0.5], &[0.0_f32, 0.25], Tolerance::dsp_default());
+    })
+    .unwrap_err();
+    let msg = msg.downcast_ref::<String>().unwrap();
+    assert!(
+        msg.contains("FAIL under `dsp-default`") && msg.contains("channel 0 frame 1"),
+        "{msg}"
+    );
+    let shape = std::panic::catch_unwind(|| {
+        assert_close(&[0.0_f32], &[0.0_f32; 2], Tolerance::exact());
+    });
+    assert!(shape.is_err());
+}
+
+#[test]
+fn b4_verdict_serialises_to_the_documented_shape() {
+    let v = compare(&[0.5_f32, 0.0], &[0.5_f32, 0.25])
+        .unwrap()
+        .judge(Tolerance::dsp_loose());
+    let json = serde_json::to_value(v).unwrap();
+    let want = serde_json::json!({
+        "schema": "syrp.testkit.verdict/v1",
+        "passed": false,
+        "tolerance": { "name": "dsp-loose", "criterion": "rms_dbfs", "limit": -96.0 },
+        "comparison": {
+            "channels": 1, "frames": 2, "bit_exact": false,
+            "max_abs_error": 0.25, "max_abs_error_at": { "channel": 0, "frame": 1 },
+            "rms_error": (0.0625_f64 / 2.0).sqrt(),
+            "rms_error_dbfs": 20.0 * (0.0625_f64 / 2.0).sqrt().log10(),
+            "peak_dbfs_actual": 20.0 * 0.5_f64.log10(),
+            "peak_dbfs_expected": 20.0 * 0.5_f64.log10(),
+            "peak_dbfs_difference": 0.0
+        }
+    });
+    assert_eq!(json, want);
+
+    let silent = compare(&[0.0_f32], &[0.0_f32])
+        .unwrap()
+        .judge(Tolerance::exact());
+    let json = serde_json::to_value(silent).unwrap();
+    assert_eq!(json["passed"], true);
+    assert_eq!(json["tolerance"]["limit"], serde_json::Value::Null);
+    assert_eq!(json["tolerance"]["criterion"], "bit_exact");
+    let c = &json["comparison"];
+    for key in [
+        "max_abs_error_at",
+        "rms_error_dbfs",
+        "peak_dbfs_actual",
+        "peak_dbfs_expected",
+    ] {
+        assert_eq!(c[key], serde_json::Value::Null, "{key}");
+    }
+    assert_eq!(c["peak_dbfs_difference"], 0.0);
+}
+
+#[test]
 fn b5_seeded_rng_is_reproducible() {
     // Known SplitMix64 outputs for seed 0 pin the sequence across platforms and releases.
     let mut rng = NoiseRng::new(0);
@@ -263,7 +369,8 @@ fn every_error_code_is_catalogued() {
     let ragged = render_offline(|_, _| {}, &[&[0.0], &[]], 1, 48e3).unwrap_err();
     let limit = write_wav(&mut bytes, mono(&[0.0]), 0.0, WavFormat::Pcm16).unwrap_err();
     let io = syrp_testkit::TestkitError::from(std::io::Error::other("x"));
-    let emitted: Vec<&str> = [ragged, limit, io]
+    let shape = compare(&[0.0_f32], &[0.0_f32; 2]).unwrap_err();
+    let emitted: Vec<&str> = [ragged, limit, io, shape]
         .iter()
         .map(|e| e.code().as_str())
         .collect();
@@ -272,7 +379,8 @@ fn every_error_code_is_catalogued() {
         [
             "SYRP-TESTKIT-0001",
             "SYRP-TESTKIT-0004",
-            "SYRP-TESTKIT-0003"
+            "SYRP-TESTKIT-0003",
+            "SYRP-TESTKIT-0005"
         ]
     );
     // 0002 (allocation failure) cannot be provoked portably; check it is catalogued too.
@@ -282,7 +390,8 @@ fn every_error_code_is_catalogued() {
             "SYRP-TESTKIT-0001",
             "SYRP-TESTKIT-0002",
             "SYRP-TESTKIT-0003",
-            "SYRP-TESTKIT-0004"
+            "SYRP-TESTKIT-0004",
+            "SYRP-TESTKIT-0005"
         ]
     );
 }

@@ -5,10 +5,14 @@
 //!   returns a [`Rendered`] buffer; [`render_offline_no_alloc`] does the same with every block
 //!   inside [`syrp_rt::no_alloc`], and [`assert_no_alloc`] guards any other closure.
 //! - [`write_wav`] and [`Rendered::write_wav_file`] write 32-bit float or 16/24-bit PCM WAV.
+//! - [`compare`], [`assert_close`] and [`Tolerance`] measure max absolute error, RMS error and
+//!   peak dBFS difference, and judge them against named profiles (`exact`, `dsp-default`,
+//!   `dsp-loose`). [`Comparison`] and [`Verdict`] serialise to the JSON shape documented on
+//!   [`Verdict`].
 //! - [`NoiseRng`] and [`white_noise`] give reproducible noise inputs from a seed.
 //!
 //! ```
-//! use syrp_testkit::{render_offline, white_noise};
+//! use syrp_testkit::{Tolerance, assert_close, render_offline, white_noise};
 //!
 //! let input = white_noise(7, 1_000, 0.5)?;
 //! let out = render_offline(
@@ -22,7 +26,7 @@
 //!     48_000.0,
 //! )?;
 //! let expected: Vec<f32> = input.iter().map(|s| s * 0.5).collect();
-//! assert_eq!(out.channel(0), expected.as_slice());
+//! assert_close(&out, &expected, Tolerance::exact());
 //! # Ok::<(), syrp_testkit::TestkitError>(())
 //! ```
 
@@ -31,10 +35,12 @@ use std::fmt;
 use syrp_audio_api::AudioError;
 use syrp_error::{Diagnostic, ErrorCode};
 
+mod compare;
 mod render;
 mod rng;
 mod wav;
 
+pub use compare::{AsAudio, Comparison, Tolerance, Verdict, assert_close, compare, peak_dbfs};
 pub use render::{Rendered, assert_no_alloc, render_offline, render_offline_no_alloc};
 pub use rng::{NoiseRng, white_noise};
 pub use wav::{WavFormat, write_wav};
@@ -70,6 +76,14 @@ pub enum TestkitError {
     /// The render does not fit a WAV file: data over 4 GiB, more than 65,535 channels, or a
     /// sample rate that does not round to 1..=`u32::MAX` Hz (`SYRP-TESTKIT-0004`).
     WavLimit,
+    /// Two signals compared have different channel counts or lengths (`SYRP-TESTKIT-0005`).
+    #[non_exhaustive]
+    ShapeMismatch {
+        /// `(channels, frames)` of the actual signal.
+        actual: (usize, usize),
+        /// `(channels, frames)` of the expected signal.
+        expected: (usize, usize),
+    },
     /// The block size or sample rate was rejected by [`syrp_audio_api::ProcessConfig`]; the
     /// code is the inner `SYRP-AUDIO-*` one.
     Audio(AudioError),
@@ -91,6 +105,11 @@ impl fmt::Display for TestkitError {
             }
             TestkitError::Io(e) => write!(f, "writing WAV failed: {e}"),
             TestkitError::WavLimit => f.write_str("render exceeds the limits of a WAV file"),
+            TestkitError::ShapeMismatch { actual, expected } => write!(
+                f,
+                "actual signal is {} channels x {} frames but expected is {} x {}",
+                actual.0, actual.1, expected.0, expected.1
+            ),
             TestkitError::Audio(e) => e.fmt(f),
         }
     }
@@ -113,6 +132,7 @@ impl Diagnostic for TestkitError {
             TestkitError::OutOfMemory { .. } => ErrorCode::new("SYRP-TESTKIT-0002"),
             TestkitError::Io(_) => ErrorCode::new("SYRP-TESTKIT-0003"),
             TestkitError::WavLimit => ErrorCode::new("SYRP-TESTKIT-0004"),
+            TestkitError::ShapeMismatch { .. } => ErrorCode::new("SYRP-TESTKIT-0005"),
             TestkitError::Audio(e) => e.code(),
         }
     }

@@ -1067,6 +1067,8 @@ dependencies = [
 name = "syrp-testkit"
 version = "0.0.1"
 dependencies = [
+ "serde",
+ "serde_json",
  "syrp-audio-api",
  "syrp-error",
  "syrp-rt",
