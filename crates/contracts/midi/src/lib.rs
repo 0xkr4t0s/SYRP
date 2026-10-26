@@ -2,7 +2,8 @@
 //! The Syrp MIDI contract (master plan §5, ADR 0003 D2 and D3).
 //!
 //! [`MidiMessage`] (owned, message thread) and [`MidiMessageRef`] (borrowed view) share the
-//! [`MidiData`] accessors. The packed `MidiBuffer` and UMP follow in later increments.
+//! [`MidiData`] accessors. [`MidiBuffer`] is a packed, sample-ordered event list whose
+//! [`try_add_event`](MidiBuffer::try_add_event) never allocates. UMP follows later.
 //!
 //! Messages are stored as their MIDI 1.0 bytes: channel messages as status plus data bytes,
 //! SysEx framed by `0xF0` and `0xF7`, and Standard MIDI File meta events as `0xFF`, type,
@@ -18,8 +19,10 @@ use std::fmt;
 
 use syrp_error::{Diagnostic, ErrorCode};
 
+mod buffer;
 mod message;
 
+pub use buffer::{Events, MidiBuffer};
 pub use message::{MidiMessage, MidiMessageRef};
 
 /// What kind of MIDI message a byte sequence holds.
@@ -56,7 +59,7 @@ pub enum MidiMessageKind {
     Meta,
 }
 
-/// Errors from building and parsing MIDI messages.
+/// Errors from building, parsing and buffering MIDI messages.
 /// ```
 /// use syrp_error::Diagnostic;
 /// let err = syrp_midi::MidiMessage::from_bytes(&[0x90, 60]).unwrap_err();
@@ -69,6 +72,8 @@ pub enum MidiError {
     Malformed,
     /// A constructor argument is outside its MIDI range (`SYRP-MIDI-0002`).
     ValueOutOfRange,
+    /// A non-allocating add found the event or byte capacity full (`SYRP-MIDI-0003`).
+    BufferFull,
 }
 
 impl fmt::Display for MidiError {
@@ -76,6 +81,7 @@ impl fmt::Display for MidiError {
         f.write_str(match self {
             MidiError::Malformed => "malformed MIDI message bytes",
             MidiError::ValueOutOfRange => "MIDI value out of range",
+            MidiError::BufferFull => "MidiBuffer capacity is full",
         })
     }
 }
@@ -87,6 +93,7 @@ impl Diagnostic for MidiError {
         ErrorCode::new(match self {
             MidiError::Malformed => "SYRP-MIDI-0001",
             MidiError::ValueOutOfRange => "SYRP-MIDI-0002",
+            MidiError::BufferFull => "SYRP-MIDI-0003",
         })
     }
 }

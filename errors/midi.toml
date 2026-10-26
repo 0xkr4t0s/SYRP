@@ -14,3 +14,10 @@ severity = "error"
 cause = "A constructor was given a channel outside 1 to 16, a 7-bit value above 127, or a 14-bit pitch-bend value above 16383."
 fix = "Channels are numbered 1 to 16. Clamp or scale the value into range before building the message."
 
+
+[[error]]
+code = "SYRP-MIDI-0003"
+title = "MidiBuffer capacity full"
+severity = "error"
+cause = "try_add_event never allocates, so it refuses an event when the buffer's event heads or its byte arena have no room left. The buffer is left unchanged."
+fix = "Size the buffer for the worst case with MidiBuffer::with_capacity(events, bytes) or reserve() off the audio thread, and clear() it every block. On the message thread, add_event grows the buffer instead."
