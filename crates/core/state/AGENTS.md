@@ -55,6 +55,13 @@ juce_data_structures/UndoManager, juce_data_structures/UndoableAction (WP-1.2-04
 - Coalescing (Syrp rule): a `PropertyChanged` for the node and property of the record just
   before it in the same transaction merges into it (first old value, last new value). A
   transaction that cancels out is kept until the next one starts, then dropped.
+- `UndoableAction`s (`action.rs`) interleave with records in a transaction; an action may
+  absorb the next one (`coalesce_with`). Units: a record is 1 + payload bytes / 64, an action
+  its `size_in_units`. History is trimmed, oldest first, when a transaction starts and on
+  `set_max_number_of_stored_units`; at least `min_transactions` and the current one stay.
+  Transaction items are dropped outside the store borrow (actions may own handles).
+- `Store::is_performing_undo_redo` is set by a guard for the length of a replay, so listeners
+  can tell replayed changes; a panicking listener cannot leave it set.
 
 ## Thread affinity
 `Store`, `NodeRef` and `Properties` are `!Send` and `!Sync` (they hold `Rc<RefCell<_>>`).
@@ -83,7 +90,5 @@ Instructions per operation from `cargo bench -p syrp-state` (Callgrind, release,
 | `set_property` (`f64`), listener on node and parent | 902 | 922 | 942 |
 
 ## Known gaps
-WP-1.2-03 is complete (B1-B8). WP-1.2-04 increment 1 covers its B1-B3; increment 2 adds
-`UndoableAction` and `perform` (B4), the remaining queries and the unit limits (B5), and the
-spike scenarios with undo and the undo/redo proptest (B6). The CLI catalogue entry for the new
+WP-1.2-03 (B1-B8) and WP-1.2-04 (B1-B6) are complete. The CLI catalogue entry for the new
 `errors/state.toml` domain needs a change request (the CLI crate is not owned here).

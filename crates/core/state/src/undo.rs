@@ -1,4 +1,4 @@
-//! [`UndoManager`]: transactions of reversible log records, with coalescing.
+//! [`UndoManager`]: transactions of reversible log records and actions, with coalescing.
 
 use std::cell::RefCell;
 use std::fmt;
@@ -7,42 +7,54 @@ use std::rc::Rc;
 use syrp_loop_api::MessageThread;
 use syrp_var::{Identifier, Var};
 
+use crate::action::{Item, UndoableAction};
 use crate::error::{StateError, StateErrorKind};
 use crate::log::{Change, LogRecord};
 use crate::node::NodeRef;
 use crate::store::{Inner, Store};
 
-/// One undo step: a name and the records it groups, oldest first.
+/// One undo step: a name and its items, oldest first.
 struct Transaction {
     name: String,
-    records: Vec<Change>,
+    items: Vec<Item>,
 }
 
 impl Transaction {
-    /// Whether undoing it would change nothing: every record is a property set back to the
+    /// Whether undoing it would change nothing: every item is a property set back to the
     /// value it started from.
     fn is_no_op(&self) -> bool {
-        self.records.iter().all(|c| {
-            matches!(c, Change::PropertyChanged { old: Some(old), new, .. } if old.eq_same_type(new))
+        self.items.iter().all(|i| {
+            matches!(i, Item::Record(Change::PropertyChanged { old: Some(old), new, .. }) if old.eq_same_type(new))
         })
+    }
+
+    fn units(&self) -> usize {
+        self.items.iter().map(Item::units).sum()
     }
 }
 
-/// Undo history for one [`Store`]: transactions of the store's reversible [`Change`] records.
+/// Undo history for one [`Store`]: transactions of the store's reversible [`Change`] records
+/// and of [`UndoableAction`]s.
 ///
 /// Mutations made through a store's `*_with_undo` methods add their records to the current
-/// transaction; the plain methods record nothing. [`UndoManager::begin_new_transaction`] starts
-/// a new transaction, which is created by its first record. Work recorded after an undo or redo
-/// always starts a new transaction, named or not. The manager holds one count on
-/// every node its records name, so a detached subtree it may need to restore stays alive until
-/// the transaction is discarded. A manager binds to the first store it records from; using it
-/// with another store is [`StateErrorKind::ForeignUndoManager`].
+/// transaction; the plain methods record nothing. [`UndoManager::perform`] adds an action.
+/// [`UndoManager::begin_new_transaction`] starts a new transaction, which is created by its
+/// first item; work recorded after an undo or redo always starts a new transaction. The
+/// manager holds one count on every node its records name, so a detached
+/// subtree it may need to restore stays alive until the transaction is discarded. A manager
+/// binds to the first store it records from; using it with another store is
+/// [`StateErrorKind::ForeignUndoManager`].
 ///
 /// Coalescing (a Syrp rule): a `PropertyChanged` record for the same node and property as the
 /// record just before it in the same transaction merges into it, keeping the first old value
 /// and the last new value, so a slider drag is one step. A transaction whose records all cancel
 /// out (a value set back to where it started) is kept, with no effect, until the next
 /// transaction starts, and is then dropped.
+///
+/// Size: a store record counts 1 unit plus 1 per 64 bytes of `Var` payload (text and binary
+/// bytes; 16 bytes per array element plus its payload; objects 0); an action counts its
+/// [`UndoableAction::size_in_units`]. The defaults are 30,000 units and 30 transactions (see
+/// [`UndoManager::set_max_number_of_stored_units`]).
 ///
 /// ```
 /// use syrp_state::{Store, UndoManager};
@@ -63,16 +75,33 @@ impl Transaction {
 ///     assert_eq!(store.property(&node, gain).unwrap(), Some(Var::from(0.3)));
 /// });
 /// ```
-#[derive(Default)]
 pub struct UndoManager {
     store: Option<Rc<RefCell<Inner>>>,
     undo: Vec<Transaction>,
     redo: Vec<Transaction>,
     /// The name for the next transaction, once `begin_new_transaction` was called.
     next_name: Option<String>,
-    /// Whether new records may join the last undoable transaction. Undo and redo close it, so
+    max_units: usize,
+    min_transactions: usize,
+    performing: bool,
+    /// Whether new items may join the last undoable transaction. Undo and redo close it, so
     /// work after them always starts a new transaction.
     open: bool,
+}
+
+impl Default for UndoManager {
+    fn default() -> Self {
+        Self {
+            store: None,
+            undo: Vec::new(),
+            redo: Vec::new(),
+            next_name: None,
+            max_units: 30_000,
+            min_transactions: 30,
+            performing: false,
+            open: false,
+        }
+    }
 }
 
 impl fmt::Debug for UndoManager {
@@ -86,9 +115,7 @@ impl fmt::Debug for UndoManager {
 
 impl Drop for UndoManager {
     fn drop(&mut self) {
-        let undo = std::mem::take(&mut self.undo);
-        let redo = std::mem::take(&mut self.redo);
-        self.discard(undo.into_iter().chain(redo));
+        self.clear_undo_history();
     }
 }
 
@@ -103,7 +130,7 @@ impl UndoManager {
         Self::default()
     }
 
-    /// Makes the next recorded change start a new transaction called `name`.
+    /// Makes the next recorded change or action start a new transaction called `name`.
     ///
     /// ```
     /// # use syrp_var::Identifier; syrp_loop_api::ManualLoop::new().with_token(|mt| { let store = syrp_state::Store::new();
@@ -120,6 +147,38 @@ impl UndoManager {
     #[doc(alias = "beginNewTransaction")]
     pub fn begin_new_transaction(&mut self, name: impl Into<String>) {
         self.next_name = Some(name.into());
+    }
+
+    /// Performs `action` and, if it succeeds, adds it to the current transaction (after any
+    /// store records already there). If the transaction's last item is an action, it is first
+    /// offered `action` through [`UndoableAction::coalesce_with`]. Returns what `perform`
+    /// returned; a failed action is dropped.
+    ///
+    /// ```
+    /// # use syrp_state::UndoableAction;
+    /// struct Noop;
+    /// impl UndoableAction for Noop {
+    ///     fn perform(&mut self, _: &syrp_loop_api::MessageThread<'_>) -> bool { true }
+    ///     fn undo(&mut self, _: &syrp_loop_api::MessageThread<'_>) -> bool { true }
+    /// }
+    /// syrp_loop_api::ManualLoop::new().with_token(|mt| {
+    ///     let mut undo = syrp_state::UndoManager::new();
+    ///     assert!(undo.perform(mt, Noop) && undo.can_undo());
+    /// });
+    /// ```
+    pub fn perform(&mut self, mt: &MessageThread<'_>, action: impl UndoableAction) -> bool {
+        let mut action: Box<dyn UndoableAction> = Box::new(action);
+        if !action.perform(mt) {
+            return false;
+        }
+        let items = self.current();
+        if let Some(Item::Action(last)) = items.last_mut()
+            && last.coalesce_with(&*action)
+        {
+            return true;
+        }
+        items.push(Item::Action(action));
+        true
     }
 
     /// Whether there is a transaction to undo.
@@ -173,13 +232,108 @@ impl UndoManager {
         self.redo.last().map(|t| t.name.as_str())
     }
 
-    /// Reverses the last transaction's records, newest first, and moves it to the redo list.
-    /// Returns `false` if there was nothing to undo.
+    /// The names of every undoable transaction, the one [`UndoManager::undo`] would reverse
+    /// first.
     ///
-    /// The reversal is made of ordinary store mutations: they are logged and delivered to
-    /// listeners, and not recorded. If the store was changed since without this manager so that
-    /// a record no longer applies (say a removed child now has another parent), the error is
-    /// returned and the records reversed before it stay reversed.
+    /// ```
+    /// assert!(syrp_state::UndoManager::new().undo_descriptions().is_empty());
+    /// ```
+    #[doc(alias = "getUndoDescriptions")]
+    #[must_use]
+    pub fn undo_descriptions(&self) -> Vec<&str> {
+        self.undo.iter().rev().map(|t| t.name.as_str()).collect()
+    }
+
+    /// Number of undoable transactions.
+    ///
+    /// ```
+    /// assert_eq!(syrp_state::UndoManager::new().transaction_count(), 0);
+    /// ```
+    #[doc(alias = "getNumberOfTransactions")]
+    #[must_use]
+    pub fn transaction_count(&self) -> usize {
+        self.undo.len()
+    }
+
+    /// The units held by every stored transaction, undoable and redoable (see the type docs).
+    ///
+    /// ```
+    /// # use syrp_var::Identifier; syrp_loop_api::ManualLoop::new().with_token(|mt| { let store = syrp_state::Store::new();
+    /// let mut undo = syrp_state::UndoManager::new();
+    /// let node = store.create(mt, Identifier::new("A"));
+    /// store.set_property_with_undo(mt, &mut undo, &node, Identifier::new("x"), 1).unwrap();
+    /// assert_eq!(undo.number_of_units_taken_up(), 1);
+    /// # });
+    /// ```
+    #[doc(alias = "getNumberOfUnitsTakenUpByStoredCommands")]
+    #[must_use]
+    pub fn number_of_units_taken_up(&self) -> usize {
+        self.undo
+            .iter()
+            .chain(&self.redo)
+            .map(Transaction::units)
+            .sum()
+    }
+
+    /// Sets the size limit. When a new transaction starts (and now), the oldest undoable
+    /// transactions are dropped while the units exceed `max_units`, but `min_transactions`
+    /// (and the current transaction) are always kept.
+    ///
+    /// ```
+    /// # use syrp_var::Identifier; syrp_loop_api::ManualLoop::new().with_token(|mt| { let store = syrp_state::Store::new();
+    /// let mut undo = syrp_state::UndoManager::new();
+    /// let node = store.create(mt, Identifier::new("A"));
+    /// for i in 0..5 {
+    ///     undo.begin_new_transaction(format!("t{i}"));
+    ///     store.set_property_with_undo(mt, &mut undo, &node, Identifier::new("x"), i).unwrap();
+    /// }
+    /// undo.set_max_number_of_stored_units(2, 1);
+    /// assert_eq!(undo.undo_descriptions(), ["t4", "t3"]);
+    /// # });
+    /// ```
+    #[doc(alias = "setMaxNumberOfStoredUnits")]
+    pub fn set_max_number_of_stored_units(&mut self, max_units: usize, min_transactions: usize) {
+        (self.max_units, self.min_transactions) = (max_units, min_transactions);
+        self.trim();
+    }
+
+    /// Discards every undoable and redoable transaction, releasing the nodes they kept alive.
+    ///
+    /// ```
+    /// # use syrp_var::Identifier; syrp_loop_api::ManualLoop::new().with_token(|mt| { let store = syrp_state::Store::new();
+    /// let mut undo = syrp_state::UndoManager::new();
+    /// let node = store.create(mt, Identifier::new("A"));
+    /// store.set_property_with_undo(mt, &mut undo, &node, Identifier::new("x"), 1).unwrap();
+    /// undo.clear_undo_history();
+    /// assert!(!undo.can_undo());
+    /// # });
+    /// ```
+    #[doc(alias = "clearUndoHistory")]
+    pub fn clear_undo_history(&mut self) {
+        let all: Vec<_> = self.undo.drain(..).chain(self.redo.drain(..)).collect();
+        self.discard(all);
+    }
+
+    /// Whether an undo or redo is running. Listeners, which cannot reach the manager then,
+    /// can ask [`Store::is_performing_undo_redo`] instead.
+    ///
+    /// ```
+    /// assert!(!syrp_state::UndoManager::new().is_performing_undo_redo());
+    /// ```
+    #[doc(alias = "isPerformingUndoRedo")]
+    #[must_use]
+    pub fn is_performing_undo_redo(&self) -> bool {
+        self.performing
+    }
+
+    /// Reverses the last transaction's items, newest first, and moves it to the redo list.
+    /// Returns `Ok(false)` if there was nothing to undo or an action's `undo` failed.
+    ///
+    /// Records are reversed through ordinary store mutations: they are logged and delivered
+    /// to listeners, and not recorded. If the store was changed since without this manager so
+    /// that a record no longer applies (say a removed child now has another parent), the error
+    /// is returned. After an error or a failed action, the items reversed before it stay
+    /// reversed and the transaction is still moved to the redo list.
     ///
     /// ```
     /// # use syrp_var::Identifier; syrp_loop_api::ManualLoop::new().with_token(|mt| { let store = syrp_state::Store::new();
@@ -192,22 +346,18 @@ impl UndoManager {
     /// # });
     /// ```
     pub fn undo(&mut self, mt: &MessageThread<'_>) -> Result<bool, StateError> {
-        let (Some(store), Some(t)) = (self.store(), self.undo.pop()) else {
+        let Some(mut t) = self.undo.pop() else {
             return Ok(false);
         };
-        let result = t
-            .records
-            .iter()
-            .rev()
-            .try_for_each(|c| apply(&store, mt, c, true));
+        let result = self.replay(mt, &mut t, true);
         self.redo.push(t);
         self.open = false;
-        result.map(|()| true)
+        result
     }
 
-    /// Re-applies the last undone transaction's records, oldest first, and moves it back to
-    /// the undo list. Returns `false` if there was nothing to redo. Errors as for
-    /// [`UndoManager::undo`].
+    /// Re-applies the last undone transaction's items, oldest first, and moves it back to the
+    /// undo list. Returns `Ok(false)` if there was nothing to redo or an action failed. Errors
+    /// as for [`UndoManager::undo`].
     ///
     /// ```
     /// # use syrp_var::Identifier; syrp_loop_api::ManualLoop::new().with_token(|mt| { let store = syrp_state::Store::new();
@@ -220,21 +370,86 @@ impl UndoManager {
     /// # });
     /// ```
     pub fn redo(&mut self, mt: &MessageThread<'_>) -> Result<bool, StateError> {
-        let (Some(store), Some(t)) = (self.store(), self.redo.pop()) else {
+        let Some(mut t) = self.redo.pop() else {
             return Ok(false);
         };
-        let result = t
-            .records
-            .iter()
-            .try_for_each(|c| apply(&store, mt, c, false));
+        let result = self.replay(mt, &mut t, false);
         self.undo.push(t);
         self.open = false;
-        result.map(|()| true)
+        result
     }
 
-    /// A store value sharing the bound store's interior, for applying records.
-    fn store(&self) -> Option<Store> {
-        self.store.as_ref().map(Store::from_rc)
+    /// Undoes the current transaction and discards it, so it cannot be redone. Does nothing,
+    /// returning `Ok(false)`, if [`UndoManager::begin_new_transaction`] was called since its
+    /// last item (the new transaction has no items yet).
+    ///
+    /// ```
+    /// # use syrp_var::Identifier; syrp_loop_api::ManualLoop::new().with_token(|mt| { let store = syrp_state::Store::new();
+    /// let mut undo = syrp_state::UndoManager::new();
+    /// let node = store.create(mt, Identifier::new("A"));
+    /// store.set_property_with_undo(mt, &mut undo, &node, Identifier::new("x"), 1).unwrap();
+    /// assert!(undo.undo_current_transaction_only(mt).unwrap());
+    /// assert!(!undo.can_undo() && !undo.can_redo());
+    /// # });
+    /// ```
+    #[doc(alias = "undoCurrentTransactionOnly")]
+    pub fn undo_current_transaction_only(
+        &mut self,
+        mt: &MessageThread<'_>,
+    ) -> Result<bool, StateError> {
+        if self.next_name.is_some() {
+            return Ok(false);
+        }
+        let Some(mut t) = self.undo.pop() else {
+            return Ok(false);
+        };
+        let result = self.replay(mt, &mut t, true);
+        self.discard([t]);
+        self.open = false;
+        result
+    }
+
+    /// Applies a transaction's items backwards (`reverse`) or forwards.
+    fn replay(
+        &mut self,
+        mt: &MessageThread<'_>,
+        t: &mut Transaction,
+        reverse: bool,
+    ) -> Result<bool, StateError> {
+        /// Sets the store's undoing flag; clears it on drop, even if a listener panics.
+        struct Undoing(Option<Store>);
+        impl Drop for Undoing {
+            fn drop(&mut self) {
+                if let Some(s) = &self.0 {
+                    s.rc().borrow_mut().undoing = false;
+                }
+            }
+        }
+        let guard = Undoing(self.store.as_ref().map(Store::from_rc));
+        if let Some(s) = &guard.0 {
+            s.rc().borrow_mut().undoing = true;
+        }
+        self.performing = true;
+        let step = |item: &mut Item| match item {
+            Item::Record(c) => {
+                let s = guard.0.as_ref().expect("records imply a bound store");
+                apply(s, mt, c, reverse).map(|()| true)
+            }
+            Item::Action(a) if reverse => Ok(a.undo(mt)),
+            Item::Action(a) => Ok(a.perform(mt)),
+        };
+        let mut result = Ok(true);
+        let mut run = |item: &mut Item| {
+            result = step(item);
+            matches!(result, Ok(true))
+        };
+        if reverse {
+            t.items.iter_mut().rev().all(&mut run);
+        } else {
+            t.items.iter_mut().all(&mut run);
+        }
+        self.performing = false;
+        result
     }
 
     /// Binds to `store` on first use; fails if bound to another store.
@@ -251,63 +466,94 @@ impl UndoManager {
         }
     }
 
+    /// The items of the transaction new work goes into: clears the redo list, and starts a
+    /// transaction if one was begun or none exists (dropping a previous one that cancelled
+    /// out, then applying the size limit).
+    fn current(&mut self) -> &mut Vec<Item> {
+        let redo = std::mem::take(&mut self.redo);
+        self.discard(redo);
+        let name = match self.next_name.take() {
+            Some(name) => Some(name),
+            None if self.undo.is_empty() || !self.open => Some(String::new()),
+            None => None,
+        };
+        if let Some(name) = name {
+            if self.undo.last().is_some_and(Transaction::is_no_op) {
+                let dropped = self.undo.pop();
+                self.discard(dropped);
+            }
+            self.undo.push(Transaction {
+                name,
+                items: Vec::new(),
+            });
+            self.open = true;
+            self.trim();
+        }
+        &mut self.undo.last_mut().expect("just ensured").items
+    }
+
+    /// Drops the oldest undoable transactions while over the unit limit, keeping at least
+    /// `min_transactions` and the current one.
+    fn trim(&mut self) {
+        let keep = self.min_transactions.max(1);
+        let mut units = self.number_of_units_taken_up();
+        let mut dropped = 0;
+        while self.undo.len() - dropped > keep && units > self.max_units {
+            units -= self.undo[dropped].units();
+            dropped += 1;
+        }
+        let old: Vec<_> = self.undo.drain(..dropped).collect();
+        self.discard(old);
+    }
+
     /// Adds records captured from one mutation, each already holding its counts.
     pub(crate) fn add(&mut self, records: Vec<Change>) {
         if records.is_empty() {
             return;
         }
-        let redo = std::mem::take(&mut self.redo);
-        self.discard(redo);
-        let mut dropped = Vec::new();
-        let begun = self.next_name.take();
-        if begun.is_some() || !self.open || self.undo.is_empty() {
-            if self.undo.last().is_some_and(Transaction::is_no_op) {
-                dropped.extend(self.undo.pop());
-            }
-            self.undo.push(Transaction {
-                name: begun.unwrap_or_default(),
-                records: Vec::new(),
-            });
-            self.open = true;
-        }
-        let records_now = &mut self.undo.last_mut().expect("just ensured").records;
+        let items = self.current();
         let mut merged = Vec::new();
         for change in records {
-            match (records_now.last_mut(), change) {
+            match (items.last_mut(), change) {
                 (
-                    Some(Change::PropertyChanged {
+                    Some(Item::Record(Change::PropertyChanged {
                         node: n0,
                         id: i0,
                         new: last,
                         ..
-                    }),
+                    })),
                     Change::PropertyChanged { node, id, old, new },
                 ) if *n0 == node && *i0 == id => {
                     *last = new;
-                    merged.push(Change::PropertyChanged {
+                    merged.push(Item::Record(Change::PropertyChanged {
                         node,
                         id,
                         old,
                         new: Var::default(),
-                    });
+                    }));
                 }
-                (_, change) => records_now.push(change),
+                (_, change) => items.push(Item::Record(change)),
             }
         }
-        self.discard(dropped);
-        if let Some(store) = &self.store {
-            let mut inner = store.borrow_mut();
-            merged.iter().for_each(|c| inner.unpin(c));
-        }
+        self.discard([Transaction {
+            name: String::new(),
+            items: merged,
+        }]);
     }
 
-    /// Releases the counts held by `transactions`' records.
+    /// Releases the counts held by `transactions`' records, then drops their items outside
+    /// the store's borrow (an action may own handles).
     fn discard(&self, transactions: impl IntoIterator<Item = Transaction>) {
-        let Some(store) = &self.store else { return };
-        let mut inner = store.borrow_mut();
-        for t in transactions {
-            t.records.iter().for_each(|c| inner.unpin(c));
+        let all: Vec<Transaction> = transactions.into_iter().collect();
+        if let Some(store) = &self.store {
+            let mut inner = store.borrow_mut();
+            for item in all.iter().flat_map(|t| &t.items) {
+                if let Item::Record(c) = item {
+                    inner.unpin(c);
+                }
+            }
         }
+        drop(all);
     }
 }
 
