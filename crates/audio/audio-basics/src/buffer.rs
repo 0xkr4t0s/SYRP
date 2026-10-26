@@ -295,7 +295,7 @@ impl<T: BufferSample> AudioBuffer<T> {
     ///
     /// # Errors
     /// [`BufferError::TooLarge`] when the new size does not fit in memory; the buffer is then
-    /// unchanged.
+    /// unchanged. (A failed allocation of a size that does fit aborts, as it does for `Vec`.)
     ///
     /// ```
     /// let mut buf = syrp_audio_basics::AudioBuffer::<f32>::new(1, 4)?;
@@ -360,7 +360,8 @@ impl<T: BufferSample> AudioBuffer<T> {
     /// allocation when it fits, as in [`set_size`](Self::set_size).
     ///
     /// # Errors
-    /// [`BufferError::TooLarge`], as for [`set_size`](Self::set_size).
+    /// [`BufferError::TooLarge`], as for [`set_size`](Self::set_size); allocation failure
+    /// aborts.
     ///
     /// ```
     /// use syrp_audio_basics::AudioBuffer;

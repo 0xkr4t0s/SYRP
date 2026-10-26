@@ -40,7 +40,7 @@ fn b1_skeleton_declares_modules_benches_and_deps() {
     // The four modules exist (control and voice are empty until their WPs land).
     #[allow(unused_imports)]
     use syrp_audio_basics::{buffer, control, vector_ops, voice};
-    let manifest = include_str!("../Cargo.toml");
+    let manifest = include_str!("../Cargo.toml").replace("\r\n", "\n");
     for dep in [
         "syrp-audio-api",
         "syrp-rt",
