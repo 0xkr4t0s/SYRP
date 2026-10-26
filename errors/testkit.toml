@@ -1,0 +1,29 @@
+# Error catalogue: offline test kit (syrp-testkit). Codes are permanent: never reuse or renumber one.
+
+[[error]]
+code = "SYRP-TESTKIT-0001"
+title = "Offline render input channels differ in length"
+severity = "error"
+cause = "render_offline was given input channels that do not all have the same number of samples, so blocks could not be cut at the same frames on every channel."
+fix = "Pad or trim every input channel to one length before rendering; the error names the first channel that differs from channel 0."
+
+[[error]]
+code = "SYRP-TESTKIT-0002"
+title = "Test kit buffer allocation failed"
+severity = "error"
+cause = "A buffer sized from the input (render output, block scratch or a noise buffer) could not be allocated, or its size overflowed usize."
+fix = "Render shorter input or fewer channels, or use a smaller block size."
+
+[[error]]
+code = "SYRP-TESTKIT-0003"
+title = "Writing a WAV file failed"
+severity = "error"
+cause = "The file could not be created or a write to it failed; the underlying I/O error is attached as the source."
+fix = "Check that the directory exists and is writable and that the disk has space."
+
+[[error]]
+code = "SYRP-TESTKIT-0004"
+title = "Render exceeds the limits of a WAV file"
+severity = "error"
+cause = "write_wav was asked to write more than 4 GiB of sample data, more than 65,535 channels, or a sample rate that does not round to 1..=4294967295 Hz."
+fix = "Write a shorter excerpt or fewer channels, and pass the render's real sample rate in Hz."
