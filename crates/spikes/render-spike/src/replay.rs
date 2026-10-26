@@ -5,10 +5,11 @@
 
 use syrp_geom::{AffineTransform, Rect};
 use syrp_gfx_api::{
-    BlendMode, BrushRef, DisplayList, Op, Path, PathView, RenderError, ResamplingQuality, StrokeRef,
+    BlendMode, BrushRef, DisplayList, ImageHandle, Op, Path, PathView, RenderError,
+    ResamplingQuality, StrokeRef,
 };
 
-use crate::assets::{Assets, RgbaImage, glyph_outline};
+use crate::assets::{Assets, glyph_outline};
 use crate::scene::OUTLINES;
 
 /// A filled or clipping shape.
@@ -28,10 +29,10 @@ pub(crate) trait Sink {
         brush: BrushRef<'_>,
         xf: &AffineTransform,
     );
-    /// Paints `image` mapped to user space by `image_xf`, limited to `area` (user units).
+    /// Paints image `handle` mapped to user space by `image_xf`, limited to `area` (user units).
     fn image(
         &mut self,
-        image: &RgbaImage,
+        handle: ImageHandle,
         image_xf: &AffineTransform,
         area: Rect<f32>,
         quality: ResamplingQuality,
@@ -82,7 +83,7 @@ pub(crate) fn replay(
                 let src = Rect::new(0.0, 0.0, img.width as f32, img.height as f32);
                 let image_xf = placement.transform_to_fit(src, dest);
                 let area = placement.apply_to(src, dest).intersection(&dest);
-                sink.image(img, &image_xf, area, quality, &xf);
+                sink.image(image, &image_xf, area, quality, &xf);
             }
             Op::DrawGlyphs {
                 font,
