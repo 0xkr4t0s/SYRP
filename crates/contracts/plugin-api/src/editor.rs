@@ -4,9 +4,7 @@
 //! This crate is L1 and never names `syrp-ui` (L4) types. An editor builds its UI through the
 //! opaque [`EditorHost`] and returns the root of what it built as a [`NodeHandle`].
 
-use std::any::Any;
-use std::fmt;
-use std::sync::Arc;
+use std::{any::Any, fmt, sync::Arc};
 
 use syrp_error::{Diagnostic, ErrorCode};
 
