@@ -1,0 +1,25 @@
+[package]
+name = "syrp-state-arena-spike"
+description = "Throwaway spike (WP-0.2-15): a slotmap ValueTree arena with refcounted detach/reattach and a change log for listeners."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "AGPL-3.0-only OR BUSL-1.1"
+repository.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[package.metadata.syrp]
+layer = "L2"
+wp = "WP-0.2-15"
+
+[dependencies]
+# Zlib licence (allowed by deny.toml). Generational arena keys, as master plan §5.9 specifies.
+slotmap = { version = "1.1.1", default-features = false, features = ["std"] }
+
+[[bench]]
+name = "property_access"
+harness = false
+
+[lints]
+workspace = true
