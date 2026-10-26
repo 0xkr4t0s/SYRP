@@ -664,7 +664,7 @@ Optional native backends (Direct2D, CoreGraphics) are deferred. They would only 
 - Silent voices and graph nodes sleep once their tails end; flush-to-zero is set for every `process` call; smoothing and coefficient updates may run at control rate.
 - Every SIMD kernel has a scalar reference implementation used by the parity tests.
 
-**Editor.** `trait Editor { fn create(&mut self, ui: &mut Ui, params: &ParamHandles, mt: MessageThread) -> ComponentId; fn constraints(&self) -> SizeConstraints; }`. It is created and destroyed on the message thread and never touches the audio state directly.
+**Editor.** `trait Editor { fn create(&mut self, host: &mut dyn EditorHost, params: &ParamHandles) -> Result<NodeHandle, EditorError>; fn constraints(&self) -> SizeConstraints; }`. `NodeHandle` and `EditorHost` are defined in `syrp-plugin-api` (L1), so the contract never names `syrp-ui` (L4). `syrp-ui`'s `ComponentId` converts losslessly to and from `NodeHandle`, and the `syrp-plugin` runtime (L5) implements `EditorHost` for `Ui` and gives plugins typed access to it (`syrp_plugin::editor_ui(host)`). The editor is created and destroyed on the message thread and never touches the audio state directly.
 
 **ProcessorGraph.**
 - Editing (`add`, `connect`, `remove`) happens on the message thread.

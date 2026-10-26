@@ -12,7 +12,7 @@ Read `docs/design/0003-data-layout.md` (ADR 0003) first. Hot-path types in this 
 - B3. `Path` with move/line/quad/cubic/close, stroke parameters (width, joins, caps, dashes), and bounds. A path is stored as a verb array and a point array; when recorded into a `DisplayList` its verbs and points are appended to the list's arenas, not stored as a separate allocation.
 - B4. Opaque `ImageHandle` and `FontHandle` ids, resolved by renderers.
 - B5. `trait Renderer { fn render(&mut self, list: &DisplayList, target: &mut RenderTarget) -> Result<(), RenderError> }` with explicit scale factor on `RenderTarget`.
-- B6. A `DisplayList` serialises to JSON (feature `serde`) for inspection and golden debugging, and exposes a content hash, equal for lists that record the same ops, used to skip re-rendering unchanged cached layers.
+- B6. A `DisplayList` serialises to JSON (feature `serde`) for inspection and golden debugging, and exposes a 64-bit content hash used to skip re-rendering unchanged cached layers and to key goldens. The hash is computed over the canonical op encoding only (op tags, payloads and the arena ranges they reference), never over spare capacity or bytes left behind by `clear()`. Floats are hashed by bit pattern, so `-0.0` and NaN payloads hash deterministically. The algorithm is fixed and seedless (not `std`'s `RandomState`), so the same ops give the same hash across runs, builds and platforms.
 - B7. Contract freeze as in WP-0.2-01.
 
 ## Crate setup

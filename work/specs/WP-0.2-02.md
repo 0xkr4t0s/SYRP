@@ -11,7 +11,7 @@ Read `docs/design/0003-data-layout.md` (ADR 0003) first. Hot-path types in this 
 - B2. `ChannelSet` covering mono, stereo, LCR, quad, 5.0/5.1, 6.x, 7.x, 7.1.4 and discrete N, with named speaker positions; `BusLayout` = ordered input and output buses with names and `ChannelSet`s; layout negotiation result types.
 - B3. `ProcessConfig`: sample rate, max block size, precision, offline/realtime flag.
 - B4. Transport and play-head: `PlayHeadInfo` with optional fields (bpm, time signature, ppq position, bar start, loop points, sample position, playing/recording/looping flags, host time) mirroring what JUCE documents for its position info.
-- B5. Alignment contract: a view reports `is_simd_aligned()`, true when every channel starts on a 64-byte boundary and `stride` is a multiple of 16 samples. Owning buffers (in `syrp-audio-basics`) must always produce aligned views; `from_raw_parts` debug-asserts alignment when asked for an aligned view. Sub-range views may be unaligned and report it.
+- B5. Alignment contract: a view reports `is_simd_aligned()`, true when every channel starts on a 64-byte boundary and the stride in bytes is a multiple of 64 (16 `f32` or 8 `f64` samples). Owning buffers (in `syrp-audio-basics`) must always produce aligned views. Two unsafe constructors exist: `from_raw_parts` accepts any layout, and `from_raw_parts_aligned` debug-asserts the alignment contract and panics in debug builds when it does not hold. Sub-range views may be unaligned and report it.
 - B6. Everything here is `RtSafe` where it is used on the audio thread (from `syrp-rt`).
 - B7. Contract freeze as in WP-0.2-01.
 

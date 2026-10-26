@@ -49,7 +49,7 @@ Both front-ends can be mixed in one tree, one graph and one state document.
 ### D2. Hot-path storage is data-oriented
 | Area | Storage | Decided in |
 |---|---|---|
-| Audio buffers | One allocation per buffer; each channel starts on a 64-byte boundary; channel stride is a multiple of 16 samples. Views carry the stride. | WP-0.2-02 |
+| Audio buffers | One allocation per buffer; each channel starts on a 64-byte boundary; channel stride in bytes is a multiple of 64 (16 `f32` or 8 `f64` samples). Views carry the stride. | WP-0.2-02 |
 | Parameters | Dense `ParamIndex(u32)` assigned at registration; values in one contiguous atomic array; one sorted change stream per block. String ids resolve to indices at prepare time only. | WP-0.2-06 |
 | MIDI buffers | Packed: an array of fixed-size event heads plus one byte arena (or `u32` word arena for UMP). No per-event allocation, SysEx included. Iteration yields borrowed views. | WP-0.2-03 |
 | Display list | An op-tag stream with per-kind payload arrays and shared arenas for path verbs, points, glyph runs and gradient stops, addressed by index. | WP-0.2-07 |
