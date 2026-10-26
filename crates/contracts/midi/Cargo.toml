@@ -1,0 +1,24 @@
+[package]
+name = "syrp-midi"
+description = "The Syrp MIDI contract: MidiMessage, borrowed MidiMessageRef views, MidiBuffer and UMP packets and codecs."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT OR Apache-2.0"
+repository.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[package.metadata.syrp]
+layer = "L1"
+wp = "WP-0.2-03"
+
+[dependencies]
+syrp-error = { version = "0.0.1", path = "../../foundation/error" }
+syrp-rt = { version = "0.0.1", path = "../../foundation/rt" }
+
+[dev-dependencies]
+proptest = { version = "1.5", default-features = false, features = ["std"] }
+
+[lints]
+workspace = true

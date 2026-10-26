@@ -1,0 +1,16 @@
+# Error catalogue: MIDI and UMP data types and codecs (syrp-midi). Never renumber.
+
+[[error]]
+code = "SYRP-MIDI-0001"
+title = "Malformed MIDI message bytes"
+severity = "error"
+cause = "The bytes are not exactly one complete MIDI 1.0 message: they are empty, start with a data byte (running status is only allowed in byte streams), have the wrong length for their status, carry a data byte of 0x80 or above, a SysEx without its closing 0xF7, or a meta event whose length field disagrees with its data."
+fix = "Pass one whole message, status byte first. Build messages with the MidiMessage constructors. Byte streams that use running status must be split into whole messages first (a stream decoder arrives with the UMP conversions)."
+
+[[error]]
+code = "SYRP-MIDI-0002"
+title = "MIDI value out of range"
+severity = "error"
+cause = "A constructor was given a channel outside 1 to 16, a 7-bit value above 127, or a 14-bit pitch-bend value above 16383."
+fix = "Channels are numbered 1 to 16. Clamp or scale the value into range before building the message."
+
