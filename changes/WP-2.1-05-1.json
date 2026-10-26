@@ -1,0 +1,1 @@
+{"wp": "WP-2.1-05", "kind": "added", "summary": "syrp-audio-basics: the Voice trait, NoteStart, VoiceSample lane access and the VoicePool skeleton (lane-packed voices, prepare, stable VoiceHandles) (increment 1: B1-B2)."}
