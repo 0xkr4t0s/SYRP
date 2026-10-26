@@ -1,0 +1,25 @@
+[package]
+name = "syrp-docgen"
+description = "Docs pipeline: rustdoc JSON to api-index.json for agents (master plan 13.1)."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[package.metadata.syrp]
+layer = "L6"
+wp = "WP-0.1-10"
+
+[dependencies]
+# rustdoc-types 0.N reads rustdoc JSON format N only: bump it together with the nightly.
+rustdoc-types = "0.61.0"
+schemars = "1.2.2"
+serde.workspace = true
+serde_json.workspace = true
+syrp-error = { version = "0.0.1", path = "../../foundation/error" }
+
+[lints]
+workspace = true

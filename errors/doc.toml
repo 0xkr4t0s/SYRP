@@ -1,0 +1,23 @@
+# Error catalogue: docs pipeline domain (syrp-docgen). `cargo syrp explain <code>` renders these entries.
+# Codes are permanent: never reuse or renumber one.
+
+[[error]]
+code = "SYRP-DOC-0001"
+title = "Nightly toolchain missing for rustdoc JSON"
+severity = "error"
+cause = "Producing rustdoc JSON needs `-Z unstable-options --output-format json`, which only a nightly rustdoc accepts, and no nightly toolchain is installed."
+fix = "Run `rustup toolchain install nightly --profile minimal`, or build the index in CI where nightly is available."
+
+[[error]]
+code = "SYRP-DOC-0002"
+title = "Unsupported rustdoc JSON format version"
+severity = "error"
+cause = "The rustdoc JSON was written by a nightly whose `format_version` differs from the one the pinned `rustdoc-types` crate reads."
+fix = "Use a nightly that writes the expected format, or bump `rustdoc-types` in crates/tooling/docgen to the matching 0.<format_version> release."
+
+[[error]]
+code = "SYRP-DOC-0003"
+title = "rustdoc JSON could not be produced or read"
+severity = "error"
+cause = "`cargo rustdoc` failed, or the JSON file is missing, unreadable or not valid rustdoc JSON."
+fix = "Run the printed `cargo +nightly rustdoc` command by hand to see the compiler error, then check the path."

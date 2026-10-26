@@ -1,0 +1,1 @@
+{"wp": "WP-0.1-10", "kind": "added", "summary": "syrp-docgen (increment 1): build api-index.json from rustdoc JSON, expose its JSON Schema, and detect a missing nightly (SYRP-DOC-0001..0003 in errors/doc.toml)."}
