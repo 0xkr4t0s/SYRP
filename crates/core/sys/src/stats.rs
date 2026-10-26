@@ -278,7 +278,8 @@ impl SystemStats {
     }
 
     /// A readable name: `Linux`, `macOS`, `Windows` or `Other`, followed by the version when
-    /// known, for example `"macOS 14.4.1"` or `"Windows 10.0.22631"`.
+    /// known, for example `"macOS 14.4.1"` or `"Windows 10.0.22631"`. Windows 11 reports
+    /// itself as 10.0 with a build of 22000 or later, so it reads as `"Windows 10.0.x"`.
     ///
     /// ```
     /// # use syrp_sys::SystemStats;

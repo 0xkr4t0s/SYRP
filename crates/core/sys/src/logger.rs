@@ -6,6 +6,9 @@ use std::sync::{Mutex, PoisonError, RwLock};
 
 /// A destination for log messages.
 ///
+/// [`Logger::log`] runs while the current-logger lock is held, so a logger must not call
+/// [`set_current_logger`] or [`write_to_log`]: either can deadlock.
+///
 /// ```
 /// use std::sync::Mutex;
 /// use syrp_sys::Logger;
@@ -55,7 +58,7 @@ pub fn set_current_logger(
 /// standard error (and, on Windows, to the debugger with `OutputDebugStringW`).
 ///
 /// Any thread; not RT-safe (it locks and does I/O). A logger must not call
-/// [`set_current_logger`] from inside [`Logger::log`]: that deadlocks.
+/// [`set_current_logger`] or [`write_to_log`] from inside [`Logger::log`]: either can deadlock.
 ///
 /// ```
 /// syrp_sys::write_to_log("starting up");
