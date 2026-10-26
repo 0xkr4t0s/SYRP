@@ -34,3 +34,10 @@ title = "Node is not a child of this parent"
 severity = "error"
 cause = "Store::remove_child was given a node that is not a direct child of the given parent."
 fix = "Look the parent up with Store::parent and remove the child from that node."
+
+[[error]]
+code = "SYRP-STATE-0006"
+title = "Child index out of range"
+severity = "error"
+cause = "Store::move_child was given a source index that is not less than the number of children."
+fix = "Pass a source index below Store::num_children. A destination past the end moves the child to the end."
