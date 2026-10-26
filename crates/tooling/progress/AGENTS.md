@@ -5,7 +5,7 @@ Builds the public progress page (WP-0.2-16). `load(root, open_prs)` reads the bo
 (`work/waves`, `work/packages`), the JUCE class inventory and parity ledger (`parity/`), and the
 first-parent git history, and returns a `Progress` snapshot: waves with each WP's shown status,
 one cell per JUCE class with its status, and the merged PRs. The `syrp-progress` binary writes it
-as `progress.json` (the HTML page arrives in increment 2). The docs workflow runs it after every
+as `progress.json` and `index.html`. The docs workflow runs it after every
 merge to main.
 
 ## Ledger rows
@@ -33,5 +33,6 @@ experimental
 directory and need `git` on `PATH`.
 
 ## Known gaps
-- Module phase and difficulty live in the page template, copied from master plan §3.
+- Module phase and difficulty live in `src/page.html`, copied from master plan §3. The treemap
+  layout is written in the page; it loads no third-party script.
 - Open PRs come only from `--open-prs`; without it, WPs with only an open PR show as planned.

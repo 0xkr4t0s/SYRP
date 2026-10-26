@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only OR BUSL-1.1
-//! `syrp-progress`: writes `progress.json` for the progress page (spec B5).
+//! `syrp-progress`: writes `progress.json` and `index.html` for the progress page (spec B5).
 
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -49,7 +49,11 @@ fn run(args: &Args) -> Result<(), ProgressError> {
         detail: e.to_string(),
     })?;
     let json = serde_json::to_string_pretty(&progress).expect("snapshot always serialises");
-    write(args.out.join("progress.json"), &(json + "\n"))
+    write(args.out.join("progress.json"), &(json + "\n"))?;
+    write(
+        args.out.join("index.html"),
+        &syrp_progress::render_html(&progress),
+    )
 }
 
 fn main() -> ExitCode {

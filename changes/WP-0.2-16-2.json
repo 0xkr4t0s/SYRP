@@ -1,0 +1,1 @@
+{"wp": "WP-0.2-16", "kind": "added", "summary": "syrp-progress: render_html and the progress page (module treemap with one cell per JUCE class, WP map, roadmap, module table, WP cards, merge history); the binary now also writes index.html."}

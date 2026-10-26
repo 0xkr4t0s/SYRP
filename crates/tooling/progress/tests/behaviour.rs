@@ -211,6 +211,42 @@ fn b3_merged_prs_oldest_first_in_utc_with_wp() {
 }
 
 #[test]
+fn b4_page_embeds_data_and_cannot_be_broken_out_of() {
+    let root = fixture("b4");
+    let open = [OpenPr {
+        number: 9,
+        title: "[WP-0.1-03] </script><script>alert(1)".into(),
+    }];
+    let mut p = syrp_progress::load(&root, &open).unwrap();
+    p.waves[0].wps[2].title = "</script><b>".into();
+    p.waves[0].wps[1].title = r#"<img src=x onerror="alert(1)">'"#.into();
+    p.waves[0].title = "<svg onload=alert(1)>".into();
+    let html = syrp_progress::render_html(&p);
+    assert!(html.starts_with("<!doctype html>"));
+    assert!(!html.contains("/*DATA*/"));
+    assert_eq!(
+        html.matches("</script>").count(),
+        1,
+        "only the page's own closing tag"
+    );
+    assert!(html.contains(r#""title":"\u003c/script>\u003cb>""#));
+    // The embedded data never contains a raw `<`, whatever the titles hold.
+    let data = html
+        .split("const D = ")
+        .nth(1)
+        .unwrap()
+        // One line of JSON; `lines` also copes with a CRLF checkout of page.html on Windows.
+        .lines()
+        .next()
+        .unwrap()
+        .trim_end_matches(';');
+    assert!(!data.contains('<'), "raw < in embedded data: {data}");
+    assert!(data.contains(r#"\u003cimg src=x onerror=\"alert(1)\">'"#));
+    let back: serde_json::Value = serde_json::from_str(data).unwrap();
+    assert_eq!(back["waves"][0]["title"], "<svg onload=alert(1)>");
+}
+
+#[test]
 fn b5_binary_writes_both_files_and_reports_bad_input() {
     let root = fixture("b5");
     let out = root.join("site/progress");
@@ -235,6 +271,9 @@ fn b5_binary_writes_both_files_and_reports_bad_input() {
     let json: serde_json::Value =
         serde_json::from_str(&std::fs::read_to_string(out.join("progress.json")).unwrap()).unwrap();
     assert_eq!(json["waves"][0]["wps"][2]["open"][0], 9);
+    let html = std::fs::read_to_string(out.join("index.html")).unwrap();
+    assert!(html.starts_with("<!doctype html>") && html.contains("\"commit\":"));
+    assert!(out.join("index.html").exists());
 
     std::fs::write(&open, "not json").unwrap();
     let bad = run(&[&open]);
@@ -268,5 +307,9 @@ fn b6_same_inputs_give_identical_output() {
     assert_eq!(
         serde_json::to_string(&a).unwrap(),
         serde_json::to_string(&b).unwrap()
+    );
+    assert_eq!(
+        syrp_progress::render_html(&a),
+        syrp_progress::render_html(&b)
     );
 }
