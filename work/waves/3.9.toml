@@ -1,0 +1,9 @@
+id = "3.9"
+phase = 3
+title = "Compatibility front-end for UI (syrp-compat-ui), parked until syrp-ui and syrp-laf have WPs"
+# ADR 0003 D1: each compat crate ships with or after its core crate. Disabled until the
+# syrp-ui and syrp-laf WPs exist and merge; the spec room enables it then.
+enabled = false
+packages = [
+  "WP-1.9-03",
+]

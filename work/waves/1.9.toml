@@ -1,11 +1,10 @@
 id = "1.9"
 phase = 1
-title = "Compatibility front-ends (syrp-compat-*), parked until their core crates have WPs"
-# ADR 0003 D1: each compat crate ships with or after its core crate. Disabled until the
-# syrp-state, syrp-audio-basics and syrp-ui WPs exist; the spec room enables it per package.
-enabled = false
+title = "Compatibility front-end for syrp-state (syrp-compat-state)"
+# ADR 0003 D1: each compat crate ships with or after its core crate. syrp-state is done
+# (WP-1.2-03, WP-1.2-04), so syrp-compat-state is scheduled. The audio and UI front-ends
+# moved to waves 2.9 and 3.9, parked until their core crates have WPs.
+enabled = true
 packages = [
   "WP-1.9-01",
-  "WP-1.9-02",
-  "WP-1.9-03",
 ]

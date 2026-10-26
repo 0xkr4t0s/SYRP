@@ -1,0 +1,9 @@
+id = "2.9"
+phase = 2
+title = "Compatibility front-end for audio (syrp-compat-audio), parked until syrp-dsp and syrp-processors have WPs"
+# ADR 0003 D1: each compat crate ships with or after its core crate. Disabled until the
+# syrp-dsp and syrp-processors WPs exist and merge; the spec room enables it then.
+enabled = false
+packages = [
+  "WP-1.9-02",
+]
