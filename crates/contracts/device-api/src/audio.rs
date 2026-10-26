@@ -6,7 +6,7 @@ use std::marker::PhantomData;
 use syrp_audio_api::{AudioBlock, AudioBlockMut};
 use syrp_rt::RtSafe;
 
-use crate::DeviceError;
+use crate::{DeviceChangeNotifier, DeviceError, DeviceId, DeviceInfo};
 
 const WORDS: usize = 4;
 
@@ -395,6 +395,29 @@ where
 /// ```
 #[doc(alias = "AudioIODevice")]
 pub trait AudioDevice: Send {
+    /// The device's id and name.
+    /// ```
+    /// # use syrp_device_api::{AudioDevice, fake::{FakeAudioDevice, FakeAudioSpec}};
+    /// assert_eq!(FakeAudioDevice::new(FakeAudioSpec::new("A", 1, 1)).info().name(), "A");
+    /// ```
+    fn info(&self) -> &DeviceInfo;
+
+    /// One name per hardware input channel.
+    /// ```
+    /// # use syrp_device_api::{AudioDevice, fake::{FakeAudioDevice, FakeAudioSpec}};
+    /// assert_eq!(FakeAudioDevice::new(FakeAudioSpec::new("A", 2, 0)).input_channel_names().len(), 2);
+    /// ```
+    #[doc(alias = "getInputChannelNames")]
+    fn input_channel_names(&self) -> Vec<String>;
+
+    /// One name per hardware output channel.
+    /// ```
+    /// # use syrp_device_api::{AudioDevice, fake::{FakeAudioDevice, FakeAudioSpec}};
+    /// assert_eq!(FakeAudioDevice::new(FakeAudioSpec::new("A", 2, 0)).output_channel_names().len(), 0);
+    /// ```
+    #[doc(alias = "getOutputChannelNames")]
+    fn output_channel_names(&self) -> Vec<String>;
+
     /// The sample rates `open` accepts, in Hz, ascending.
     /// ```
     /// # use syrp_device_api::{AudioDevice, fake::{FakeAudioDevice, FakeAudioSpec}};
@@ -498,4 +521,62 @@ pub trait AudioDevice: Send {
     /// ```
     #[doc(alias = "getXRunCount")]
     fn xrun_count(&self) -> Option<u64>;
+}
+
+/// An audio backend (CoreAudio, WASAPI, ASIO, ALSA, JACK...): enumerates devices and creates
+/// [`AudioDevice`]s.
+/// ```
+/// use syrp_device_api::{AudioDeviceType, fake::{FakeAudioDeviceType, FakeAudioSpec}};
+/// let ty = FakeAudioDeviceType::new();
+/// ty.add_device(FakeAudioSpec::new("A", 2, 2));
+/// let dev = ty.create(ty.default_device().as_ref().unwrap())?;
+/// assert_eq!(dev.info().name(), "A");
+/// # Ok::<(), syrp_device_api::DeviceError>(())
+/// ```
+#[doc(alias = "AudioIODeviceType")]
+pub trait AudioDeviceType {
+    /// The backend's name, such as `"ALSA"`.
+    /// ```
+    /// # use syrp_device_api::{AudioDeviceType, fake::FakeAudioDeviceType};
+    /// assert_eq!(FakeAudioDeviceType::new().name(), "Fake");
+    /// ```
+    #[doc(alias = "getTypeName")]
+    fn name(&self) -> &str;
+
+    /// The devices present now.
+    /// ```
+    /// # use syrp_device_api::{AudioDeviceType, fake::FakeAudioDeviceType};
+    /// assert!(FakeAudioDeviceType::new().devices().is_empty());
+    /// ```
+    #[doc(alias = "getDeviceNames")]
+    #[doc(alias = "scanForDevices")]
+    fn devices(&self) -> Vec<DeviceInfo>;
+
+    /// The system default device, if there is one.
+    /// ```
+    /// # use syrp_device_api::{AudioDeviceType, fake::FakeAudioDeviceType};
+    /// assert!(FakeAudioDeviceType::new().default_device().is_none());
+    /// ```
+    #[doc(alias = "getDefaultDeviceIndex")]
+    fn default_device(&self) -> Option<DeviceId>;
+
+    /// Creates a closed device.
+    ///
+    /// # Errors
+    /// [`DeviceError::NotFound`] if no device has `id`.
+    /// ```
+    /// # use syrp_device_api::{AudioDeviceType, DeviceError, DeviceId, fake::FakeAudioDeviceType};
+    /// let r = FakeAudioDeviceType::new().create(&DeviceId::new("nope"));
+    /// assert_eq!(r.err(), Some(DeviceError::NotFound));
+    /// ```
+    #[doc(alias = "createDevice")]
+    fn create(&self, id: &DeviceId) -> Result<Box<dyn AudioDevice>, DeviceError>;
+
+    /// Installs (or with `None` removes) the notifier told about hot-plug changes.
+    /// ```
+    /// # use syrp_device_api::{AudioDeviceType, fake::FakeAudioDeviceType};
+    /// FakeAudioDeviceType::new().set_change_notifier(None);
+    /// ```
+    #[doc(alias = "addListener")]
+    fn set_change_notifier(&self, notifier: Option<DeviceChangeNotifier>);
 }
