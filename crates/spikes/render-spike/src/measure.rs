@@ -160,7 +160,8 @@ impl Timing {
 }
 
 /// Times `runs` renders of `scene` at `scale` with one `renderer`, after one untimed warm-up
-/// render. Each timed render covers target allocation, list replay and rasterisation.
+/// render. One target is allocated up front and cleared, untimed, before each run, so a timed
+/// render covers list replay and rasterisation only.
 ///
 /// # Errors
 /// The first [`RenderError`] from the target or the renderer.
@@ -176,11 +177,15 @@ pub fn time_scene(
     scale: f64,
     runs: usize,
 ) -> Result<Timing, RenderError> {
-    renderer.render(scene.list(), &mut scene.target(scale)?)?;
+    let mut target = scene.target(scale)?;
+    renderer.render(scene.list(), &mut target)?;
     let mut samples = Vec::with_capacity(runs.min(1024));
     for _ in 0..runs {
+        target
+            .pixels_mut()
+            .ok_or(RenderError::InvalidTarget)?
+            .fill(0);
         let start = Instant::now();
-        let mut target = scene.target(scale)?;
         renderer.render(scene.list(), &mut target)?;
         samples.push(start.elapsed());
     }

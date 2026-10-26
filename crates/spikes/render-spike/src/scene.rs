@@ -110,14 +110,41 @@ fn pt(x: f32, y: f32) -> Point<f32> {
     Point::new(x, y)
 }
 
+/// Sine and cosine from a fixed Taylor series using only `+`, `*`, `/` and `round`, which IEEE
+/// 754 makes bit-exact everywhere. The platform libm is not, and scene geometry must be identical
+/// on every OS and architecture so that cross-platform render differences are the renderer's.
+fn sin_cos(a: f64) -> (f64, f64) {
+    let a = a - std::f64::consts::TAU * (a / std::f64::consts::TAU).round();
+    let (mut s, mut c, mut ts, mut tc) = (a, 1.0, a, 1.0);
+    for n in 1..14 {
+        let n = f64::from(n);
+        ts *= -a * a / ((2.0 * n) * (2.0 * n + 1.0));
+        tc *= -a * a / ((2.0 * n - 1.0) * (2.0 * n));
+        s += ts;
+        c += tc;
+    }
+    (s, c)
+}
+
+/// The point at `radius` and angle `a` (radians, clockwise from +x on screen) around a centre.
+fn polar(cx: f32, cy: f32, radius: f32, a: f64) -> (f32, f32) {
+    let (s, c) = sin_cos(a);
+    (cx + radius * c as f32, cy + radius * s as f32)
+}
+
+/// A rotation by `a` radians about `(px, py)`, built with [`sin_cos`].
+fn rotation_about(a: f64, px: f64, py: f64) -> AffineTransform {
+    let (s, c) = sin_cos(a);
+    AffineTransform::new(c, -s, px - c * px + s * py, s, c, py - s * px - c * py)
+}
+
 fn star(cx: f32, cy: f32, outer: f32, inner: f32, n: u32, rule: FillRule) -> Path {
     let mut p = Path::new();
-    let step = std::f32::consts::PI / n as f32;
+    let step = std::f64::consts::PI / f64::from(n);
     let pts: Vec<_> = (0..2 * n)
         .map(|i| {
             let r = if i % 2 == 0 { outer } else { inner };
-            let a = i as f32 * step - std::f32::consts::FRAC_PI_2;
-            (cx + r * a.cos(), cy + r * a.sin())
+            polar(cx, cy, r, f64::from(i) * step - std::f64::consts::FRAC_PI_2)
         })
         .collect();
     polygon(&mut p, &pts);
@@ -130,8 +157,8 @@ fn pentagram(rule: FillRule) -> Path {
     let mut p = Path::new();
     let pts: Vec<_> = (0..5)
         .map(|i| {
-            let a = (i * 2 % 5) as f32 * 2.0 * std::f32::consts::PI / 5.0 - 1.570_796_4;
-            (60.0 + 40.0 * a.cos(), 47.0 + 40.0 * a.sin())
+            let a = f64::from(i * 2 % 5) * std::f64::consts::TAU / 5.0;
+            polar(60.0, 47.0, 40.0, a - std::f64::consts::FRAC_PI_2)
         })
         .collect();
     polygon(&mut p, &pts);
@@ -271,7 +298,7 @@ const SCENES: [(&str, Build); 20] = [
     }),
     ("glyphs_gradient_rotated", |l| {
         backdrop(l);
-        l.push_transform(AffineTransform::rotation_about(-0.2, 60.0, 45.0));
+        l.push_transform(rotation_about(-0.2, 60.0, 45.0));
         let b = Brush::linear(
             pt(0.0, 30.0),
             pt(0.0, 70.0),
@@ -290,7 +317,7 @@ const SCENES: [(&str, Build); 20] = [
         );
     }),
     ("image_nearest_rotated", |l| {
-        l.push_transform(AffineTransform::rotation_about(0.3, 60.0, 45.0));
+        l.push_transform(rotation_about(0.3, 60.0, 45.0));
         let fit = RectanglePlacement::STRETCH_TO_FIT;
         l.draw_image(
             PHOTO,
@@ -319,7 +346,7 @@ const SCENES: [(&str, Build); 20] = [
     ("clip_rects_nested", |l| {
         l.push_clip_rect(Rect::new(10.5, 10.5, 100.0, 70.0));
         backdrop(l);
-        l.push_transform(AffineTransform::rotation_about(0.4, 60.0, 45.0));
+        l.push_transform(rotation_about(0.4, 60.0, 45.0));
         l.push_clip_rect(Rect::new(30.0, 25.0, 60.0, 40.0));
         l.fill_rect(Rect::new(0.0, 0.0, 120.0, 90.0), c(0xc0ff_ffff));
         l.pop_all();

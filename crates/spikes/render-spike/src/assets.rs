@@ -68,7 +68,8 @@ fn sprite() -> RgbaImage {
     let c = (n as f32 - 1.0) / 2.0;
     for y in 0..n {
         for x in 0..n {
-            let d = ((x as f32 - c).powi(2) + (y as f32 - c).powi(2)).sqrt() / c;
+            let (dx, dy) = (x as f32 - c, y as f32 - c);
+            let d = (dx * dx + dy * dy).sqrt() / c;
             let a = ((1.0 - d) * 2.0).clamp(0.0, 1.0);
             let premul = |v: f32| (v * a).round() as u8;
             data.extend([premul(250.0), premul(120.0), premul(30.0), premul(255.0)]);
