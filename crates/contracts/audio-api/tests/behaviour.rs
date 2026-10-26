@@ -107,6 +107,19 @@ fn b1_split_channels_mut_yields_disjoint_slices() {
     assert_eq!(data, [1., 1., 1., 0., 1., 1., 1., 0., 3., 3., 3., 0.]);
 }
 
+/// `iter` must not capture the borrow of the view itself (edition 2024 `impl Trait` capture).
+fn channels_of(block: AudioBlock<'_, f32>) -> impl Iterator<Item = &[f32]> {
+    block.iter()
+}
+
+#[test]
+fn b1_iter_outlives_the_view_it_came_from() {
+    let data = ramp::<8>();
+    let block = AudioBlock::new(&data, 2, 3, 4).unwrap();
+    let firsts: Vec<f32> = channels_of(block).map(|c| c[0]).collect();
+    assert_eq!(firsts, [0.0, 4.0]);
+}
+
 #[test]
 fn b1_views_are_generic_over_f32_and_f64() {
     fn sum<T: AudioSample + Into<f64>>(b: AudioBlock<'_, T>) -> f64 {

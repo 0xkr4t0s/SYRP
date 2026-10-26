@@ -241,12 +241,13 @@ impl<'a, T: AudioSample> AudioBlock<'a, T> {
         )))
     }
 
-    /// A view over memory the caller vouches for, with any alignment.
+    /// A view over memory the caller vouches for, without the SIMD alignment contract.
     ///
     /// # Panics
     /// If `frames > stride`.
     ///
     /// # Safety
+    /// `ptr` must be non-null and aligned for `T`, even when `channels` or `stride` is 0.
     /// For every channel `c < channels`, the `stride` samples starting at `ptr + c * stride`
     /// must be initialised, valid for reads and not written through any other path for `'a`.
     /// ```
@@ -321,7 +322,7 @@ impl<'a, T: AudioSample> AudioBlock<'a, T> {
     }
 
     /// The channels in order, each `frames()` samples long.
-    pub fn iter(&self) -> impl ExactSizeIterator<Item = &'a [T]> + 'a {
+    pub fn iter(&self) -> impl ExactSizeIterator<Item = &'a [T]> + use<'a, T> {
         let view = *self;
         (0..view.channels()).map(move |ch| view.channel(ch))
     }
@@ -363,12 +364,13 @@ impl<'a, T: AudioSample> AudioBlockMut<'a, T> {
         )))
     }
 
-    /// A mutable view over memory the caller vouches for, with any alignment.
+    /// A mutable view over memory the caller vouches for, without the SIMD alignment contract.
     ///
     /// # Panics
     /// If `frames > stride`.
     ///
     /// # Safety
+    /// `ptr` must be non-null and aligned for `T`, even when `channels` or `stride` is 0.
     /// For every channel `c < channels`, the `stride` samples starting at `ptr + c * stride`
     /// must be initialised, valid for reads and writes, and not accessed through any other
     /// path for `'a`.
