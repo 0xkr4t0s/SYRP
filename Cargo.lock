@@ -1192,6 +1192,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "syrp-compat-state"
+version = "0.0.1"
+dependencies = [
+ "syrp-loop-api",
+ "syrp-state",
+ "syrp-var",
+]
+
+[[package]]
 name = "syrp-device-api"
 version = "0.0.1"
 dependencies = [
