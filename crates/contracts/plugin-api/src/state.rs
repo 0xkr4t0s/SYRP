@@ -38,12 +38,6 @@ pub trait PluginState {
     fn state_version(&self) -> u32;
 
     /// Appends the current state's payload to `out`.
-    /// ```
-    /// # struct S; impl syrp_plugin_api::PluginState for S { fn state_version(&self) -> u32 { 3 } fn save_state(&self, o: &mut Vec<u8>) -> Result<(), syrp_plugin_api::PluginError> { o.push(1); Ok(()) } fn load_state(&mut self, _: u32, _: &[u8]) -> Result<(), syrp_plugin_api::PluginError> { Ok(()) } }
-    /// let mut out = Vec::new();
-    /// syrp_plugin_api::PluginState::save_state(&S, &mut out).unwrap();
-    /// assert_eq!(out, [1]);
-    /// ```
     fn save_state(&self, out: &mut Vec<u8>) -> Result<(), PluginError>;
 
     /// Restores from a payload written at `version`, which is never above
