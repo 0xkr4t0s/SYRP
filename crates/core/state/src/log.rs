@@ -237,12 +237,17 @@ impl fmt::Debug for LogCursor {
 impl Inner {
     /// Appends a record and pins the nodes it names until it is delivered.
     pub(crate) fn push(&mut self, change: Change) {
+        self.pin(&change);
+        self.log.push_back(LogRecord::new(self.next_seq, change));
+        self.next_seq += 1;
+    }
+
+    /// Counts each node `change` names once.
+    pub(crate) fn pin(&mut self, change: &Change) {
         self.retain(change.node());
         if let Some(child) = change.child() {
             self.retain(child);
         }
-        self.log.push_back(LogRecord::new(self.next_seq, change));
-        self.next_seq += 1;
     }
 
     /// Releases the pins of a delivered record.

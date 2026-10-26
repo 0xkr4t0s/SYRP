@@ -26,6 +26,8 @@ pub enum StateErrorKind {
     NotAChild,
     /// `SYRP-STATE-0006`: `move_child` was given a source index past the last child.
     IndexOutOfRange,
+    /// `SYRP-STATE-0007`: an `UndoManager` bound to one store was used with another.
+    ForeignUndoManager,
 }
 
 impl StateErrorKind {
@@ -44,6 +46,7 @@ impl StateErrorKind {
             Self::DeadKey => "SYRP-STATE-0004",
             Self::NotAChild => "SYRP-STATE-0005",
             Self::IndexOutOfRange => "SYRP-STATE-0006",
+            Self::ForeignUndoManager => "SYRP-STATE-0007",
         })
     }
 
@@ -55,6 +58,7 @@ impl StateErrorKind {
             Self::DeadKey => "the node key refers to a freed node",
             Self::NotAChild => "the node is not a child of this parent",
             Self::IndexOutOfRange => "the child index is out of range",
+            Self::ForeignUndoManager => "the undo manager belongs to another store",
         }
     }
 }

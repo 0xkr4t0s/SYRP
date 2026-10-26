@@ -1,0 +1,1 @@
+{"wp": "WP-1.2-04", "kind": "added", "summary": "syrp-state undo, increment 1: UndoManager with named transactions, undo and redo replayed as ordinary logged mutations, redo cleared by new actions, node counts held by recorded records, coalescing of consecutive property changes, *_with_undo siblings for every logged Store mutation, and SYRP-STATE-0007."}

@@ -49,6 +49,10 @@ pub(crate) struct Inner {
     pub(crate) subscriptions: usize,
     /// Reused per-record listener snapshot.
     pub(crate) scratch: Vec<(NodeKey, u64, Listener)>,
+    /// First sequence number an `UndoManager` is capturing from, during a `*_with_undo` call.
+    pub(crate) capture_from: Option<u64>,
+    /// Records captured for that call, each counting the nodes it names.
+    pub(crate) captured: Vec<Change>,
 }
 
 impl Inner {
@@ -570,6 +574,13 @@ impl Store {
 
     pub(crate) fn rc(&self) -> &Rc<RefCell<Inner>> {
         &self.inner
+    }
+
+    /// Another `Store` value over the same document.
+    pub(crate) fn from_rc(inner: &Rc<RefCell<Inner>>) -> Self {
+        Self {
+            inner: Rc::clone(inner),
+        }
     }
 
     /// Registers a [`LogCursor`] that reads every record appended from now on.

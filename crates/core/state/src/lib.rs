@@ -21,6 +21,9 @@
 //! once its borrow is released. [`LogCursor`]s read the log; see [`Store::subscribe`] for the
 //! delivery rules. [`Store::deep_copy`] and [`Store::is_equivalent`] work on whole subtrees.
 //!
+//! Each logged mutation has a `*_with_undo` sibling that adds its records to an
+//! [`UndoManager`] transaction, for [`UndoManager::undo`] and [`UndoManager::redo`].
+//!
 //! ```
 //! use syrp_state::Store;
 //! use syrp_var::{Identifier, Var};
@@ -48,6 +51,7 @@ mod error;
 mod log;
 mod node;
 mod store;
+mod undo;
 
 pub use delivery::Subscription;
 pub use error::{StateError, StateErrorKind};
@@ -55,3 +59,4 @@ pub use log::{Change, LogCursor, LogRecord};
 pub use node::{NodeKey, NodeRef, Properties};
 pub use store::Store;
 pub use syrp_error::Diagnostic;
+pub use undo::UndoManager;
