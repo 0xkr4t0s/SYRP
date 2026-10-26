@@ -32,7 +32,8 @@ impl Transaction {
 ///
 /// Mutations made through a store's `*_with_undo` methods add their records to the current
 /// transaction; the plain methods record nothing. [`UndoManager::begin_new_transaction`] starts
-/// a new transaction, which is created by its first record. The manager holds one count on
+/// a new transaction, which is created by its first record. Work recorded after an undo or redo
+/// always starts a new transaction, named or not. The manager holds one count on
 /// every node its records name, so a detached subtree it may need to restore stays alive until
 /// the transaction is discarded. A manager binds to the first store it records from; using it
 /// with another store is [`StateErrorKind::ForeignUndoManager`].
@@ -69,6 +70,9 @@ pub struct UndoManager {
     redo: Vec<Transaction>,
     /// The name for the next transaction, once `begin_new_transaction` was called.
     next_name: Option<String>,
+    /// Whether new records may join the last undoable transaction. Undo and redo close it, so
+    /// work after them always starts a new transaction.
+    open: bool,
 }
 
 impl fmt::Debug for UndoManager {
@@ -197,6 +201,7 @@ impl UndoManager {
             .rev()
             .try_for_each(|c| apply(&store, mt, c, true));
         self.redo.push(t);
+        self.open = false;
         result.map(|()| true)
     }
 
@@ -223,6 +228,7 @@ impl UndoManager {
             .iter()
             .try_for_each(|c| apply(&store, mt, c, false));
         self.undo.push(t);
+        self.open = false;
         result.map(|()| true)
     }
 
@@ -253,19 +259,16 @@ impl UndoManager {
         let redo = std::mem::take(&mut self.redo);
         self.discard(redo);
         let mut dropped = Vec::new();
-        if let Some(name) = self.next_name.take() {
+        let begun = self.next_name.take();
+        if begun.is_some() || !self.open || self.undo.is_empty() {
             if self.undo.last().is_some_and(Transaction::is_no_op) {
                 dropped.extend(self.undo.pop());
             }
             self.undo.push(Transaction {
-                name,
+                name: begun.unwrap_or_default(),
                 records: Vec::new(),
             });
-        } else if self.undo.is_empty() {
-            self.undo.push(Transaction {
-                name: String::new(),
-                records: Vec::new(),
-            });
+            self.open = true;
         }
         let records_now = &mut self.undo.last_mut().expect("just ensured").records;
         let mut merged = Vec::new();
@@ -363,15 +366,18 @@ impl Store {
         f: impl FnOnce() -> Result<T, StateError>,
     ) -> Result<T, StateError> {
         undo.bind(self.rc())?;
-        {
+        // A listener's nested `*_with_undo` call (with another manager) appends after `mark`,
+        // so each call takes only its own records.
+        let mark = {
             let mut inner = self.rc().borrow_mut();
             inner.capture_from = Some(inner.next_seq);
-        }
+            inner.captured.len()
+        };
         let result = f();
         let records = {
             let mut inner = self.rc().borrow_mut();
             inner.capture_from = None;
-            std::mem::take(&mut inner.captured)
+            inner.captured.split_off(mark)
         };
         undo.add(records);
         result

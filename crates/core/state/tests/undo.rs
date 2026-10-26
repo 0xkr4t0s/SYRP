@@ -250,3 +250,69 @@ fn b3_a_transaction_that_cancels_out_is_kept_until_the_next_starts_syrp_choice()
         assert_eq!(undo.undo_description(), Some("first")); // "wiggle" was dropped
     });
 }
+
+#[test]
+fn b2_work_after_undo_or_redo_starts_a_new_transaction() {
+    with_mt(|mt| {
+        let store = Store::new();
+        let mut undo = UndoManager::new();
+        let n = store.create(mt, id("N"));
+        undo.begin_new_transaction("a");
+        store
+            .set_property_with_undo(mt, &mut undo, &n, id("x"), 1)
+            .unwrap();
+        undo.begin_new_transaction("b");
+        store
+            .set_property_with_undo(mt, &mut undo, &n, id("y"), 1)
+            .unwrap();
+        undo.undo(mt).unwrap();
+        store
+            .set_property_with_undo(mt, &mut undo, &n, id("z"), 1)
+            .unwrap(); // no begin
+        undo.undo(mt).unwrap(); // reverts z only
+        assert!(
+            store.has_property(&n, id("x")).unwrap() && !store.has_property(&n, id("z")).unwrap()
+        );
+        undo.redo(mt).unwrap();
+        store
+            .set_property_with_undo(mt, &mut undo, &n, id("w"), 1)
+            .unwrap();
+        undo.undo(mt).unwrap(); // reverts w only
+        assert!(
+            store.has_property(&n, id("z")).unwrap() && !store.has_property(&n, id("w")).unwrap()
+        );
+        assert_eq!(undo.undo_description(), Some(""));
+    });
+}
+
+#[test]
+fn b1_a_nested_call_with_another_manager_takes_only_its_own_records() {
+    with_mt(|mt| {
+        let store = Store::new();
+        let mut outer = UndoManager::new();
+        let [n, mirror] = ["N", "Mirror"].map(|t| store.create(mt, id(t)));
+        let inner = Rc::new(RefCell::new(UndoManager::new()));
+        let (inner2, m) = (Rc::clone(&inner), mirror.clone());
+        let _sub = store
+            .subscribe(mt, &n, move |s, mt, c| {
+                if let Change::PropertyChanged { new, .. } = c {
+                    let mut u = inner2.borrow_mut();
+                    s.set_property_with_undo(mt, &mut u, &m, id("copy"), new.clone())
+                        .unwrap();
+                }
+            })
+            .unwrap();
+        store
+            .set_property_with_undo(mt, &mut outer, &n, id("x"), 7)
+            .unwrap();
+        assert_eq!(
+            store.property(&mirror, id("copy")).unwrap(),
+            Some(Var::from(7))
+        );
+        assert!(outer.undo(mt).unwrap()); // the outer manager recorded its own change
+        assert!(!store.has_property(&n, id("x")).unwrap());
+        assert!(store.has_property(&mirror, id("copy")).unwrap()); // not the inner one
+        assert!(inner.borrow_mut().undo(mt).unwrap());
+        assert!(!store.has_property(&mirror, id("copy")).unwrap());
+    });
+}
