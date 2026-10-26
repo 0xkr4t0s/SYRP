@@ -1,0 +1,1 @@
+{"wp": "WP-0.2-02", "kind": "added", "summary": "syrp-audio-api (first increment): AudioBlock/AudioBlockMut planar views over f32/f64 with a fixed channel stride, padded channels, disjoint channel splitting and the 64-byte SIMD alignment contract; ProcessConfig with Precision and ProcessMode; new errors/audio.toml domain (SYRP-AUDIO-0001..0004)."}

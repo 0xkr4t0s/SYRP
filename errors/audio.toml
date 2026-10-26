@@ -1,0 +1,29 @@
+# Error catalogue: audio data contract (syrp-audio-api) and its users. Never renumber.
+
+[[error]]
+code = "SYRP-AUDIO-0001"
+title = "Audio view frames exceed the channel stride"
+severity = "error"
+cause = "An AudioBlock or AudioBlockMut was asked for more frames per channel than the distance between channel starts, so channels would overlap."
+fix = "Pass a stride of at least `frames` samples. Owning buffers round the stride up to a multiple of 64 bytes (16 f32 or 8 f64 samples)."
+
+[[error]]
+code = "SYRP-AUDIO-0002"
+title = "Slice too short for the audio view's layout"
+severity = "error"
+cause = "The slice given to AudioBlock::new or AudioBlockMut::new holds fewer than `channels * stride` samples (or that product overflows usize)."
+fix = "Allocate `channels * stride` samples, including the padding after the last channel, or build the view from fewer channels."
+
+[[error]]
+code = "SYRP-AUDIO-0003"
+title = "Invalid sample rate"
+severity = "error"
+cause = "ProcessConfig::new was given a sample rate that is zero, negative, NaN or infinite."
+fix = "Pass the device or host sample rate in Hz, for example 48000.0."
+
+[[error]]
+code = "SYRP-AUDIO-0004"
+title = "Invalid maximum block size"
+severity = "error"
+cause = "ProcessConfig::new was given a maximum block size of zero frames."
+fix = "Pass the largest number of frames a process call will receive, as reported by the device or host."

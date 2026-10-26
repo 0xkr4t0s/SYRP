@@ -1,0 +1,21 @@
+[package]
+name = "syrp-audio-api"
+description = "The Syrp audio data contract: planar buffer views, ChannelSet, BusLayout, ProcessConfig and PlayHeadInfo."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT OR Apache-2.0"
+repository.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[package.metadata.syrp]
+layer = "L1"
+wp = "WP-0.2-02"
+
+[dependencies]
+syrp-error = { version = "0.0.1", path = "../../foundation/error" }
+syrp-rt = { version = "0.0.1", path = "../../foundation/rt" }
+
+[lints]
+workspace = true
