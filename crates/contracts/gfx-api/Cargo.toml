@@ -1,0 +1,20 @@
+[package]
+name = "syrp-gfx-api"
+description = "The Syrp drawing contract: paths, strokes, brushes and image and font handles (DisplayList and Renderer to follow)."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT OR Apache-2.0"
+repository.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[package.metadata.syrp]
+layer = "L1"
+wp = "WP-0.2-07"
+
+[dependencies]
+syrp-geom = { version = "0.0.1", path = "../../foundation/geom" }
+
+[lints]
+workspace = true
