@@ -228,6 +228,9 @@ impl Value {
     /// Adds `listener` to this wrapper; it hears every change of the property until removed,
     /// the wrapper drops or the listener drops. Adding it twice does nothing.
     ///
+    /// **The caller owns the listener:** the wrapper holds it weakly, so passing a temporary
+    /// `Rc` does nothing. Keep the `Rc` alive while it should hear changes.
+    ///
     /// ```
     /// # use std::{cell::RefCell, rc::Rc};
     /// # use syrp_compat_state::{Value, ValueListener};

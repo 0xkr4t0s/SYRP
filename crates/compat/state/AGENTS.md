@@ -42,7 +42,8 @@ experimental
 `cargo test -p syrp-compat-state`; `cargo clippy -p syrp-compat-state --all-targets -- -D warnings`.
 
 ## Known gaps
-`Value` listeners are synchronous, not asynchronous as in JUCE. Listener order is the store's and is not yet
-checked against JUCE (0005 open questions 1 to 9); the `parity/scenarios/` entries for it
-belong to the spec room. XML/binary
-serialisation is not in this WP.
+- `Value` listeners are called synchronously from the store's change log; JUCE notifies them
+  asynchronously. Ported code that relies on the async hop needs its own deferral.
+- Listener order is the store's and is not yet checked against JUCE (0005 open questions 1
+  to 9); the spec-room scenarios under `parity/scenarios/` describe what is decided.
+- XML/binary serialisation is not in this WP.
