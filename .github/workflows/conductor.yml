@@ -44,9 +44,12 @@ jobs:
           gh pr list --state open --limit 500 --json number,isDraft,labels,headRefName > prs.json
 
       - name: Tick
+        env:
+          SLOTS: ${{ vars.SYRP_SLOTS || 12 }}
         run: |
+          [[ "$SLOTS" =~ ^[0-9]+$ ]] || { echo "SYRP_SLOTS must be a number"; exit 1; }
           cargo syrp conductor tick --issues issues.json --prs prs.json \
-            --slots "${{ vars.SYRP_SLOTS || 12 }}" --json > tick.json || {
+            --slots "$SLOTS" --json > tick.json || {
             cat tick.json; exit 1; }
           jq -c '.results[]' tick.json | tee actions.jsonl
 

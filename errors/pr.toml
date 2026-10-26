@@ -32,7 +32,7 @@ fix = "Address the verifier's findings; its attack tests usually show the failin
 code = "SYRP-PR-0005"
 title = "PR front matter missing or invalid"
 severity = "error"
-cause = "The body must contain `<!-- syrp-pr: {json} -->` naming a known WP (or kind change-request)."
+cause = "The body must contain `<!-- syrp-pr: {json} -->` naming a known WP (or kind change-request), with risk categories only from: public-api, unsafe, ffi, plugin-wrapper, licensing, ci-infra, contract-change, supply-chain, rt-safety."
 fix = "Use the PR template. Example: <!-- syrp-pr: {\"wp\":\"WP-0.1-03\",\"final\":true,\"risk\":[],\"deps_added\":[],\"unsafe_count\":0} -->"
 
 [[error]]
@@ -46,5 +46,5 @@ fix = "Amend or reword the commits on your own branch to add the trailers, then 
 code = "SYRP-PR-0007"
 title = "Review file invalid"
 severity = "error"
-cause = "The reviewer's JSON is malformed, skips a checklist item, passes an item without evidence, or lists no commands run."
+cause = "The reviewer's JSON is malformed, is for a different PR or review kind than the one being published, skips a checklist item, passes an item without evidence, or lists no commands run."
 fix = "Answer every item from `cargo syrp review checklist` with evidence from commands you ran yourself."

@@ -211,6 +211,14 @@ impl Board {
                     );
                 }
             }
+            for r in &wp.risk {
+                if !crate::gates::RISK_CATEGORIES.contains(&r.as_str()) {
+                    diags.push(
+                        Diagnostic::error("SYRP-WP-0001", format!("{}: unknown risk {r:?}", wp.id))
+                            .at(format!("work/packages/{}.toml", wp.id)),
+                    );
+                }
+            }
             if !root.join(&wp.spec).is_file() {
                 diags.push(
                     Diagnostic::error(

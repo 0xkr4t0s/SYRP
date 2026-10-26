@@ -165,6 +165,12 @@ pub enum ReviewCmd {
     Validate {
         /// Review JSON file.
         file: PathBuf,
+        /// Fail unless the review is for this PR number.
+        #[arg(long, requires = "kind")]
+        pr: Option<u64>,
+        /// Fail unless the review is of this kind (`primary` or `adversarial`).
+        #[arg(long, requires = "pr")]
+        kind: Option<String>,
     },
 }
 
@@ -321,9 +327,10 @@ pub fn dispatch(cli: &Cli) -> Outcome {
                 ..Default::default()
             };
         }
-        Cmd::Review(ReviewCmd::Validate { file }) => {
+        Cmd::Review(ReviewCmd::Validate { file, pr, kind }) => {
+            let expect = pr.zip(kind.as_deref());
             return match fs::read_to_string(file) {
-                Ok(s) => review::validate(&s),
+                Ok(s) => review::validate(&s, expect),
                 Err(e) => fail(
                     Diagnostic::error("SYRP-CLI-0003", format!("{}: {e}", file.display())),
                     ExitCode::Usage,

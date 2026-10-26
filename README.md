@@ -30,25 +30,11 @@ cargo syrp docs build --skip-book
 
 ## Turning on the pipeline
 
-The pipeline is off until a person sets it up. It needs:
-
-1. **Secrets** (Settings > Secrets and variables > Actions):
-   - `ANTHROPIC_API_KEY`: used by the implementer, reviewer and PR-manager agents.
-   - `SYRP_BOT_TOKEN`: a fine-grained personal access token (or GitHub App token) for this
-     repository with Contents, Pull requests, Issues, Commit statuses and Actions set to
-     read and write. Pushes, statuses and merges made with the default `GITHUB_TOKEN` do not
-     trigger other workflows, so the pipeline needs this token to chain its steps.
-2. **Variables**: `SYRP_PIPELINE_ENABLED=true` (the master switch), and optionally
-   `SYRP_SLOTS` (default 12), `SYRP_IMPLEMENTER_MODEL`, `SYRP_REVIEWER_MODEL`,
-   `SYRP_ADVERSARIAL_MODEL`, `SYRP_PR_MANAGER_MODEL`, `SYRP_PAGES_ENABLED`.
-3. **Branch protection on `main`**: require the `ci` checks plus the `syrp/review` and
-   `syrp/adversarial` statuses, and squash merging. Do not require human approvals, or the
-   pipeline cannot merge.
-4. **Actions settings**: allow GitHub Actions to create pull requests, and Pages source
-   "GitHub Actions" if you want the docs site.
-
+The pipeline is off until a person completes the checklist in
+[docs/agents/pipeline.md](docs/agents/pipeline.md#before-enabling-the-pipeline): two separate
+tokens, the API key, branch protection on `main`, and the `SYRP_PIPELINE_ENABLED` switch.
 Then run the `conductor` workflow once by hand. It opens issues for every work package and
-starts agents on the ones that are ready. See `docs/agents/pipeline.md` for how it works.
+starts agents on the ones that are ready.
 
 ## Licence
 

@@ -38,7 +38,7 @@ jobs:
           gh label create ci-triaged --force >/dev/null
           gh label create pm:rebasing --force >/dev/null
           for pr in $(gh pr list --state open --limit 200 --json number,isDraft --jq '.[] | select(.isDraft|not) | .number'); do
-            gh pr view "$pr" --json number,body,labels,files,commits,statusCheckRollup,mergeable,isDraft > pr.json
+            gh pr view "$pr" --json number,headRefOid,body,labels,files,commits,statusCheckRollup,mergeable,isDraft > pr.json
             cargo syrp pr gates --pr pr.json --json > gates.json
             verdict="$(jq -r '.results[0].verdict' gates.json)"
             labels="$(jq -r '.labels[].name' pr.json)"
@@ -49,7 +49,8 @@ jobs:
             done
             case "$verdict" in
               merge)
-                if ! gh pr merge "$pr" --squash --delete-branch; then
+                # Merge exactly the head the gates evaluated; a newer push fails the merge.
+                if ! gh pr merge "$pr" --squash --delete-branch --match-head-commit "$(jq -r .headRefOid pr.json)"; then
                   # Usually "branch is behind": bring it up to date; CI and review rerun.
                   gh pr update-branch "$pr" --rebase || true
                 fi

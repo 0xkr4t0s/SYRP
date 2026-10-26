@@ -242,6 +242,24 @@ pub fn check(root: &Path, lints_only: bool) -> Outcome {
         out.exit = Some(ExitCode::CleanRoom);
     }
     step("lint-banned", banned, &mut out);
+    // A committed review.json could be published as the reviewer's verdict.
+    let planted: Vec<Diagnostic> = [
+        "review.json",
+        "review-primary.json",
+        "review-adversarial.json",
+    ]
+    .iter()
+    .filter(|f| root.join(f).exists())
+    .map(|f| {
+        Diagnostic::error(
+            "SYRP-CLI-0207",
+            format!("{f} must not exist in the repository"),
+        )
+        .at(*f)
+        .hint("delete it; reviewers write their review outside the checkout")
+    })
+    .collect();
+    step("lint-review-files", planted, &mut out);
     let (board, mut wp_diags) = Board::load(root);
     wp_diags.extend(board.validate(root));
     step("wp-validate", wp_diags, &mut out);

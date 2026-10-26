@@ -92,8 +92,10 @@ fn primary() -> String {
     "primary".into()
 }
 
-/// Validates a review and derives its verdict and comment body.
-pub fn validate(src: &str) -> Outcome {
+/// Validates a review and derives its verdict and comment body. When `expect` is given,
+/// the review must be for that PR number and kind (`primary` or `adversarial`), so a file
+/// written for one PR or review leg can never be published on another.
+pub fn validate(src: &str, expect: Option<(u64, &str)>) -> Outcome {
     let review: Review = match serde_json::from_str(src) {
         Ok(r) => r,
         Err(e) => {
@@ -108,6 +110,17 @@ pub fn validate(src: &str) -> Outcome {
         }
     };
     let mut diags = Vec::new();
+    if let Some((pr, kind)) = expect
+        && (review.pr != pr || review.kind != kind)
+    {
+        diags.push(Diagnostic::error(
+            "SYRP-PR-0007",
+            format!(
+                "review is for PR #{} ({}), expected PR #{pr} ({kind})",
+                review.pr, review.kind
+            ),
+        ));
+    }
     for (id, _) in CHECKLIST {
         match review.items.iter().find(|i| i.id == *id) {
             None => diags.push(Diagnostic::error(
@@ -202,27 +215,44 @@ mod tests {
 
     #[test]
     fn complete_passing_review_approves() {
-        let o = validate(&review(true, "ran tests"));
+        let o = validate(&review(true, "ran tests"), None);
         assert_eq!(o.exit_code(), ExitCode::Ok);
         assert_eq!(o.results[0]["approve"], true);
     }
 
     #[test]
     fn any_failure_requests_changes() {
-        let o = validate(&review(false, "ran tests"));
+        let o = validate(&review(false, "ran tests"), None);
         assert_eq!(o.results[0]["approve"], false);
         assert_eq!(o.results[0]["state"], "failure");
     }
 
     #[test]
+    fn review_must_match_the_expected_pr_and_kind() {
+        let src = review(true, "ran tests");
+        assert_eq!(
+            validate(&src, Some((1, "primary"))).exit_code(),
+            ExitCode::Ok
+        );
+        assert_eq!(
+            validate(&src, Some((2, "primary"))).exit_code(),
+            ExitCode::Usage
+        );
+        assert_eq!(
+            validate(&src, Some((1, "adversarial"))).exit_code(),
+            ExitCode::Usage
+        );
+    }
+
+    #[test]
     fn passes_without_evidence_are_rejected() {
-        let o = validate(&review(true, ""));
+        let o = validate(&review(true, ""), None);
         assert_eq!(o.exit_code(), ExitCode::Usage);
     }
 
     #[test]
     fn missing_items_are_rejected() {
-        let o = validate(r#"{"pr":1,"items":[],"commands_run":["x"]}"#);
+        let o = validate(r#"{"pr":1,"items":[],"commands_run":["x"]}"#, None);
         assert_eq!(o.diagnostics.len(), CHECKLIST.len());
     }
 }

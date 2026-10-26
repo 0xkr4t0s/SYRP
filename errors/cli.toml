@@ -94,6 +94,13 @@ cause = "Every workspace crate needs `[package.metadata.syrp] layer = \"L0\"..\"
 fix = "Add both. The AGENTS.md headings are in docs/agents/crate-agents-template.md."
 
 [[error]]
+code = "SYRP-CLI-0207"
+title = "Review file inside the repository"
+severity = "error"
+cause = "A review.json at the repository root could be mistaken for, or published as, a reviewer's verdict."
+fix = "Delete it. Reviewer agents write their review to a path outside the checkout that the workflow chooses."
+
+[[error]]
 code = "SYRP-CLI-0301"
 title = "Tests failed"
 severity = "error"

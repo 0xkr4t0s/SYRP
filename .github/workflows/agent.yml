@@ -19,7 +19,6 @@ permissions:
   contents: write
   pull-requests: write
   issues: write
-  id-token: write
 
 jobs:
   run:
@@ -27,14 +26,21 @@ jobs:
     # Below the conductor's 4 h lease TTL, so the finish step always releases the lease first.
     timeout-minutes: 230
     env:
-      GH_TOKEN: ${{ secrets.SYRP_BOT_TOKEN }}
+      # Implementers get a token that can push branches and open PRs but cannot set commit
+      # statuses or merge (see docs/agents/pipeline.md, "Before enabling the pipeline").
+      GH_TOKEN: ${{ secrets.SYRP_IMPLEMENTER_TOKEN }}
       GH_REPO: ${{ github.repository }}
       MODEL: ${{ vars.SYRP_IMPLEMENTER_MODEL || 'claude-opus-5-5' }}
+      WP: ${{ inputs.wp }}
+      ISSUE: ${{ inputs.issue }}
+      ROLE: ${{ inputs.role }}
+      MODE: ${{ inputs.mode }}
+      PR: ${{ inputs.pr }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.SYRP_BOT_TOKEN }}
+          token: ${{ secrets.SYRP_IMPLEMENTER_TOKEN }}
 
       - name: Clean room - block JUCE hosts
         run: |
@@ -50,22 +56,28 @@ jobs:
           git config user.name "syrp-bot"
           git config user.email "syrp-bot@users.noreply.github.com"
 
+      - name: Validate inputs
+        run: |
+          [[ "$WP" =~ ^WP-[0-9]+\.[0-9]+-[0-9]{2}$ ]] || { echo "bad wp"; exit 1; }
+          [[ "$ISSUE" =~ ^[0-9]+$ ]] || { echo "bad issue"; exit 1; }
+          [[ "$PR" =~ ^[0-9]*$ ]] || { echo "bad pr"; exit 1; }
+          [[ "$MODE" =~ ^(implement|revise)$ ]] || { echo "bad mode"; exit 1; }
+
       - name: Render prompt
         id: prompt
         run: |
-          role="${{ inputs.role }}"
+          role="$ROLE"
           [ "$role" = "spec-room" ] || role="implementer"
           {
             echo 'text<<PROMPT_EOF'
-            agents/render.sh "roles/$role.md" WP="${{ inputs.wp }}" ISSUE="${{ inputs.issue }}" \
-              MODE="${{ inputs.mode }}" PR="${{ inputs.pr }}" MODEL="$MODEL"
+            agents/render.sh "roles/$role.md" WP="$WP" ISSUE="$ISSUE" MODE="$MODE" PR="$PR" MODEL="$MODEL"
             echo 'PROMPT_EOF'
           } >> "$GITHUB_OUTPUT"
 
       - uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          github_token: ${{ secrets.SYRP_BOT_TOKEN }}
+          github_token: ${{ secrets.SYRP_IMPLEMENTER_TOKEN }}
           prompt: ${{ steps.prompt.outputs.text }}
           claude_args: >-
             --model ${{ env.MODEL }}
@@ -75,7 +87,7 @@ jobs:
       - name: Finish - release the lease
         if: always()
         run: |
-          wp="${{ inputs.wp }}"; issue="${{ inputs.issue }}"
+          wp="$WP"; issue="$ISSUE"
           open="$(gh pr list --state open --json headRefName \
             --jq "map(select(.headRefName | startswith(\"wp/$wp\"))) | length")"
           gh issue view "$issue" --json number,title,state,labels,body > issue.json

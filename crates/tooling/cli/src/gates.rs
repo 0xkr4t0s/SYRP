@@ -43,6 +43,31 @@ pub const MAX_CHANGED_LINES: u64 = 1200;
 const SIZE_EXEMPT: &[&str] = &["Cargo.lock"];
 const FRONT_MATTER_OPEN: &str = "<!-- syrp-pr: ";
 
+/// The only risk categories a PR may declare or carry as `risk:*` labels. Anything else is
+/// rejected: risk strings flow into workflow shell steps, so they must be a closed set.
+pub const RISK_CATEGORIES: &[&str] = &[
+    "public-api",
+    "unsafe",
+    "ffi",
+    "plugin-wrapper",
+    "licensing",
+    "ci-infra",
+    "contract-change",
+    "supply-chain",
+    "rt-safety",
+];
+
+/// Paths whose changes alter what later PRs are checked against or allowed to touch: the
+/// gate, review, scheduler and provenance code, plus the ownership and work definitions.
+const GATEKEEPING_PATHS: &[&str] = &[
+    "crates/tooling/cli/",
+    "crates/tooling/provenance/",
+    "ownership.toml",
+    "work/packages/",
+    "work/waves/",
+    "errors/",
+];
+
 /// A changed file.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct FileChange {
@@ -141,8 +166,19 @@ impl FrontMatter {
         let end = rest
             .find(" -->")
             .ok_or("unterminated front matter marker")?;
-        serde_json::from_str(&rest[..end])
-            .map_err(|e| format!("front matter is not valid JSON: {e}"))
+        let fm: FrontMatter = serde_json::from_str(&rest[..end])
+            .map_err(|e| format!("front matter is not valid JSON: {e}"))?;
+        if let Some(bad) = fm
+            .risk
+            .iter()
+            .find(|r| !RISK_CATEGORIES.contains(&r.as_str()))
+        {
+            return Err(format!(
+                "unknown risk category {bad:?}; allowed: {}",
+                RISK_CATEGORIES.join(", ")
+            ));
+        }
+        Ok(fm)
     }
 }
 
@@ -199,8 +235,14 @@ pub fn path_risks(files: &[FileChange], own: &Ownership) -> BTreeSet<String> {
         if f.path.starts_with("contracts/") {
             out.insert("contract-change".to_string());
         }
-        if let Some(pm) = own.roles.get("pr-manager")
-            && pm.paths.iter().any(|p| crate::wp::path_matches(p, &f.path))
+        let shared = own
+            .roles
+            .get("pr-manager")
+            .is_some_and(|pm| pm.paths.iter().any(|p| crate::wp::path_matches(p, &f.path)));
+        if shared
+            || GATEKEEPING_PATHS
+                .iter()
+                .any(|p| crate::wp::path_matches(p, &f.path))
         {
             out.insert("ci-infra".to_string());
         }
@@ -423,7 +465,9 @@ pub fn evaluate(pr: &PrView, board: &Board, own: &Ownership) -> Outcome {
     risks.extend(
         pr.labels
             .iter()
-            .filter_map(|l| l.name.strip_prefix("risk:").map(str::to_string)),
+            .filter_map(|l| l.name.strip_prefix("risk:"))
+            .filter(|r| RISK_CATEGORIES.contains(r))
+            .map(str::to_string),
     );
     if let Ok(fm) = &fm {
         risks.extend(fm.risk.iter().cloned());
@@ -533,6 +577,46 @@ mod tests {
 
     fn verdict(o: &Outcome) -> String {
         o.results[0]["verdict"].as_str().unwrap().to_string()
+    }
+
+    #[test]
+    fn gatekeeping_paths_are_ci_infra() {
+        for path in [
+            "crates/tooling/cli/src/gates.rs",
+            "work/packages/WP-0.1-03.toml",
+            "errors/cli.toml",
+        ] {
+            let files = [FileChange {
+                path: path.into(),
+                additions: 1,
+                deletions: 0,
+            }];
+            assert!(path_risks(&files, &own()).contains("ci-infra"), "{path}");
+        }
+        let files = [FileChange {
+            path: "crates/x/A/src/lib.rs".into(),
+            additions: 1,
+            deletions: 0,
+        }];
+        assert!(path_risks(&files, &own()).is_empty());
+    }
+
+    #[test]
+    fn unknown_risk_categories_are_rejected() {
+        let bad = "<!-- syrp-pr: {\"wp\":\"A\",\"risk\":[\"x'; rm -rf /\"]} -->";
+        assert!(
+            FrontMatter::parse(bad)
+                .unwrap_err()
+                .contains("unknown risk")
+        );
+        let ok = "<!-- syrp-pr: {\"wp\":\"A\",\"risk\":[\"unsafe\"]} -->";
+        assert!(FrontMatter::parse(ok).is_ok());
+        let mut pr = green_pr();
+        pr.labels = vec![Label {
+            name: "risk:'$(evil)'".into(),
+        }];
+        let o = evaluate(&pr, &board(vec![wp("A", &[])]), &own());
+        assert_eq!(o.results[0]["risks"], json!([]));
     }
 
     #[test]

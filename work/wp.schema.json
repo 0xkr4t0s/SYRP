@@ -18,7 +18,7 @@
     "tolerance": { "type": "string" },
     "risk": {
       "type": "array",
-      "items": { "enum": ["public-api", "unsafe", "ffi", "plugin-wrapper", "licensing", "ci-infra", "contract-change", "supply-chain"] }
+      "items": { "enum": ["public-api", "unsafe", "ffi", "plugin-wrapper", "licensing", "ci-infra", "contract-change", "supply-chain", "rt-safety"] }
     },
     "acceptance": { "type": "string" },
     "platforms": { "type": "array", "items": { "enum": ["linux", "macos", "windows", "ios", "android", "web"] } },
