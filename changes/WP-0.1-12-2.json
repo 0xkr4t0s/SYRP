@@ -1,0 +1,1 @@
+{"wp": "WP-0.1-12", "kind": "added", "summary": "syrp-provenance: winnowing contamination scanner with a documented fingerprint database (syrp.cleanroom-fingerprints/v1), JSON report (syrp.cleanroom-report/v1) and a scan subcommand."}
