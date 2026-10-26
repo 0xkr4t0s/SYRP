@@ -1,0 +1,1 @@
+{"wp": "WP-1.1-11", "kind": "added", "summary": "syrp-maths: numeric helpers and MathConstants, Random (SplitMix64) with system_random, StatisticsAccumulator (Welford), and RtSafe impls with no-allocation tests."}

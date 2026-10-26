@@ -5,8 +5,11 @@ use crate::{Float, MathsError, Range};
 /// A custom mapping function. It receives the range's start, end and the value to map, in
 /// that order, and returns the mapped value.
 ///
-/// It is a plain function pointer, so closures that capture nothing coerce to it and the range
-/// stays `Copy`.
+/// It is a plain function pointer, so the range stays `Copy`. Closures that capture nothing
+/// coerce to it; closures that capture variables cannot be used. A mapping that needs extra
+/// state must encode it in constants or in the start and end it is passed. The range is [`RtSafe`](syrp_rt::RtSafe) on the understanding that these
+/// functions are too: they must not allocate, lock or block if the range is used on an audio
+/// thread.
 ///
 /// ```
 /// use syrp_maths::MapFn;
@@ -176,7 +179,9 @@ impl<T: Float> NormalisableRange<T> {
     }
 
     /// Returns a copy that maps through `from_0to1` and `to_0to1` instead of the built-in
-    /// skewed mapping. Each receives `(start, end, value)`.
+    /// skewed mapping. Each receives `(start, end, value)`. They are [`MapFn`] pointers:
+    /// closures that capture variables do not coerce to them, so put any state a mapping needs
+    /// into constants or derive it from `start` and `end`.
     ///
     /// ```
     /// use syrp_maths::NormalisableRange;
@@ -275,7 +280,8 @@ impl<T: Float> NormalisableRange<T> {
         Range::new(self.start, self.end)
     }
 
-    /// Maps `value` to `0..=1`, clamping values outside the range.
+    /// Maps `value` to `0..=1`, clamping values outside the range. A NaN `value` gives NaN
+    /// (clamping does not remove it); custom mappings decide for themselves.
     ///
     /// ```
     /// use syrp_maths::NormalisableRange;
@@ -295,6 +301,7 @@ impl<T: Float> NormalisableRange<T> {
 
     /// Maps a normalised `proportion` (clamped to `0..=1`) back into the range. It does not
     /// snap to the interval; call [`snap_to_legal_value`](Self::snap_to_legal_value) for that.
+    /// A NaN `proportion` gives NaN.
     ///
     /// ```
     /// use syrp_maths::NormalisableRange;
@@ -316,7 +323,7 @@ impl<T: Float> NormalisableRange<T> {
     }
 
     /// Rounds `value` to the nearest multiple of the interval counted from `start` (when the
-    /// interval is positive), then clamps it to the range.
+    /// interval is positive), then clamps it to the range. A NaN `value` gives NaN.
     ///
     /// ```
     /// use syrp_maths::NormalisableRange;
