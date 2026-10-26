@@ -1,0 +1,235 @@
+pub mod syrp_gfx_api
+#[non_exhaustive] pub enum syrp_gfx_api::BlendMode
+pub syrp_gfx_api::BlendMode::Colour
+pub syrp_gfx_api::BlendMode::ColourBurn
+pub syrp_gfx_api::BlendMode::ColourDodge
+pub syrp_gfx_api::BlendMode::Darken
+pub syrp_gfx_api::BlendMode::Difference
+pub syrp_gfx_api::BlendMode::Exclusion
+pub syrp_gfx_api::BlendMode::HardLight
+pub syrp_gfx_api::BlendMode::Hue
+pub syrp_gfx_api::BlendMode::Lighten
+pub syrp_gfx_api::BlendMode::Luminosity
+pub syrp_gfx_api::BlendMode::Multiply
+pub syrp_gfx_api::BlendMode::Normal
+pub syrp_gfx_api::BlendMode::Overlay
+pub syrp_gfx_api::BlendMode::Saturation
+pub syrp_gfx_api::BlendMode::Screen
+pub syrp_gfx_api::BlendMode::SoftLight
+#[non_exhaustive] pub enum syrp_gfx_api::BrushKind
+#[non_exhaustive] pub syrp_gfx_api::BrushKind::Linear
+pub syrp_gfx_api::BrushKind::Linear::end: syrp_geom::point::Point<f32>
+pub syrp_gfx_api::BrushKind::Linear::start: syrp_geom::point::Point<f32>
+#[non_exhaustive] pub syrp_gfx_api::BrushKind::Radial
+pub syrp_gfx_api::BrushKind::Radial::centre: syrp_geom::point::Point<f32>
+pub syrp_gfx_api::BrushKind::Radial::radius: f32
+pub syrp_gfx_api::BrushKind::Solid(syrp_gfx_api::Colour)
+#[non_exhaustive] pub syrp_gfx_api::BrushKind::TwoPointConical
+pub syrp_gfx_api::BrushKind::TwoPointConical::end: syrp_geom::point::Point<f32>
+pub syrp_gfx_api::BrushKind::TwoPointConical::end_radius: f32
+pub syrp_gfx_api::BrushKind::TwoPointConical::start: syrp_geom::point::Point<f32>
+pub syrp_gfx_api::BrushKind::TwoPointConical::start_radius: f32
+pub enum syrp_gfx_api::Cap
+pub syrp_gfx_api::Cap::Butt
+pub syrp_gfx_api::Cap::Round
+pub syrp_gfx_api::Cap::Square
+pub enum syrp_gfx_api::FillRule
+pub syrp_gfx_api::FillRule::EvenOdd
+pub syrp_gfx_api::FillRule::NonZero
+pub enum syrp_gfx_api::Join
+pub syrp_gfx_api::Join::Bevel
+pub syrp_gfx_api::Join::Miter
+pub syrp_gfx_api::Join::Round
+#[non_exhaustive] pub enum syrp_gfx_api::Op<'a>
+#[non_exhaustive] pub syrp_gfx_api::Op::DrawGlyphs
+pub syrp_gfx_api::Op::DrawGlyphs::brush: syrp_gfx_api::BrushRef<'a>
+pub syrp_gfx_api::Op::DrawGlyphs::font: syrp_gfx_api::FontHandle
+pub syrp_gfx_api::Op::DrawGlyphs::glyphs: &'a [syrp_gfx_api::Glyph]
+pub syrp_gfx_api::Op::DrawGlyphs::size: f32
+#[non_exhaustive] pub syrp_gfx_api::Op::DrawImage
+pub syrp_gfx_api::Op::DrawImage::dest: syrp_geom::rect::Rect<f32>
+pub syrp_gfx_api::Op::DrawImage::image: syrp_gfx_api::ImageHandle
+pub syrp_gfx_api::Op::DrawImage::placement: syrp_geom::placement::RectanglePlacement
+pub syrp_gfx_api::Op::DrawImage::quality: syrp_gfx_api::ResamplingQuality
+#[non_exhaustive] pub syrp_gfx_api::Op::FillPath
+pub syrp_gfx_api::Op::FillPath::brush: syrp_gfx_api::BrushRef<'a>
+pub syrp_gfx_api::Op::FillPath::path: syrp_gfx_api::PathView<'a>
+#[non_exhaustive] pub syrp_gfx_api::Op::FillRect
+pub syrp_gfx_api::Op::FillRect::brush: syrp_gfx_api::BrushRef<'a>
+pub syrp_gfx_api::Op::FillRect::rect: syrp_geom::rect::Rect<f32>
+pub syrp_gfx_api::Op::Pop
+#[non_exhaustive] pub syrp_gfx_api::Op::PushClipMask
+pub syrp_gfx_api::Op::PushClipMask::image: syrp_gfx_api::ImageHandle
+pub syrp_gfx_api::Op::PushClipMask::transform: syrp_geom::transform::AffineTransform
+#[non_exhaustive] pub syrp_gfx_api::Op::PushClipPath
+pub syrp_gfx_api::Op::PushClipPath::path: syrp_gfx_api::PathView<'a>
+#[non_exhaustive] pub syrp_gfx_api::Op::PushClipRect
+pub syrp_gfx_api::Op::PushClipRect::rect: syrp_geom::rect::Rect<f32>
+#[non_exhaustive] pub syrp_gfx_api::Op::PushLayer
+pub syrp_gfx_api::Op::PushLayer::blend: syrp_gfx_api::BlendMode
+pub syrp_gfx_api::Op::PushLayer::opacity: f32
+#[non_exhaustive] pub syrp_gfx_api::Op::PushTransform
+pub syrp_gfx_api::Op::PushTransform::transform: syrp_geom::transform::AffineTransform
+#[non_exhaustive] pub syrp_gfx_api::Op::StrokePath
+pub syrp_gfx_api::Op::StrokePath::brush: syrp_gfx_api::BrushRef<'a>
+pub syrp_gfx_api::Op::StrokePath::path: syrp_gfx_api::PathView<'a>
+pub syrp_gfx_api::Op::StrokePath::stroke: syrp_gfx_api::StrokeRef<'a>
+pub enum syrp_gfx_api::PathEl
+pub syrp_gfx_api::PathEl::Close
+pub syrp_gfx_api::PathEl::CubicTo(syrp_geom::point::Point<f32>, syrp_geom::point::Point<f32>, syrp_geom::point::Point<f32>)
+pub syrp_gfx_api::PathEl::LineTo(syrp_geom::point::Point<f32>)
+pub syrp_gfx_api::PathEl::MoveTo(syrp_geom::point::Point<f32>)
+pub syrp_gfx_api::PathEl::QuadTo(syrp_geom::point::Point<f32>, syrp_geom::point::Point<f32>)
+pub enum syrp_gfx_api::PathVerb
+pub syrp_gfx_api::PathVerb::Close
+pub syrp_gfx_api::PathVerb::CubicTo
+pub syrp_gfx_api::PathVerb::LineTo
+pub syrp_gfx_api::PathVerb::MoveTo
+pub syrp_gfx_api::PathVerb::QuadTo
+impl syrp_gfx_api::PathVerb
+pub const fn syrp_gfx_api::PathVerb::point_count(self) -> usize
+#[non_exhaustive] pub enum syrp_gfx_api::RenderError
+pub syrp_gfx_api::RenderError::Backend(alloc::string::String)
+pub syrp_gfx_api::RenderError::InvalidTarget
+pub syrp_gfx_api::RenderError::UnknownFont(syrp_gfx_api::FontHandle)
+pub syrp_gfx_api::RenderError::UnknownImage(syrp_gfx_api::ImageHandle)
+impl core::error::Error for syrp_gfx_api::RenderError
+impl core::fmt::Display for syrp_gfx_api::RenderError
+pub fn syrp_gfx_api::RenderError::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl syrp_error::Diagnostic for syrp_gfx_api::RenderError
+pub fn syrp_gfx_api::RenderError::code(&self) -> syrp_error::ErrorCode
+pub enum syrp_gfx_api::ResamplingQuality
+pub syrp_gfx_api::ResamplingQuality::High
+pub syrp_gfx_api::ResamplingQuality::Low
+pub syrp_gfx_api::ResamplingQuality::Medium
+pub struct syrp_gfx_api::Brush
+impl syrp_gfx_api::Brush
+pub fn syrp_gfx_api::Brush::as_view(&self) -> syrp_gfx_api::BrushRef<'_>
+pub fn syrp_gfx_api::Brush::linear(syrp_geom::point::Point<f32>, syrp_geom::point::Point<f32>, impl core::iter::traits::collect::IntoIterator<Item = syrp_gfx_api::GradientStop>) -> Self
+pub fn syrp_gfx_api::Brush::radial(syrp_geom::point::Point<f32>, f32, impl core::iter::traits::collect::IntoIterator<Item = syrp_gfx_api::GradientStop>) -> Self
+pub fn syrp_gfx_api::Brush::solid(syrp_gfx_api::Colour) -> Self
+pub fn syrp_gfx_api::Brush::two_point_conical(syrp_geom::point::Point<f32>, f32, syrp_geom::point::Point<f32>, f32, impl core::iter::traits::collect::IntoIterator<Item = syrp_gfx_api::GradientStop>) -> Self
+impl core::convert::From<syrp_gfx_api::Colour> for syrp_gfx_api::Brush
+pub fn syrp_gfx_api::Brush::from(syrp_gfx_api::Colour) -> Self
+impl<'a> core::convert::From<&'a syrp_gfx_api::Brush> for syrp_gfx_api::BrushRef<'a>
+pub fn syrp_gfx_api::BrushRef<'a>::from(&'a syrp_gfx_api::Brush) -> Self
+pub struct syrp_gfx_api::BrushRef<'a>
+impl<'a> syrp_gfx_api::BrushRef<'a>
+pub fn syrp_gfx_api::BrushRef<'a>::kind(self) -> syrp_gfx_api::BrushKind
+pub fn syrp_gfx_api::BrushRef<'a>::stops(self) -> &'a [syrp_gfx_api::GradientStop]
+impl core::convert::From<syrp_gfx_api::Colour> for syrp_gfx_api::BrushRef<'static>
+pub fn syrp_gfx_api::BrushRef<'static>::from(syrp_gfx_api::Colour) -> Self
+impl<'a> core::convert::From<&'a syrp_gfx_api::Brush> for syrp_gfx_api::BrushRef<'a>
+pub fn syrp_gfx_api::BrushRef<'a>::from(&'a syrp_gfx_api::Brush) -> Self
+pub struct syrp_gfx_api::Colour(_)
+impl syrp_gfx_api::Colour
+pub const syrp_gfx_api::Colour::BLACK: syrp_gfx_api::Colour
+pub const syrp_gfx_api::Colour::TRANSPARENT: syrp_gfx_api::Colour
+pub const syrp_gfx_api::Colour::WHITE: syrp_gfx_api::Colour
+pub const fn syrp_gfx_api::Colour::argb(self) -> u32
+pub const fn syrp_gfx_api::Colour::from_argb(u32) -> Self
+pub const fn syrp_gfx_api::Colour::from_rgba(u8, u8, u8, u8) -> Self
+pub const fn syrp_gfx_api::Colour::to_rgba(self) -> [u8; 4]
+impl core::convert::From<syrp_gfx_api::Colour> for syrp_gfx_api::Brush
+pub fn syrp_gfx_api::Brush::from(syrp_gfx_api::Colour) -> Self
+impl core::convert::From<syrp_gfx_api::Colour> for syrp_gfx_api::BrushRef<'static>
+pub fn syrp_gfx_api::BrushRef<'static>::from(syrp_gfx_api::Colour) -> Self
+pub struct syrp_gfx_api::DisplayList
+impl syrp_gfx_api::DisplayList
+pub fn syrp_gfx_api::DisplayList::clear(&mut self)
+pub fn syrp_gfx_api::DisplayList::draw_glyphs<'b>(&mut self, syrp_gfx_api::FontHandle, f32, &[syrp_gfx_api::Glyph], impl core::convert::Into<syrp_gfx_api::BrushRef<'b>>)
+pub fn syrp_gfx_api::DisplayList::draw_image<T: syrp_geom::coord::Coord>(&mut self, syrp_gfx_api::ImageHandle, syrp_geom::rect::Rect<T>, syrp_geom::placement::RectanglePlacement, syrp_gfx_api::ResamplingQuality)
+pub fn syrp_gfx_api::DisplayList::fill_path<'p, 'b>(&mut self, impl core::convert::Into<syrp_gfx_api::PathView<'p>>, impl core::convert::Into<syrp_gfx_api::BrushRef<'b>>)
+pub fn syrp_gfx_api::DisplayList::fill_rect<'b, T: syrp_geom::coord::Coord>(&mut self, syrp_geom::rect::Rect<T>, impl core::convert::Into<syrp_gfx_api::BrushRef<'b>>)
+pub fn syrp_gfx_api::DisplayList::get(&self, usize) -> core::option::Option<syrp_gfx_api::Op<'_>>
+pub fn syrp_gfx_api::DisplayList::is_empty(&self) -> bool
+pub fn syrp_gfx_api::DisplayList::len(&self) -> usize
+pub fn syrp_gfx_api::DisplayList::new() -> Self
+pub fn syrp_gfx_api::DisplayList::open_scopes(&self) -> u32
+pub fn syrp_gfx_api::DisplayList::ops(&self) -> impl core::iter::traits::exact_size::ExactSizeIterator<Item = syrp_gfx_api::Op<'_>> + use<'_>
+pub fn syrp_gfx_api::DisplayList::pop(&mut self) -> bool
+pub fn syrp_gfx_api::DisplayList::pop_all(&mut self)
+pub fn syrp_gfx_api::DisplayList::push_clip_mask(&mut self, syrp_gfx_api::ImageHandle, syrp_geom::transform::AffineTransform)
+pub fn syrp_gfx_api::DisplayList::push_clip_path<'p>(&mut self, impl core::convert::Into<syrp_gfx_api::PathView<'p>>)
+pub fn syrp_gfx_api::DisplayList::push_clip_rect<T: syrp_geom::coord::Coord>(&mut self, syrp_geom::rect::Rect<T>)
+pub fn syrp_gfx_api::DisplayList::push_layer(&mut self, f32, syrp_gfx_api::BlendMode)
+pub fn syrp_gfx_api::DisplayList::push_transform(&mut self, syrp_geom::transform::AffineTransform)
+pub fn syrp_gfx_api::DisplayList::stroke_path<'p, 's, 'b>(&mut self, impl core::convert::Into<syrp_gfx_api::PathView<'p>>, impl core::convert::Into<syrp_gfx_api::StrokeRef<'s>>, impl core::convert::Into<syrp_gfx_api::BrushRef<'b>>)
+impl syrp_gfx_api::DisplayList
+pub fn syrp_gfx_api::DisplayList::content_hash(&self) -> u64
+pub struct syrp_gfx_api::FontHandle(_)
+impl syrp_gfx_api::FontHandle
+pub const fn syrp_gfx_api::FontHandle::from_raw(u64) -> Self
+pub const fn syrp_gfx_api::FontHandle::raw(self) -> u64
+pub struct syrp_gfx_api::Glyph
+impl syrp_gfx_api::Glyph
+pub const fn syrp_gfx_api::Glyph::id(self) -> u32
+pub const fn syrp_gfx_api::Glyph::new(u32, syrp_geom::point::Point<f32>) -> Self
+pub const fn syrp_gfx_api::Glyph::origin(self) -> syrp_geom::point::Point<f32>
+pub struct syrp_gfx_api::GradientStop
+impl syrp_gfx_api::GradientStop
+pub fn syrp_gfx_api::GradientStop::colour(self) -> syrp_gfx_api::Colour
+pub fn syrp_gfx_api::GradientStop::new(f32, syrp_gfx_api::Colour) -> Self
+pub fn syrp_gfx_api::GradientStop::offset(self) -> f32
+pub struct syrp_gfx_api::ImageHandle(_)
+impl syrp_gfx_api::ImageHandle
+pub const fn syrp_gfx_api::ImageHandle::from_raw(u64) -> Self
+pub const fn syrp_gfx_api::ImageHandle::raw(self) -> u64
+pub struct syrp_gfx_api::Path
+impl syrp_gfx_api::Path
+pub fn syrp_gfx_api::Path::as_view(&self) -> syrp_gfx_api::PathView<'_>
+pub fn syrp_gfx_api::Path::bounds(&self) -> core::option::Option<syrp_geom::rect::Rect<f32>>
+pub fn syrp_gfx_api::Path::clear(&mut self)
+pub fn syrp_gfx_api::Path::close(&mut self)
+pub fn syrp_gfx_api::Path::cubic_to(&mut self, f32, f32, f32, f32, f32, f32)
+pub fn syrp_gfx_api::Path::is_empty(&self) -> bool
+pub fn syrp_gfx_api::Path::line_to(&mut self, f32, f32)
+pub fn syrp_gfx_api::Path::move_to(&mut self, f32, f32)
+pub fn syrp_gfx_api::Path::new() -> Self
+pub fn syrp_gfx_api::Path::quad_to(&mut self, f32, f32, f32, f32)
+pub fn syrp_gfx_api::Path::set_fill_rule(&mut self, syrp_gfx_api::FillRule)
+impl<'a> core::convert::From<&'a syrp_gfx_api::Path> for syrp_gfx_api::PathView<'a>
+pub fn syrp_gfx_api::PathView<'a>::from(&'a syrp_gfx_api::Path) -> Self
+pub struct syrp_gfx_api::PathView<'a>
+impl<'a> syrp_gfx_api::PathView<'a>
+pub fn syrp_gfx_api::PathView<'a>::bounds(self) -> core::option::Option<syrp_geom::rect::Rect<f32>>
+pub fn syrp_gfx_api::PathView<'a>::elements(self) -> impl core::iter::traits::iterator::Iterator<Item = syrp_gfx_api::PathEl> + use<'a>
+pub fn syrp_gfx_api::PathView<'a>::fill_rule(self) -> syrp_gfx_api::FillRule
+pub fn syrp_gfx_api::PathView<'a>::points(self) -> &'a [syrp_geom::point::Point<f32>]
+pub fn syrp_gfx_api::PathView<'a>::verbs(self) -> &'a [syrp_gfx_api::PathVerb]
+impl<'a> core::convert::From<&'a syrp_gfx_api::Path> for syrp_gfx_api::PathView<'a>
+pub fn syrp_gfx_api::PathView<'a>::from(&'a syrp_gfx_api::Path) -> Self
+pub struct syrp_gfx_api::RenderTarget
+impl syrp_gfx_api::RenderTarget
+pub fn syrp_gfx_api::RenderTarget::from_logical(f64, f64, f64, bool) -> core::result::Result<Self, syrp_gfx_api::RenderError>
+pub fn syrp_gfx_api::RenderTarget::height(&self) -> u32
+pub fn syrp_gfx_api::RenderTarget::logical_size(&self) -> (f64, f64)
+pub fn syrp_gfx_api::RenderTarget::new(u32, u32, f64) -> core::result::Result<Self, syrp_gfx_api::RenderError>
+pub fn syrp_gfx_api::RenderTarget::pixels(&self) -> core::option::Option<&[u8]>
+pub fn syrp_gfx_api::RenderTarget::pixels_mut(&mut self) -> core::option::Option<&mut [u8]>
+pub fn syrp_gfx_api::RenderTarget::resize(&mut self, u32, u32, f64) -> core::result::Result<(), syrp_gfx_api::RenderError>
+pub fn syrp_gfx_api::RenderTarget::scale(&self) -> f64
+pub fn syrp_gfx_api::RenderTarget::width(&self) -> u32
+pub fn syrp_gfx_api::RenderTarget::with_pixels(u32, u32, f64) -> core::result::Result<Self, syrp_gfx_api::RenderError>
+pub struct syrp_gfx_api::Stroke
+impl syrp_gfx_api::Stroke
+pub fn syrp_gfx_api::Stroke::as_view(&self) -> syrp_gfx_api::StrokeRef<'_>
+pub fn syrp_gfx_api::Stroke::new(f32) -> Self
+pub fn syrp_gfx_api::Stroke::with_cap(self, syrp_gfx_api::Cap) -> Self
+pub fn syrp_gfx_api::Stroke::with_dashes(self, impl core::iter::traits::collect::IntoIterator<Item = f32>, f32) -> Self
+pub fn syrp_gfx_api::Stroke::with_join(self, syrp_gfx_api::Join) -> Self
+pub fn syrp_gfx_api::Stroke::with_miter_limit(self, f32) -> Self
+impl<'a> core::convert::From<&'a syrp_gfx_api::Stroke> for syrp_gfx_api::StrokeRef<'a>
+pub fn syrp_gfx_api::StrokeRef<'a>::from(&'a syrp_gfx_api::Stroke) -> Self
+pub struct syrp_gfx_api::StrokeRef<'a>
+impl<'a> syrp_gfx_api::StrokeRef<'a>
+pub fn syrp_gfx_api::StrokeRef<'a>::cap(self) -> syrp_gfx_api::Cap
+pub fn syrp_gfx_api::StrokeRef<'a>::dash_offset(self) -> f32
+pub fn syrp_gfx_api::StrokeRef<'a>::dashes(self) -> &'a [f32]
+pub fn syrp_gfx_api::StrokeRef<'a>::join(self) -> syrp_gfx_api::Join
+pub fn syrp_gfx_api::StrokeRef<'a>::miter_limit(self) -> f32
+pub fn syrp_gfx_api::StrokeRef<'a>::width(self) -> f32
+impl<'a> core::convert::From<&'a syrp_gfx_api::Stroke> for syrp_gfx_api::StrokeRef<'a>
+pub fn syrp_gfx_api::StrokeRef<'a>::from(&'a syrp_gfx_api::Stroke) -> Self
+pub trait syrp_gfx_api::Renderer
+pub fn syrp_gfx_api::Renderer::render(&mut self, &syrp_gfx_api::DisplayList, &mut syrp_gfx_api::RenderTarget) -> core::result::Result<(), syrp_gfx_api::RenderError>
