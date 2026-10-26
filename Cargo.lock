@@ -976,6 +976,8 @@ version = "0.0.1"
 dependencies = [
  "syrp-audio-api",
  "syrp-error",
+ "syrp-loop-api",
+ "syrp-midi",
  "syrp-rt",
 ]
 

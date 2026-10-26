@@ -16,6 +16,8 @@ wp = "WP-0.2-05"
 [dependencies]
 syrp-audio-api = { version = "0.0.1", path = "../audio-api" }
 syrp-error = { version = "0.0.1", path = "../../foundation/error" }
+syrp-loop-api = { version = "0.0.1", path = "../loop-api" }
+syrp-midi = { version = "0.0.1", path = "../midi" }
 syrp-rt = { version = "0.0.1", path = "../../foundation/rt" }
 
 [lints]
