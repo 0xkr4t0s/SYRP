@@ -53,7 +53,7 @@
    - About **16–20 months to Rust feature parity** (Phases 0–7), and about 3–4 more months for interop (Phase 8).
    - This assumes 10–15 implementer agents in rolling waves, 2–4 reviewer agents, one PR-manager agent, a deterministic orchestrator and part-time human escalation. §7 explains the throughput model behind the numbers.
 
-**What "full parity" means here.** Every public JUCE capability has a Rust equivalent that passes behavioural tests derived from JUCE's documented behaviour and from the differential harness. Parity is functional, not source-compatible, and Rust APIs are idiomatic. A small set of **deliberate gaps** is recorded in the ledger with reasons:
+**What "full parity" means here.** Every public JUCE capability has a Rust equivalent that passes behavioural tests derived from JUCE's documented behaviour and from the differential harness. Parity is functional, not source-compatible, and Rust APIs are idiomatic. The core API is data-oriented; JUCE-shaped types for porting (Component, ValueTree, SynthesiserVoice and similar) live in optional `syrp-compat-*` crates over the same storage (ADR [0003](0003-data-layout.md)). A small set of **deliberate gaps** is recorded in the ledger with reasons:
 - VST2, because there is no SDK licence.
 - AudioCDBurner and AudioCDReader, ActiveX and AppleRemote, which are legacy platform features.
 - Blocking modal loops, replaced by async equivalents.
@@ -87,8 +87,8 @@ Each property below is a concrete deliverable with an automated acceptance test.
 | A14 | **RT safety by construction** | The `process` signature only exposes RT-safe handles. Allocating or locking APIs require `PrepareCtx` or `MessageThread`. The allocator is guarded in debug builds (`assert_no_alloc`), and RTSan runs in CI. | RT test suite; RTSan job (§9). |
 | A15 | **Minimal macro magic** | Proc-macros are limited to optional derives such as `#[derive(Params)]`, and each has a hand-written equivalent shown in the docs. There are no DSL macros in core paths. | A lint caps macro use in public API examples; `cargo syrp expand` output is snapshot-tested. |
 | A16 | **Small focused files** | A soft limit of 400 lines and a hard limit of 800 per file, one primary type per file, module docs at the top, and a predictable layout (`src/<concept>.rs`, `tests/<concept>.rs`). | A size lint in CI. |
-| A17 | **JUCE-name discoverability** | Every Rust item that maps to a JUCE class or method carries `#[doc(alias = "JuceName")]`, so searching rustdoc or the index for `AudioProcessorValueTreeState` finds `ParamTree`. | The alias lint is cross-checked against the migration map. |
-| A18 | **JUCE→Rust migration map** | `migration-map.json` and human pages map each JUCE class, and its notable methods, to the Rust item, a pattern note, a snippet pair (JUCE idiom → Rust idiom, written fresh) and pitfalls. Exposed through `cargo syrp migrate lookup juce::Slider::setRange`. | Every ledger row with status `done` has a map entry. |
+| A17 | **JUCE-name discoverability** | Every Rust item that maps to a JUCE class or method carries `#[doc(alias = "JuceName")]`, so searching rustdoc or the index for `AudioProcessorValueTreeState` finds `ParamTree`. Compat types carry the alias for the JUCE class they mirror; the core type they wrap carries it too, marked as the native equivalent. | The alias lint is cross-checked against the migration map. |
+| A18 | **JUCE→Rust migration map** | `migration-map.json` and human pages map each JUCE class, and its notable methods, to the Rust item, a pattern note, a snippet pair (JUCE idiom → Rust idiom, written fresh) and pitfalls. Where Syrp's core model differs from JUCE's object model, the entry points at the `syrp-compat-*` type for a straight port and names the native type to move to later (ADR 0003, D6). Exposed through `cargo syrp migrate lookup juce::Slider::setRange`. | Every ledger row with status `done` has a map entry. |
 | A19 | **Capability manifest** | `capabilities.json` lists, per feature and platform, whether it is supported, partial or a gap. Agents query it before coding. It is generated from the ledger. | Freshness check. |
 | A20 | **Agent usability evals** | About 60 benchmark tasks run nightly with a reference agent and the skill. Examples: "gain plugin with dB slider", "port JUCE tutorial X", "add an undoable property", "fix failing golden". Success rate, turn count and the first error code hit are tracked as KPIs. Regressions open doc or API issues automatically. | KPI thresholds gate releases. |
 | A21 | **Reproducibility** | Pinned `rust-toolchain.toml` (stable is 1.99.1 as of 2026-10-13), committed lockfiles, hermetic CI images, and `cargo syrp doctor` to diagnose the environment as JSON. | Doctor runs in CI on clean images. |
@@ -279,7 +279,7 @@ All data below comes from the crates.io API on 2026-10-26: version, last publish
 | rustfft 6.4 / realfft 3.5 | Mature | **Wrap** inside `syrp-dsp-core::Fft` | The FFT is a solved problem. Syrp wraps it to match JUCE's API for scaling and ordering. |
 | rubato 5.0 (Oct 2026) | Mature resampling | **Reuse** for the high-quality resampler option | JUCE's ResamplingAudioSource and interpolators are rebuilt to their documented behaviour. |
 | fundsp 0.23, dasp 0.11 (2020), biquad 0.6, idsp 0.23 | Varied | **Reference** only | The filters, oscillators and effects are rebuilt from public-domain DSP literature (RBJ cookbook, Zavalishin's TPT, and so on) to match JUCE's documented responses. |
-| SIMD | `std::simd` is still unstable (UNVERIFIED for 1.99); `wide` / `pulp` were not checked | **Build** `SimdRegister<T>` over `core::arch` with a scalar fallback; evaluate `wide` in Phase 0 | Needed for SIMDRegister parity and FloatVectorOperations speed. |
+| SIMD | `std::simd` is still unstable; fearless_simd 1.x (Linebender, Apache/MIT, runtime dispatch, already a vello dependency); `wide`, `pulp` | **Wrap** fearless_simd in L0 `syrp-simd`: the `Sample` trait, lane packs, aligned allocation, denormal guard; a scalar reference path for every kernel | SIMDRegister parity, FloatVectorOperations speed, and lane-generic voices and filters (ADR 0003, D5). |
 
 ### 4.10 Real-time primitives
 | Candidates | Maturity / licence | Decision | Rationale |
@@ -383,7 +383,7 @@ syrp/
 
 | Layer | Crates (one-line purpose) |
 |---|---|
-| **L0 Foundation** | `syrp-error`: `ErrorCode`, the `Diagnostic` trait, hints and docs URLs. `syrp-rt`: RT tokens, `RtSafe` marker, SPSC queues (rtrb), deferred-drop collector, `AtomicF32`/`AtomicF64`, allocation guard. `syrp-geom`: Point, Rect, RectList, AffineTransform, BorderSize, Line, Parallelogram, Justification, RectanglePlacement (kurbo inside). |
+| **L0 Foundation** | `syrp-simd`: `Sample` trait over `f32`, `f64` and SIMD lane packs, runtime dispatch (fearless_simd), 64-byte aligned allocation, denormal guard. `syrp-error`: `ErrorCode`, the `Diagnostic` trait, hints and docs URLs. `syrp-rt`: RT tokens, `RtSafe` marker, SPSC queues (rtrb), deferred-drop collector, `AtomicF32`/`AtomicF64`, allocation guard. `syrp-geom`: Point, Rect, RectList, AffineTransform, BorderSize, Line, Parallelogram, Justification, RectanglePlacement (kurbo inside). |
 | **L1 Contracts** (frozen in Phase 0) | `syrp-loop-api`: MessageLoop trait, tasks, timers, VBlank source. `syrp-audio-api`: buffer views, ChannelSet, BusLayout, ProcessConfig, PlayHead and transport. `syrp-midi`: MidiMessage, MidiBuffer, UMP packet types (data types plus codecs). `syrp-format-api`: AudioFormat, Reader and Writer traits, metadata model. `syrp-device-api`: audio and MIDI device backend traits. `syrp-plugin-api`: Processor, ParamSpec, Editor, PluginDescriptor, state traits. `syrp-gfx-api`: Graphics ops, DisplayList, Brush, Path, Image and Font handles, Renderer trait. `syrp-peer-api`: window peer, input events, IME, clipboard, cursors, displays, drag and drop, native dialogs. |
 | **L2 Core** | `syrp-strings` (LocalisedStrings, TextDiff, Base64, StringPool). `syrp-maths` (BigInteger, Expression, Range, NormalisableRange, Random, statistics). `syrp-sys` (SystemStats, Time, Uuid, Logger, registry, permissions). `syrp-var` (`Var`, DynamicObject, NamedValueSet, Identifier, JSON, XmlElement). `syrp-io` (streams, File, MemoryBlock, mmap, zip/gzip, MIME). `syrp-thread` (Thread, ThreadPool, TimeSliceThread, HighResolutionTimer, WaitableEvent). `syrp-process` (ChildProcess, InterProcessLock, DynamicLibrary). `syrp-net` (URL, WebInputStream, sockets, IP and MAC addresses, NamedPipe). Umbrella: `syrp-core`. |
 | **L2 Events and state** | `syrp-events`: desktop MessageLoop implementations, ManualLoop, Timer, AsyncUpdater, broadcasters. `syrp-ipc`: InterprocessConnection, child-process coordinator, service discovery. `syrp-state`: ValueTree, Value, CachedValue, UndoManager, PropertiesFile, synchroniser, compat formats. |
@@ -393,6 +393,7 @@ syrp/
 | **L3 Peers** | `syrp-peer-{win32,appkit,x11,wayland,uikit,android,web}`. `syrp-a11y`: bridge to the AccessKit adapters. |
 | **L4 UI** | `syrp-ui`: component tree, events, focus, painting, modal, Desktop. `syrp-ui-layout`: FlexBox, Grid, stretchable, constrainers. `syrp-commands`. `syrp-laf`: LookAndFeel framework plus V1–V4 themes. `syrp-widgets-{buttons,slider,text,lists,menus,panels}`. `syrp-windows`. `syrp-filebrowser`. `syrp-app`. `syrp-animation`. `syrp-opengl`. |
 | **L5 UI extras and audio UI** | `syrp-ui-extra`, `syrp-code-editor`, `syrp-webview`, `syrp-embed`, `syrp-audio-utils`, `syrp-processors-ui`, `syrp-unlock-ui`, `syrp-physics2d`, `syrp-video`. |
+| **L5 Compatibility** (optional) | JUCE-shaped front-ends over core storage, owning none of their own (ADR 0003, D1). `syrp-compat-ui`: Component, LookAndFeel, `resized`/`paint` hooks as custom node rows. `syrp-compat-state`: ValueTree, Value, CachedValue over the state store. `syrp-compat-audio`: SynthesiserVoice and Synthesiser over `VoicePool`, per-channel processor duplication. |
 | **L5 Plugins** | `syrp-plugin`: format-neutral wrapper runtime and `export_plugin!`. `syrp-wrap-{clap,vst3,auv2,auv3,lv2,aax,unity,standalone,ara}`. `syrp-bundler`: bundles, plists, moduleinfo.json, LV2 TTL, signing hooks. |
 | **L6 Tooling** | `syrp-testkit`: offline render, ManualLoop harness, golden comparators, fake host, UI driver. `syrp-inspect`: JSON dumps. `syrp-parity`: ledger schema and tools. `syrp-docgen`: API index, llms.txt, briefs, migration map. `syrp-resources`: binary-data `build.rs` helper. `syrp-cli`: the `cargo syrp` binary. `syrp-mcp`: MCP server. |
 | **L6 Facade and apps** | `syrp`: feature-gated umbrella. `apps/host-app` (AudioPluginHost). `apps/demos` (DemoRunner). `apps/perf`. |
@@ -404,6 +405,7 @@ Arrows read "depends on". Third-party crates are shown in brackets. No crate may
 ```text
 // L0
 syrp-error      -> (none)
+syrp-simd       -> (none) [fearless_simd]
 syrp-rt         -> error [rtrb]
 syrp-geom       -> (none) [kurbo]
 // L1 contracts
@@ -432,10 +434,10 @@ syrp-analytics  -> net, events
 syrp-unlock     -> crypto, net, var
 syrp-js         -> var [rquickjs]
 // L3 audio
-syrp-audio-basics -> audio-api, rt, maths
+syrp-audio-basics -> audio-api, rt, maths, simd
 syrp-mpe          -> midi, audio-basics
 syrp-midi-ci      -> midi
-syrp-dsp-core     -> audio-basics [rustfft, realfft]
+syrp-dsp-core     -> audio-basics, simd [rustfft, realfft]
 syrp-dsp-{filters,fx,conv} -> dsp-core            ; syrp-dsp -> all dsp-*
 syrp-format-{wav,aiff,flac,ogg,mp3,opus,platform} -> format-api, io   (parallel leaves)
 syrp-formats      -> format-api, audio-basics, io
@@ -474,6 +476,9 @@ syrp-audio-utils  -> ui, widgets-*, devices, formats, processors
 syrp-unlock-ui    -> unlock, windows
 syrp-physics2d    -> gfx [rapier2d]
 syrp-video        -> ui, peer-api
+syrp-compat-ui    -> ui, laf
+syrp-compat-state -> state
+syrp-compat-audio -> audio-basics, dsp, processors
 syrp-plugin       -> plugin-api, processors, (feature "editor": ui, peer-api)
 syrp-wrap-{clap,vst3,auv2,auv3,lv2,aax,unity,standalone,ara} -> plugin   (parallel leaves)
                        [clack-plugin | vst3 | objc2-audio-toolbox | lv2 headers | cxx+AAX SDK | ARA headers]
@@ -569,12 +574,23 @@ lp.advance(Duration::from_millis(100));          // fires exactly 3 times
 ```
 
 ### 5.6 Component and UI model
-**Retained tree in an arena.**
-- `Ui` owns a slotmap of nodes keyed by `ComponentId`. Each node holds bounds, transform, visibility, z-order, opacity, cached-image policy, focus flags, accessibility info and the boxed behaviour object.
-- User types implement `Component`, with JUCE-familiar hooks given default implementations.
-- Parent and child links live in the arena, not in user structs. This avoids `Rc` cycles and makes the tree trivially serialisable for `inspect`.
+The UI follows ADR [0003](0003-data-layout.md): one data-oriented node table in `syrp-ui`, a native API over it, and an optional JUCE-shaped front-end in `syrp-compat-ui` that writes to the same table.
 
-**Typed handles.** `Handle<T: Component>` gives checked downcasting: `ui.get_mut(slider_handle)`.
+**Node table.**
+- `Ui` owns a slotmap from `ComponentId` to a dense row, and stores node data in columns: bounds, local and world transform, flags (visible, opaque, wants focus, dirty, …) as bits, z-order, opacity, cached-layer policy, parent, first-child and next-sibling links, widget kind and properties, accessibility info, and a cold column of boxed behaviour objects for custom nodes.
+- Rows are kept in tree pre-order, so a full traversal is a linear scan and a subtree is a contiguous range.
+- The per-frame work runs as passes over columns: transform composition, layout, hit testing, dirty-region propagation, culling, accessibility diffing and paint ordering. A pass reads only the columns it needs.
+- Columns are private to `syrp-ui`. Users hold handles, never rows.
+
+**Native widgets.** Standard widgets (sliders, buttons, labels, lists, meters and the rest) are a widget kind plus properties and theme tokens in the table. Their layout, input and painting are implemented by the framework as batched passes, so a native widget has no per-node virtual call.
+
+**Custom nodes.** A node whose kind is `Custom` carries a boxed behaviour implementing a small trait with paint and event hooks. It still gets its geometry, focus and accessibility from the columns. This is the extension point for new widget types and the mechanism the compat layer uses.
+
+**Declarative layer.** A serde-describable `UiSpec` (JSON/TOML) builds widget trees and parameter bindings directly into the table. It is the format agents and WebView relays use, and the recommended way to describe native UIs.
+
+**Compatibility front-end** (`syrp-compat-ui`). JUCE-shaped `Component` with familiar hooks (`paint`, `resized`, mouse and key handlers, `paint_over_children`) and `LookAndFeel` resolved up the tree. A compat component is a `Custom` row; it owns no geometry of its own, so batched passes still cover it. Every compat object exposes `.handle()` for moving one piece at a time to the native API.
+
+**Typed handles.** `Handle<T>` gives checked access: `ui.get_mut(slider_handle)`.
 
 **Events.**
 - The mouse, touch and pen pipeline mirrors JUCE's MouseInputSource semantics: enter, exit, drag thresholds, double-click timing and capture.
@@ -583,31 +599,24 @@ lp.advance(Duration::from_millis(100));          // fires exactly 3 times
 
 **Painting.**
 - Dirty regions are coalesced per peer and painted on VBlank.
-- `paint` receives `&mut Graphics` (§5.7). `paint_over_children` is supported.
-- Per-component cached layers replace CachedComponentImage.
+- Native widgets emit display-list ops directly; custom nodes receive `&mut Graphics` (§5.7).
+- Per-node cached layers replace CachedComponentImage. A layer is reused when the content hash of its display list is unchanged.
 
-**LookAndFeel.**
-- A trait with one method per drawable widget part, such as `draw_rotary_slider` and `draw_button_background`, plus colour IDs as typed theme tokens.
-- V1–V4 are provided as implementations. LookAndFeel is resolved up the tree, as in JUCE.
+**Theming.** Theme tokens (colours, metrics, fonts) are data resolved up the tree. The V1–V4 looks are token sets plus paint routines for native widgets; the compat `LookAndFeel` trait maps its methods onto the same routines.
 
-**Layout.** `resized` hooks, plus `syrp-ui-layout`: FlexBox and Grid via taffy, StretchableLayout and constrainers.
+**Layout.** A layout pass over the table, with FlexBox and Grid via taffy in `syrp-ui-layout`, StretchableLayout and constrainers. Compat `resized` hooks run as part of the same pass.
 
-**Accessibility.** Each node contributes an AccessKit node through `accessibility()`. Defaults come from the widget's role. The same tree drives screen readers, `inspect` and test scripting.
-
-**Optional declarative layer.** A serde-describable `UiSpec` (JSON/TOML) builds standard widget trees and parameter bindings. It is the format agents and WebView relays use, and it compiles to ordinary component calls.
+**Accessibility.** Each node contributes an AccessKit node, from the widget kind's role by default. The same tree drives screen readers, `inspect` and test scripting.
 
 ```rust
-pub trait Component: 'static {
-    fn paint(&mut self, g: &mut Graphics, cx: &PaintCx) {}
-    fn resized(&mut self, cx: &mut LayoutCx) {}
-    fn mouse_down(&mut self, e: &MouseEvent, cx: &mut EventCx) -> Handled { Handled::No }
-    fn key_pressed(&mut self, k: &KeyPress, cx: &mut EventCx) -> Handled { Handled::No }
-    fn accessibility(&self, node: &mut a11y::NodeBuilder) {}
-}
-let root   = ui.set_root(mt, Panel::new());
-let gain   = ui.add_child(mt, root, Slider::rotary().range(-60.0..=12.0).suffix(" dB"));
+// native
+let root = ui.set_root(mt, Panel::new());
+let gain = ui.add(mt, root, Slider::rotary().range(-60.0..=12.0).suffix(" dB"));
 ui.attach_param(mt, gain, params.gain());          // ParameterAttachment equivalent
 ui.set_bounds(mt, gain, Rect::new(10, 10, 80, 80));
+
+// ported code, same tree
+let meter = ui.add(mt, root, compat::ComponentNode::new(MyOldMeter::default()));
 let png = testkit::render(&ui, Scale(2.0))?;        // headless golden
 ```
 
@@ -645,14 +654,22 @@ Optional native backends (Direct2D, CoreGraphics) are deferred. They would only 
 
 **Parameters.**
 - A `ParamSpec` is declared by builder, by TOML, or by an optional derive. Each parameter has an ID, name, range (NormalisableRange semantics), default, unit, text conversion, smoothing, automation flags and group.
-- At runtime, `Params` provides atomics and sample-accurate change iterators.
-- `ParamTree` in `syrp-processors` is the AudioProcessorValueTreeState equivalent: atomics plus a ValueTree mirror for persistence and undo.
+- Registration assigns each parameter a dense `ParamIndex(u32)`. String IDs resolve to indices at prepare time only.
+- At runtime, values live in one contiguous atomic array, and `ProcessIo` exposes one sorted per-block stream of `(sample offset, ParamIndex, value)` changes.
+- `ParamTree` in `syrp-processors` is the AudioProcessorValueTreeState equivalent: the atomic array plus a mirror in the state store (§5.9) for persistence and undo. `syrp-compat-state` exposes that mirror as a ValueTree for ported code.
+
+**DSP execution model** (ADR 0003, D5).
+- Per-instance DSP (voices, filters, oscillators) is written against the `Sample` trait from `syrp-simd`, so `MyVoice<F32x8>` runs eight instances in one pass.
+- `VoicePool<V>` in `syrp-audio-basics` stores voices as lane packs, assigns notes to lanes and packs voices and channels together to fill lanes. JUCE's Synthesiser and SynthesiserVoice are provided by `syrp-compat-audio` over it.
+- Silent voices and graph nodes sleep once their tails end; flush-to-zero is set for every `process` call; smoothing and coefficient updates may run at control rate.
+- Every SIMD kernel has a scalar reference implementation used by the parity tests.
 
 **Editor.** `trait Editor { fn create(&mut self, ui: &mut Ui, params: &ParamHandles, mt: MessageThread) -> ComponentId; fn constraints(&self) -> SizeConstraints; }`. It is created and destroyed on the message thread and never touches the audio state directly.
 
 **ProcessorGraph.**
 - Editing (`add`, `connect`, `remove`) happens on the message thread.
 - `compile()` runs on a worker. It topologically sorts nodes, allocates buffers, inserts latency-compensation delays, and resolves MIDI routing into a `RenderPlan`.
+- The `RenderPlan` is flat data: steps in topological order holding node and buffer-slot indices, one pooled buffer allocation whose slots are reused by liveness, pre-sized delay lines, MIDI routes, and steps grouped by dependency level for a later parallel scheduler. Built-in node kinds of the same type may be batched into one lane-pack call.
 - The plan is published to the audio thread through `RtHandoff`, and old plans are reclaimed through deferred drop.
 - Graph I/O nodes mirror JUCE's AudioGraphIOProcessor.
 
@@ -679,36 +696,42 @@ g.connect(mt, gain.audio_out(0..2),  g.output().audio_in(0..2))?;
 let plan_ticket = g.compile_async(mt);                 // swapped into RT when ready
 ```
 
-### 5.9 ValueTree, undo and state model
-**`ValueTree`.**
-- Internally an `Rc`-shared node with a type `Identifier`, ordered properties (`Identifier → Var`), children and listeners.
-- Message-thread only: every mutation takes `&MessageThread`, and the type is `!Send`.
-- Cloning is shallow, as in JUCE, where `ValueTree` is a reference. `deep_clone()` is explicit.
-- Listener callbacks are queued and delivered after the mutation, so they cannot re-enter it. The ordering rules are documented and tested against the harness.
+### 5.9 State, undo and ValueTree
+State follows ADR [0003](0003-data-layout.md): a data-oriented store in `syrp-state`, with JUCE's ValueTree API provided by `syrp-compat-state` over it.
+
+**State store.**
+- One store per document, message-thread only (every mutation takes `&MessageThread`; the store is `!Send`).
+- Nodes live in a slotmap arena. Each node has an interned type `Identifier` (`u32`), properties as a small sorted list of `(Identifier, Var)`, and an ordered child list. `Var` is kept to 16 bytes, heap-allocating only for strings, arrays and objects.
+- Schemas are optional: `#[derive(StateSchema)]`, or hand-written equivalents, gives typed accessors and compile-time property names over a branch. Untyped nodes are always allowed, because JUCE's dynamic trees must be representable.
+- **The change log is the source of truth for observers.** Every mutation appends a `(node, op)` record. Listeners are subscriptions over the log, delivered after the mutation, so they cannot re-enter it. Undo, `ValueTreeSynchroniser` deltas, `inspect`, WebView JSON patches and remote editors all read the same log.
 
 **`UndoManager`.**
-- Transactions with names, coalescing, `begin_new_transaction`, and per-transaction undo and redo.
-- `UndoableAction` is a trait.
-- ValueTree mutations accept `Option<&mut UndoManager>`.
+- Transactions with names, coalescing, `begin_new_transaction`, and per-transaction undo and redo, implemented by reversing log records.
+- `UndoableAction` is a trait for actions outside the store.
+- Store mutations accept `Option<&mut UndoManager>`.
 
-**`Value` and `CachedValue<T>`.** Observable cells, bridged to ValueTree properties.
+**Compatibility front-end** (`syrp-compat-state`).
+- `ValueTree` is a handle (store plus node key) with JUCE's documented semantics: cloning is shallow, `deep_clone()` is explicit, and the listener ordering rules are documented and tested against the harness.
+- JUCE lets a subtree be detached, kept alive by a reference and re-attached elsewhere. Nodes therefore carry reference counts, so orphans live while referenced and are reclaimed after. A spike before the `syrp-state` WP must show this passes the detach/reattach and listener-ordering scenarios.
+- `Value` and `CachedValue<T>` are observable cells over node properties.
 
 **Persistence.**
-- XML (quick-xml), JSON and a binary format.
+- XML (quick-xml), JSON and a binary format, written by a linear walk of the arena.
 - The **`juce-compat` feature** adds readers and writers for JUCE's ValueTree binary and XML layouts. They are specified by black-box observation of harness-produced files (§10). This is how ported plugins keep their sessions.
 - `PropertiesFile` and `ApplicationProperties` use platform-appropriate locations.
 
-**`ValueTreeSynchroniser`.** Emits change deltas. The same delta stream feeds `inspect`, WebView UIs (JSON patches) and remote editors.
-
-**Typed views.** An optional `#[derive(StateSchema)]`, or hand-written equivalents, provides typed accessors over a ValueTree branch, so agents get compile-time property names.
-
 ```rust
+// ported code
 let tree = ValueTree::new(mt, id("Synth"));
 let mut undo = UndoManager::new();
 tree.set_property(mt, id("cutoff"), Var::from(1200.0), Some(&mut undo))?;
 tree.on_property_changed(mt, |ev| tracing::info!(prop = %ev.property, "changed"));
 undo.undo(mt)?;
 let bytes = tree.to_binary(BinaryFormat::Syrp)?;        // or BinaryFormat::JuceCompat
+
+// native, typed
+let synth = doc.root::<SynthState>(mt);
+synth.set_cutoff(mt, 1200.0, Some(&mut undo));
 ```
 
 ## 6. Platform backends
