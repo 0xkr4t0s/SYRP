@@ -1,0 +1,1 @@
+{"wp": "WP-0.2-09", "kind": "added", "summary": "Renderer spike, increment 3: determinism runs (10 runs per scene and scale, SIMD-level drift), per-scene timing, and the write-up docs/design/0004-renderer-spike.md recommending vello_cpu in a pinned deterministic mode with tolerance-based goldens."}

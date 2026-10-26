@@ -27,12 +27,14 @@
 
 mod assets;
 mod golden;
+mod measure;
 mod replay;
 mod scene;
 mod skia;
 mod vello;
 
 pub use golden::{GoldenReport, Tolerance, compare};
+pub use measure::{Determinism, Timing, check_determinism, fingerprint, time_scene};
 pub use scene::{SCALES, Scene, scenes};
 pub use skia::TinySkiaRenderer;
 pub use vello::{VelloCpuRenderer, VelloMode};

@@ -32,6 +32,5 @@ cargo test -p syrp-render-spike --release --test b2_b3_measure -- --ignored --no
 ```
 
 ## Known gaps
-Increment 2 of 3: timing, determinism runs and ADR 0004 arrive in increment 3.
 No clip masks, no real fonts or text shaping (parley/skrifa belong to `syrp-text`), no
 aarch64 determinism run, no GPU comparison. All for `syrp-render-cpu` and its WPs.
