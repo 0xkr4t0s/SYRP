@@ -1,0 +1,20 @@
+[package]
+name = "syrp-loop-api"
+description = "The Syrp message-loop contract: MessageThread tokens, tasks, timers, VBlank callbacks, Coalescer and the deterministic ManualLoop."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT OR Apache-2.0"
+repository.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[package.metadata.syrp]
+layer = "L1"
+wp = "WP-0.2-01"
+
+[dependencies]
+syrp-error = { path = "../../foundation/error" }
+
+[lints]
+workspace = true
