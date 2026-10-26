@@ -104,7 +104,7 @@ impl GradientStop {
 /// What a brush paints, without its gradient stops. Radii are clamped to `>= 0`.
 /// ```
 /// use syrp_gfx_api::{Brush, BrushKind, Colour};
-/// assert_eq!(Brush::solid(Colour::BLACK).as_ref().kind(), BrushKind::Solid(Colour::BLACK));
+/// assert_eq!(Brush::solid(Colour::BLACK).as_view().kind(), BrushKind::Solid(Colour::BLACK));
 /// ```
 #[derive(Clone, Copy, Debug, PartialEq)]
 #[non_exhaustive]
@@ -112,6 +112,7 @@ pub enum BrushKind {
     /// One colour everywhere.
     Solid(Colour),
     /// Colour varies along the line from `start` (offset 0) to `end` (offset 1).
+    #[non_exhaustive]
     Linear {
         /// Point at offset 0.
         start: Point<f32>,
@@ -119,6 +120,7 @@ pub enum BrushKind {
         end: Point<f32>,
     },
     /// Colour varies with distance from `centre`, reaching offset 1 at `radius`.
+    #[non_exhaustive]
     Radial {
         /// Centre (offset 0).
         centre: Point<f32>,
@@ -126,6 +128,7 @@ pub enum BrushKind {
         radius: f32,
     },
     /// Colour varies between two circles (offset 0 on the first, 1 on the second).
+    #[non_exhaustive]
     TwoPointConical {
         /// First circle's centre.
         start: Point<f32>,
@@ -148,7 +151,7 @@ pub enum BrushKind {
 ///     GradientStop::new(1.0, Colour::WHITE),
 ///     GradientStop::new(0.0, Colour::BLACK),
 /// ]);
-/// assert_eq!(b.as_ref().stops()[0].colour(), Colour::BLACK);
+/// assert_eq!(b.as_view().stops()[0].colour(), Colour::BLACK);
 /// ```
 #[doc(alias = "FillType")]
 #[doc(alias = "ColourGradient")]
@@ -234,9 +237,9 @@ impl Brush {
 
     /// A borrowed view of this brush.
     /// ```
-    /// assert!(syrp_gfx_api::Brush::solid(Default::default()).as_ref().stops().is_empty());
+    /// assert!(syrp_gfx_api::Brush::solid(Default::default()).as_view().stops().is_empty());
     /// ```
-    pub fn as_ref(&self) -> BrushRef<'_> {
+    pub fn as_view(&self) -> BrushRef<'_> {
         BrushRef::new(self.kind, &self.stops)
     }
 }

@@ -20,38 +20,39 @@ fn b2_colours_and_solid_brushes() {
     assert_eq!(Colour::default(), Colour::TRANSPARENT);
     let b = Brush::from(Colour::WHITE);
     assert_eq!(b, Brush::solid(Colour::WHITE));
-    assert_eq!(b.as_ref().kind(), BrushKind::Solid(Colour::WHITE));
-    assert!(b.as_ref().stops().is_empty());
-    assert_eq!(BrushRef::from(Colour::WHITE), b.as_ref());
+    assert_eq!(b.as_view().kind(), BrushKind::Solid(Colour::WHITE));
+    assert!(b.as_view().stops().is_empty());
+    assert_eq!(BrushRef::from(Colour::WHITE), b.as_view());
 }
 
 #[test]
 fn b2_gradient_kinds_keep_their_geometry() {
     let (p0, p1, p2) = (pt(0.0, 1.0), pt(2.0, 3.0), pt(9.0, 0.0));
-    let kind = |b: Brush| b.as_ref().kind();
-    let (start, end, centre, radius) = (p0, p1, p2, 4.0);
-    assert_eq!(
-        kind(Brush::linear(p0, p1, [])),
-        BrushKind::Linear { start, end }
+    let kind = |b: Brush| b.as_view().kind();
+    let linear = kind(Brush::linear(p0, p1, []));
+    assert!(matches!(linear, BrushKind::Linear { start, end, .. } if (start, end) == (p0, p1)));
+    let radial = kind(Brush::radial(p2, 4.0, []));
+    assert!(
+        matches!(radial, BrushKind::Radial { centre, radius, .. } if (centre, radius) == (p2, 4.0))
     );
-    assert_eq!(
-        kind(Brush::radial(p2, 4.0, [])),
-        BrushKind::Radial { centre, radius }
-    );
-    let (start_radius, end, end_radius) = (1.0, p2, 6.0);
-    let want = BrushKind::TwoPointConical {
+    let conical = kind(Brush::two_point_conical(p0, 1.0, p2, 6.0, []));
+    let BrushKind::TwoPointConical {
         start,
         start_radius,
         end,
         end_radius,
+        ..
+    } = conical
+    else {
+        panic!("not conical");
     };
-    assert_eq!(kind(Brush::two_point_conical(p0, 1.0, p2, 6.0, [])), want);
+    assert_eq!((start, start_radius, end, end_radius), (p0, 1.0, p2, 6.0));
 }
 
 #[test]
 fn b2_negative_nan_and_negative_zero_radii_become_positive_zero() {
     for r in [-3.0, f32::NAN, -0.0] {
-        let BrushKind::Radial { radius, .. } = Brush::radial(pt(0.0, 0.0), r, []).as_ref().kind()
+        let BrushKind::Radial { radius, .. } = Brush::radial(pt(0.0, 0.0), r, []).as_view().kind()
         else {
             panic!("not radial");
         };
@@ -63,7 +64,7 @@ fn b2_negative_nan_and_negative_zero_radii_become_positive_zero() {
         start_radius,
         end_radius,
         ..
-    } = b.as_ref().kind()
+    } = b.as_view().kind()
     else {
         panic!("not conical");
     };
@@ -86,7 +87,7 @@ fn b2_stop_offsets_are_clamped_and_sorted_stably() {
     ];
     let brush = Brush::linear(pt(0.0, 0.0), pt(1.0, 0.0), stops);
     let got: Vec<_> = brush
-        .as_ref()
+        .as_view()
         .stops()
         .iter()
         .map(|s| (s.offset(), s.colour()))
@@ -112,7 +113,7 @@ fn b3_path_records_verbs_and_points() {
     );
     let n: usize = p.as_view().verbs().iter().map(|v| v.point_count()).sum();
     assert_eq!(p.as_view().points().len(), n);
-    let els: Vec<_> = p.as_view().elements().collect();
+    let els: Vec<_> = elements_of(&p).collect();
     assert_eq!(els[2], PathEl::QuadTo(pt(2.0, 0.0), pt(2.0, 1.0)));
     assert_eq!(
         els[3],
@@ -128,7 +129,7 @@ fn b3_drawing_without_a_subpath_starts_one_at_the_current_point() {
     p.close();
     p.close(); // no open subpath: ignored
     p.line_to(0.0, 4.0); // after close: starts at the closed subpath's start
-    let els: Vec<_> = p.as_view().elements().collect();
+    let els: Vec<_> = elements_of(&p).collect();
     assert_eq!(
         els,
         [
@@ -147,6 +148,11 @@ fn b3_drawing_without_a_subpath_starts_one_at_the_current_point() {
         q.as_view().elements().nth(2),
         Some(PathEl::MoveTo(pt(5.0, 5.0)))
     );
+}
+
+/// `elements` must not capture the borrow of the view itself (edition 2024 capture rules).
+fn elements_of(path: &Path) -> impl Iterator<Item = PathEl> + '_ {
+    path.as_view().elements()
 }
 
 #[test]
@@ -177,7 +183,7 @@ fn b3_fill_rule_and_clear() {
 #[test]
 fn b3_stroke_parameters_and_sanitising() {
     let s = Stroke::new(2.0);
-    let r = s.as_ref();
+    let r = s.as_view();
     assert_eq!(
         (r.width(), r.join(), r.cap(), r.miter_limit()),
         (2.0, Join::Miter, Cap::Butt, 4.0)
@@ -188,7 +194,7 @@ fn b3_stroke_parameters_and_sanitising() {
         .with_cap(Cap::Square)
         .with_miter_limit(-2.0)
         .with_dashes([5.0, -1.0, f32::NAN, 2.5], f32::INFINITY);
-    let r = s.as_ref();
+    let r = s.as_view();
     assert_eq!(
         (r.width(), r.join(), r.cap(), r.miter_limit()),
         (0.0, Join::Bevel, Cap::Square, 0.0)
@@ -197,7 +203,7 @@ fn b3_stroke_parameters_and_sanitising() {
     assert_eq!(r.dash_offset(), 0.0);
     let s = s.with_dashes([1.0], -3.0); // replaces; negative offsets are allowed
     assert_eq!(
-        (s.as_ref().dashes(), s.as_ref().dash_offset()),
+        (s.as_view().dashes(), s.as_view().dash_offset()),
         (&[1.0][..], -3.0)
     );
 }

@@ -277,7 +277,7 @@ impl<'a> PathView<'a> {
     /// ```
     /// assert_eq!(syrp_gfx_api::Path::new().as_view().elements().count(), 0);
     /// ```
-    pub fn elements(&self) -> impl Iterator<Item = PathEl> + 'a {
+    pub fn elements(&self) -> impl Iterator<Item = PathEl> + use<'a> {
         let mut pts = self.points.iter().copied();
         let mut next = move || pts.next().unwrap_or_default();
         self.verbs.iter().map(move |verb| match verb {
@@ -363,7 +363,7 @@ pub(crate) struct StrokeParams {
 /// ```
 /// use syrp_gfx_api::{Cap, Join, Stroke};
 /// let s = Stroke::new(2.0).with_join(Join::Round).with_cap(Cap::Round).with_dashes([4.0, 2.0], 0.0);
-/// assert_eq!(s.as_ref().dashes(), &[4.0, 2.0]);
+/// assert_eq!(s.as_view().dashes(), &[4.0, 2.0]);
 /// ```
 #[doc(alias = "PathStrokeType")]
 #[derive(Clone, Debug, PartialEq)]
@@ -375,7 +375,7 @@ pub struct Stroke {
 impl Stroke {
     /// A solid stroke of `width` with miter joins (limit 4), butt caps and no dashes.
     /// ```
-    /// assert_eq!(syrp_gfx_api::Stroke::new(-1.0).as_ref().width(), 0.0);
+    /// assert_eq!(syrp_gfx_api::Stroke::new(-1.0).as_view().width(), 0.0);
     /// ```
     pub fn new(width: f32) -> Self {
         let params = StrokeParams {
@@ -414,7 +414,7 @@ impl Stroke {
     /// Sets the miter limit (ratio of miter length to width).
     /// ```
     /// let s = syrp_gfx_api::Stroke::new(1.0).with_miter_limit(10.0);
-    /// assert_eq!(s.as_ref().miter_limit(), 10.0);
+    /// assert_eq!(s.as_view().miter_limit(), 10.0);
     /// ```
     #[must_use]
     pub fn with_miter_limit(mut self, limit: f32) -> Self {
@@ -425,7 +425,7 @@ impl Stroke {
     /// Sets the dash lengths and the distance into the pattern at which dashing starts.
     /// ```
     /// let s = syrp_gfx_api::Stroke::new(1.0).with_dashes([3.0, f32::NAN], 1.0);
-    /// assert_eq!(s.as_ref().dashes(), &[3.0, 0.0]);
+    /// assert_eq!(s.as_view().dashes(), &[3.0, 0.0]);
     /// ```
     #[doc(alias = "createDashedStroke")]
     #[must_use]
@@ -438,9 +438,9 @@ impl Stroke {
 
     /// A borrowed view of this stroke.
     /// ```
-    /// assert_eq!(syrp_gfx_api::Stroke::new(3.0).as_ref().width(), 3.0);
+    /// assert_eq!(syrp_gfx_api::Stroke::new(3.0).as_view().width(), 3.0);
     /// ```
-    pub fn as_ref(&self) -> StrokeRef<'_> {
+    pub fn as_view(&self) -> StrokeRef<'_> {
         StrokeRef::new(self.params, &self.dashes)
     }
 }
@@ -448,7 +448,7 @@ impl Stroke {
 /// A borrowed [`Stroke`], as read back from a `DisplayList`.
 /// ```
 /// let s = syrp_gfx_api::Stroke::new(1.5);
-/// assert_eq!(s.as_ref().cap(), syrp_gfx_api::Cap::Butt);
+/// assert_eq!(s.as_view().cap(), syrp_gfx_api::Cap::Butt);
 /// ```
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct StrokeRef<'a> {
@@ -463,7 +463,7 @@ impl<'a> StrokeRef<'a> {
 
     /// Stroke width in user units.
     /// ```
-    /// assert_eq!(syrp_gfx_api::Stroke::new(2.0).as_ref().width(), 2.0);
+    /// assert_eq!(syrp_gfx_api::Stroke::new(2.0).as_view().width(), 2.0);
     /// ```
     pub fn width(&self) -> f32 {
         self.params.width
@@ -471,7 +471,7 @@ impl<'a> StrokeRef<'a> {
 
     /// The join style.
     /// ```
-    /// assert_eq!(syrp_gfx_api::Stroke::new(2.0).as_ref().join(), syrp_gfx_api::Join::Miter);
+    /// assert_eq!(syrp_gfx_api::Stroke::new(2.0).as_view().join(), syrp_gfx_api::Join::Miter);
     /// ```
     pub fn join(&self) -> Join {
         self.params.join
@@ -479,7 +479,7 @@ impl<'a> StrokeRef<'a> {
 
     /// The cap style.
     /// ```
-    /// assert_eq!(syrp_gfx_api::Stroke::new(2.0).as_ref().cap(), syrp_gfx_api::Cap::Butt);
+    /// assert_eq!(syrp_gfx_api::Stroke::new(2.0).as_view().cap(), syrp_gfx_api::Cap::Butt);
     /// ```
     pub fn cap(&self) -> Cap {
         self.params.cap
@@ -487,7 +487,7 @@ impl<'a> StrokeRef<'a> {
 
     /// The miter limit.
     /// ```
-    /// assert_eq!(syrp_gfx_api::Stroke::new(2.0).as_ref().miter_limit(), 4.0);
+    /// assert_eq!(syrp_gfx_api::Stroke::new(2.0).as_view().miter_limit(), 4.0);
     /// ```
     pub fn miter_limit(&self) -> f32 {
         self.params.miter_limit
@@ -495,7 +495,7 @@ impl<'a> StrokeRef<'a> {
 
     /// The dash lengths (empty for a solid stroke).
     /// ```
-    /// assert!(syrp_gfx_api::Stroke::new(2.0).as_ref().dashes().is_empty());
+    /// assert!(syrp_gfx_api::Stroke::new(2.0).as_view().dashes().is_empty());
     /// ```
     pub fn dashes(&self) -> &'a [f32] {
         self.dashes
@@ -503,7 +503,7 @@ impl<'a> StrokeRef<'a> {
 
     /// The distance into the dash pattern at which the stroke starts.
     /// ```
-    /// assert_eq!(syrp_gfx_api::Stroke::new(2.0).as_ref().dash_offset(), 0.0);
+    /// assert_eq!(syrp_gfx_api::Stroke::new(2.0).as_view().dash_offset(), 0.0);
     /// ```
     pub fn dash_offset(&self) -> f32 {
         self.params.dash_offset

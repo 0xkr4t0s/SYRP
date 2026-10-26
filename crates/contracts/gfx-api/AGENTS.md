@@ -16,6 +16,9 @@ juce_graphics/ColourGradient, juce_graphics/FillType (shared with `syrp-gfx`)
 - Contract types have no public fields (ADR 0003 D3); the `b7_` test scans the sources.
   Owned types (`Path`, `Stroke`, `Brush`) lend borrowed views; a display list will hand back
   the same views over its arenas, so renderers never see the owned types.
+  The view accessor is always `as_view()`.
+- Colours and brushes are this crate's own types, never peniko re-exports, so the frozen
+  contract pins no renderer dependency; renderer crates convert with plain functions.
 - Every subpath in `Path::verbs` starts with `MoveTo` (a drawing verb with no open subpath
   inserts one at the current point). `points.len()` is the sum of `PathVerb::point_count`.
 - `Path::bounds` covers control points (conservative for curves) and skips NaN points.
