@@ -139,6 +139,22 @@ fn b3_missing_nightly_gives_doc_0001() {
 }
 
 #[test]
+fn b3_nightly_round_trip_when_installed() {
+    // Without nightly this is exactly the B3 diagnostic; with it, the fixture is regenerated live.
+    let nightly = match detect_nightly("nightly") {
+        Ok(n) => n,
+        Err(e) => return assert_eq!(e.code().as_str(), "SYRP-DOC-0001"),
+    };
+    let target = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("docgen-demo");
+    let json = generate_rustdoc_json(&nightly, &here("tests/fixtures/demo"), "demo", &target);
+    match build_index(&[json.expect("rustdoc runs")]) {
+        Ok(live) => assert_eq!(live.entries, index().entries, "refresh the fixture"),
+        // A nightly newer than the pinned rustdoc-types: the precise diagnostic, not a parse error.
+        Err(e) => assert_eq!(e.code().as_str(), "SYRP-DOC-0002", "{e}"),
+    }
+}
+
+#[test]
 fn every_doc_code_is_catalogued() {
     let src = std::fs::read_to_string(here("../../../errors/doc.toml")).unwrap();
     for code in ["SYRP-DOC-0001", "SYRP-DOC-0002", "SYRP-DOC-0003"] {

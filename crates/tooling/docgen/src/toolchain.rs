@@ -1,5 +1,7 @@
-//! Nightly detection (B3): rustdoc JSON needs `-Z unstable-options --output-format json`.
+//! Nightly detection (B3) and rustdoc JSON generation, which needs
+//! `-Z unstable-options --output-format json`.
 
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use crate::DocError;
@@ -49,4 +51,44 @@ pub fn detect_nightly(toolchain: &str) -> Result<NightlyToolchain, DocError> {
         return Err(missing(format!("`{version}` is not a nightly")));
     }
     Ok(NightlyToolchain { name, version })
+}
+
+/// Runs `cargo +<nightly> rustdoc -p <package> --lib -- -Z unstable-options --output-format json`
+/// in `workspace` with `--target-dir target_dir`, and returns the path of the JSON it wrote.
+///
+/// Fails with SYRP-DOC-0003 (with the end of rustdoc's stderr) if cargo or rustdoc fails.
+///
+/// ```no_run
+/// let nightly = syrp_docgen::detect_nightly("nightly").unwrap();
+/// let target = std::path::Path::new("target/docgen");
+/// let json = syrp_docgen::generate_rustdoc_json(&nightly, ".".as_ref(), "syrp-docgen", target);
+/// assert!(json.unwrap().ends_with("doc/syrp_docgen.json"));
+/// ```
+pub fn generate_rustdoc_json(
+    nightly: &NightlyToolchain,
+    workspace: &Path,
+    package: &str,
+    target_dir: &Path,
+) -> Result<PathBuf, DocError> {
+    let json = target_dir.join(format!("doc/{}.json", package.replace('-', "_")));
+    let fail = |detail: String| DocError::Read {
+        path: json.clone(),
+        detail,
+    };
+    let mut cmd = Command::new("cargo");
+    cmd.arg(format!("+{}", nightly.name))
+        .args(["rustdoc", "--quiet", "--lib", "-p", package]);
+    cmd.arg("--target-dir")
+        .arg(target_dir)
+        .current_dir(workspace);
+    cmd.args(["--", "-Z", "unstable-options", "--output-format", "json"]);
+    let out = cmd.env_remove("RUSTUP_TOOLCHAIN").output();
+    let out = out.map_err(|e| fail(format!("cannot run cargo: {e}")))?;
+    if !out.status.success() {
+        let stderr = String::from_utf8_lossy(&out.stderr);
+        let lines: Vec<&str> = stderr.lines().collect();
+        let tail = lines[lines.len().saturating_sub(5)..].join("\n");
+        return Err(fail(format!("cargo rustdoc failed: {tail}")));
+    }
+    Ok(json)
 }
