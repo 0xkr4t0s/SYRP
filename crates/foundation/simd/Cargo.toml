@@ -1,0 +1,20 @@
+[package]
+name = "syrp-simd"
+description = "L0 SIMD layer for Syrp: the Sample trait, lane packs, runtime dispatch, aligned buffers, a denormal guard and slice kernels."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT OR Apache-2.0"
+repository.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[package.metadata.syrp]
+layer = "L0"
+wp = "WP-0.2-14"
+
+[dependencies]
+fearless_simd = { version = "1.2.0", default-features = false, features = ["std"] }
+
+[lints]
+workspace = true

@@ -1,0 +1,1 @@
+{"wp": "WP-0.2-14", "kind": "added", "summary": "syrp-simd (increment 1): sealed Sample trait with fused mul_add, F32x4/F32x8/F64x2/F64x4 lane packs and masks, Level detection with SYRP_SIMD=scalar, a dispatch! entry point over fearless_simd, and the 64-byte aligned AlignedBuf."}
