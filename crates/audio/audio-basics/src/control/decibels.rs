@@ -127,8 +127,12 @@ pub fn decibels_to_gain<F: DecibelFloat>(db: F, minus_infinity_db: F) -> F {
 }
 
 /// Formats decibels for display with `decimal_places` digits after the point and a `" dB"`
-/// suffix. Values at or below the default floor (−100 dB) give `minus_infinity_text` instead;
-/// pass [`MINUS_INFINITY_TEXT`] for JUCE's default, `"-INF"`.
+/// suffix. Values at or below the default floor (−100 dB), and NaN, give
+/// `minus_infinity_text` instead; pass [`MINUS_INFINITY_TEXT`] for JUCE's default, `"-INF"`.
+///
+/// The cutoff is always [`DecibelFloat::DEFAULT_MINUS_INFINITY_DB`], as the spec's signature
+/// has no floor parameter. A caller that converts with another floor and wants that floor
+/// shown as silence checks `db <= floor` itself before formatting.
 ///
 /// This allocates the returned `String`; do not call it on the audio thread.
 ///
@@ -137,6 +141,7 @@ pub fn decibels_to_gain<F: DecibelFloat>(db: F, minus_infinity_db: F) -> F {
 /// assert_eq!(to_string(-6.0206_f32, 2, MINUS_INFINITY_TEXT), "-6.02 dB");
 /// assert_eq!(to_string(3.0_f64, 0, MINUS_INFINITY_TEXT), "3 dB");
 /// assert_eq!(to_string(-100.0_f64, 2, "silent"), "silent");
+/// assert_eq!(to_string(f32::NAN, 2, MINUS_INFINITY_TEXT), "-INF");
 /// ```
 #[doc(alias = "Decibels::toString")]
 pub fn to_string<F: DecibelFloat>(
@@ -144,7 +149,8 @@ pub fn to_string<F: DecibelFloat>(
     decimal_places: usize,
     minus_infinity_text: &str,
 ) -> String {
-    if db <= F::DEFAULT_MINUS_INFINITY_DB {
+    // NaN compares as unordered, so it takes this branch too.
+    if db.partial_cmp(&F::DEFAULT_MINUS_INFINITY_DB) != Some(core::cmp::Ordering::Greater) {
         return minus_infinity_text.to_owned();
     }
     format!("{db:.decimal_places$} dB")

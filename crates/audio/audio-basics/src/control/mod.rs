@@ -20,10 +20,13 @@
 //!   accumulate rounding; values agree with repeated addition up to that rounding. A
 //!   [`Multiplicative`] ramp multiplies by a per-sample ratio, so in `f32` it drifts from the
 //!   exact curve by up to about `steps * 2^-24` relative before landing on the target.
-//!   [`decibels::to_string`] shows the floor itself as silence, like the conversions do.
+//!   [`decibels::to_string`] shows the floor itself, and NaN, as silence; its cutoff is always
+//!   the default −100 dB floor (the spec's signature has no floor parameter).
+//!   [`SmoothedValue::reset`] truncates: the ramp is `floor(sample_rate * ramp_seconds)`
+//!   samples, so 10.9 samples' worth of time ramps over 10.
 //!
-//! Known gaps: `Adsr` (spec B4) and the allocation tests, `RtSafe` and benches (B6) land in
-//! the next increment of WP-2.1-03.
+//! Known gaps: `Adsr` (spec B4), the B5 matrix for it, and the allocation tests, `RtSafe` and
+//! benches (B6) land in the next increment of WP-2.1-03. Tests are in `tests/control.rs`.
 //!
 //! ```
 //! use syrp_audio_basics::control::{SmoothedValue, decibels};
@@ -36,10 +39,6 @@
 
 pub mod decibels;
 mod smoothed;
-// The spec's `tests/control.rs` is blocked by WP-2.1-01's skeleton test, which asserts that
-// file does not exist; the tests live here until that assertion is lifted.
-#[cfg(test)]
-mod tests;
 
 use syrp_simd::{F32x4, F32x8, F64x2, F64x4, Sample};
 

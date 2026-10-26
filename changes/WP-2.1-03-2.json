@@ -1,0 +1,1 @@
+{"wp": "WP-2.1-03", "kind": "changed", "summary": "syrp-audio-basics: control tests move to tests/control.rs; decibels::to_string shows NaN as silence and documents its fixed -100 dB cutoff; parity notes record that SmoothedValue::reset truncates the ramp length (increment 2)."}
