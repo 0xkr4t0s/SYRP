@@ -1,6 +1,6 @@
 [package]
 name = "syrp-geom"
-description = "2D geometry for Syrp: points, rectangles and affine transforms with JUCE-equivalent semantics."
+description = "2D geometry for Syrp: points, rectangles, rectangle lists, lines, affine transforms and placement with JUCE-equivalent semantics."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -13,9 +13,15 @@ publish.workspace = true
 layer = "L0"
 wp = "WP-0.1-05"
 
+[features]
+# `From` conversions to and from kurbo's Point, Vec2, Rect, Line and Affine.
+kurbo = ["dep:kurbo"]
+
 [dependencies]
+kurbo = { version = "0.13.1", optional = true, default-features = false, features = ["std"] }
 
 [dev-dependencies]
+syrp-geom = { path = ".", features = ["kurbo"] }
 proptest = { version = "1.5", default-features = false, features = ["std"] }
 
 [lints]
