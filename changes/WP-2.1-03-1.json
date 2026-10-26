@@ -1,0 +1,1 @@
+{"wp": "WP-2.1-03", "kind": "added", "summary": "syrp-audio-basics: control module with decibel conversion (gain_to_decibels, decibels_to_gain, to_string) and the lane-generic SmoothedValue (Linear and Multiplicative mappings, skip, apply_gain, per-lane is_smoothing) with an optional control rate (increment 1: B1-B3)."}
