@@ -37,6 +37,10 @@ juce_graphics/ColourGradient, juce_graphics/FillType, juce_graphics/Graphics (sh
   over little-endian bytes, floats by bit pattern, slices length-prefixed. Op codes and enum
   discriminant order (`BlendMode`, `FillRule`, `PathVerb`, `Join`, `Cap`, `ResamplingQuality`)
   are part of the encoding: append variants only, never reorder. The `b6_` golden pins it.
+  `encode.rs` binds every `Op`/`BrushKind` field with no `..` (non_exhaustive does not bind
+  in-crate), so a new field fails to compile until hashed and serialised. `StrokeRef` and
+  `PathView` are hashed accessor by accessor: a new accessor must be added to `Fnv::op` and
+  `OpJson` too.
 - `RenderTarget`: physical `u32` size plus a finite positive `f64` scale; `from_logical`
   rounds each side up but snaps products within `1e-9` relative of a whole number. CPU buffers
   are RGBA8 premultiplied, tightly packed, top row first, cleared on create and resize.

@@ -62,11 +62,11 @@ impl Fnv {
                 self.u8(0);
                 self.u32(c.argb());
             }
-            BrushKind::Linear { start, end, .. } => {
+            BrushKind::Linear { start, end } => {
                 self.u8(1);
                 [start, end].into_iter().for_each(|p| self.point(p));
             }
-            BrushKind::Radial { centre, radius, .. } => {
+            BrushKind::Radial { centre, radius } => {
                 self.u8(2);
                 self.point(centre);
                 self.f32(radius);
@@ -76,7 +76,6 @@ impl Fnv {
                 start_radius,
                 end,
                 end_radius,
-                ..
             } => {
                 self.u8(3);
                 self.point(start);
@@ -93,12 +92,12 @@ impl Fnv {
     }
     fn op(&mut self, op: Op<'_>) {
         match op {
-            Op::FillRect { rect, brush, .. } => {
+            Op::FillRect { rect, brush } => {
                 self.u8(0);
                 self.rect(rect);
                 self.brush(brush);
             }
-            Op::FillPath { path, brush, .. } => {
+            Op::FillPath { path, brush } => {
                 self.u8(1);
                 self.path(path);
                 self.brush(brush);
@@ -107,7 +106,6 @@ impl Fnv {
                 path,
                 stroke,
                 brush,
-                ..
             } => {
                 self.u8(2);
                 self.path(path);
@@ -125,7 +123,6 @@ impl Fnv {
                 dest,
                 placement,
                 quality,
-                ..
             } => {
                 self.u8(3);
                 self.u64(image.raw());
@@ -138,7 +135,6 @@ impl Fnv {
                 size,
                 glyphs,
                 brush,
-                ..
             } => {
                 self.u8(4);
                 self.u64(font.raw());
@@ -150,26 +146,24 @@ impl Fnv {
                 }
                 self.brush(brush);
             }
-            Op::PushClipRect { rect, .. } => {
+            Op::PushClipRect { rect } => {
                 self.u8(5);
                 self.rect(rect);
             }
-            Op::PushClipPath { path, .. } => {
+            Op::PushClipPath { path } => {
                 self.u8(6);
                 self.path(path);
             }
-            Op::PushClipMask {
-                image, transform, ..
-            } => {
+            Op::PushClipMask { image, transform } => {
                 self.u8(7);
                 self.u64(image.raw());
                 self.transform(transform);
             }
-            Op::PushTransform { transform, .. } => {
+            Op::PushTransform { transform } => {
                 self.u8(8);
                 self.transform(transform);
             }
-            Op::PushLayer { opacity, blend, .. } => {
+            Op::PushLayer { opacity, blend } => {
                 self.u8(9);
                 self.f32(opacity);
                 self.u8(blend as u8);
@@ -273,12 +267,12 @@ mod json {
                 .collect();
             match b.kind() {
                 BrushKind::Solid(c) => BrushJson::Solid { argb: c.argb() },
-                BrushKind::Linear { start, end, .. } => BrushJson::Linear {
+                BrushKind::Linear { start, end } => BrushJson::Linear {
                     start: xy(start),
                     end: xy(end),
                     stops,
                 },
-                BrushKind::Radial { centre, radius, .. } => BrushJson::Radial {
+                BrushKind::Radial { centre, radius } => BrushJson::Radial {
                     centre: xy(centre),
                     radius,
                     stops,
@@ -288,7 +282,6 @@ mod json {
                     start_radius,
                     end,
                     end_radius,
-                    ..
                 } => {
                     let (start, end) = (xy(start), xy(end));
                     BrushJson::TwoPointConical {
@@ -351,11 +344,11 @@ mod json {
     impl<'a> From<Op<'a>> for OpJson<'a> {
         fn from(op: Op<'a>) -> Self {
             match op {
-                Op::FillRect { rect, brush, .. } => OpJson::FillRect {
+                Op::FillRect { rect, brush } => OpJson::FillRect {
                     rect: xywh(rect),
                     brush: brush.into(),
                 },
-                Op::FillPath { path, brush, .. } => OpJson::FillPath {
+                Op::FillPath { path, brush } => OpJson::FillPath {
                     path: path.into(),
                     brush: brush.into(),
                 },
@@ -363,7 +356,6 @@ mod json {
                     path,
                     stroke: s,
                     brush,
-                    ..
                 } => OpJson::StrokePath {
                     path: path.into(),
                     width: s.width(),
@@ -379,7 +371,6 @@ mod json {
                     dest,
                     placement,
                     quality,
-                    ..
                 } => {
                     let (image, dest, placement) = (image.raw(), xywh(dest), placement.bits());
                     OpJson::DrawImage {
@@ -394,7 +385,6 @@ mod json {
                     size,
                     glyphs,
                     brush,
-                    ..
                 } => {
                     let glyphs = glyphs.iter().map(|g| (g.id(), xy(g.origin()))).collect();
                     OpJson::DrawGlyphs {
@@ -404,18 +394,16 @@ mod json {
                         brush: brush.into(),
                     }
                 }
-                Op::PushClipRect { rect, .. } => OpJson::PushClipRect { rect: xywh(rect) },
-                Op::PushClipPath { path, .. } => OpJson::PushClipPath { path: path.into() },
-                Op::PushClipMask {
-                    image, transform, ..
-                } => OpJson::PushClipMask {
+                Op::PushClipRect { rect } => OpJson::PushClipRect { rect: xywh(rect) },
+                Op::PushClipPath { path } => OpJson::PushClipPath { path: path.into() },
+                Op::PushClipMask { image, transform } => OpJson::PushClipMask {
                     image: image.raw(),
                     transform: matrix(transform),
                 },
-                Op::PushTransform { transform, .. } => OpJson::PushTransform {
+                Op::PushTransform { transform } => OpJson::PushTransform {
                     transform: matrix(transform),
                 },
-                Op::PushLayer { opacity, blend, .. } => OpJson::PushLayer { opacity, blend },
+                Op::PushLayer { opacity, blend } => OpJson::PushLayer { opacity, blend },
                 Op::Pop => OpJson::Pop,
             }
         }

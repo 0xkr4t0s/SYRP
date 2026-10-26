@@ -62,7 +62,13 @@ fn buffer(width: u32, height: u32) -> Result<Vec<u8>, RenderError> {
         .checked_mul(height as usize)
         .and_then(|n| n.checked_mul(4));
     match len {
-        Some(n) if n <= isize::MAX as usize => Ok(vec![0; n]),
+        Some(n) if n <= isize::MAX as usize => {
+            let mut buf = Vec::new();
+            buf.try_reserve_exact(n)
+                .map_err(|_| RenderError::InvalidTarget)?;
+            buf.resize(n, 0);
+            Ok(buf)
+        }
         _ => Err(RenderError::InvalidTarget),
     }
 }
@@ -90,7 +96,8 @@ impl RenderTarget {
     /// A target with a zeroed CPU pixel buffer.
     ///
     /// # Errors
-    /// [`RenderError::InvalidTarget`] for a bad `scale` or a buffer too large to address.
+    /// [`RenderError::InvalidTarget`] for a bad `scale` or a buffer too large to address or
+    /// one that cannot be allocated.
     /// ```
     /// let t = syrp_gfx_api::RenderTarget::with_pixels(2, 2, 1.0).unwrap();
     /// assert_eq!(t.pixels(), Some(&[0; 16][..]));

@@ -26,7 +26,7 @@ fn b5_logical_sizes_round_up_to_cover_the_area_but_snap_float_noise() {
     assert_eq!(size(100.0, 1.25), (125, 125)); // exact product
     assert_eq!(size(101.0, 1.25), (127, 127)); // 126.25: round up
     assert_eq!(size(10.0, 1.1), (11, 11)); // 11.000000000000002: noise, not 12
-    assert_eq!(size(0.3, 3.0), (1, 1)); // 0.8999999999999999: noise, 1
+    assert_eq!(size(0.3, 3.0), (1, 1)); // 0.8999999999999999: round up (the snap only matters above a whole number)
     assert_eq!(size(10.5, 1.5), (16, 16)); // 15.75: round up
     assert_eq!(size(7.0, 1.0), (7, 7));
     assert_eq!(size(0.0, 2.0), (0, 0));
