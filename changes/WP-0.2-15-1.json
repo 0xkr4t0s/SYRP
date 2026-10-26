@@ -1,0 +1,1 @@
+{"wp": "WP-0.2-15", "kind": "added", "summary": "ValueTree arena spike: syrp-state-arena-spike (slotmap store, refcounted TreeRef, change-log listener delivery, property-access micro-benchmarks) and the write-up docs/design/0005-state-arena-spike.md."}
