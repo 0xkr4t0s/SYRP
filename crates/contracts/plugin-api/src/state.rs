@@ -35,10 +35,6 @@ const HEADER: usize = 20;
 pub trait PluginState {
     /// The version of the payload [`save_state`](Self::save_state) writes. Raise it whenever
     /// the payload changes shape.
-    /// ```
-    /// # struct S; impl syrp_plugin_api::PluginState for S { fn state_version(&self) -> u32 { 3 } fn save_state(&self, _: &mut Vec<u8>) -> Result<(), syrp_plugin_api::PluginError> { Ok(()) } fn load_state(&mut self, _: u32, _: &[u8]) -> Result<(), syrp_plugin_api::PluginError> { Ok(()) } }
-    /// assert_eq!(syrp_plugin_api::PluginState::state_version(&S), 3);
-    /// ```
     fn state_version(&self) -> u32;
 
     /// Appends the current state's payload to `out`.
@@ -52,10 +48,6 @@ pub trait PluginState {
 
     /// Restores from a payload written at `version`, which is never above
     /// [`state_version`](Self::state_version). Migrate older versions here.
-    /// ```
-    /// # struct S; impl syrp_plugin_api::PluginState for S { fn state_version(&self) -> u32 { 3 } fn save_state(&self, _: &mut Vec<u8>) -> Result<(), syrp_plugin_api::PluginError> { Ok(()) } fn load_state(&mut self, _: u32, _: &[u8]) -> Result<(), syrp_plugin_api::PluginError> { Ok(()) } }
-    /// syrp_plugin_api::PluginState::load_state(&mut S, 1, &[]).unwrap();
-    /// ```
     fn load_state(&mut self, version: u32, data: &[u8]) -> Result<(), PluginError>;
 }
 

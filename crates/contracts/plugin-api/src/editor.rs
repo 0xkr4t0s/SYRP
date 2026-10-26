@@ -182,7 +182,8 @@ impl SizeConstraints {
     }
 
     /// The accepted size nearest to a proposed one: width clamped first, then the height
-    /// from the aspect ratio if there is one, then the height clamped.
+    /// from the aspect ratio if there is a finite positive one, then the height clamped, then
+    /// the width again from the clamped height.
     /// ```
     /// assert_eq!(syrp_plugin_api::SizeConstraints::fixed(2.0, 3.0).clamp(f32::NAN, 9.0), (2.0, 3.0));
     /// ```
@@ -190,8 +191,11 @@ impl SizeConstraints {
     pub fn clamp(&self, width: f32, height: f32) -> (f32, f32) {
         let fit = |v: f32, lo: f32, hi: f32| if v.is_nan() { lo } else { v.max(lo).min(hi) };
         let w = fit(width, self.min.0, self.max.0);
-        let h = self.aspect.map_or(height, |ratio| w / ratio);
-        (w, fit(h, self.min.1, self.max.1))
+        let Some(r) = self.aspect.filter(|r| r.is_finite() && *r > 0.0) else {
+            return (w, fit(height, self.min.1, self.max.1));
+        };
+        let h = fit(w / r, self.min.1, self.max.1);
+        (fit(h * r, self.min.0, self.max.0), h)
     }
 }
 

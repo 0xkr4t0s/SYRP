@@ -146,6 +146,15 @@ fn b5_size_constraints_clamp_and_keep_the_aspect_ratio() {
     let fixed = SizeConstraints::fixed(300.0, 150.0);
     assert!(!fixed.is_resizable());
     assert_eq!(fixed.clamp(f32::NAN, f32::NAN), (300.0, 150.0));
+    let tall = SizeConstraints::resizable((400.0, 200.0), (200.0, 100.0), (800.0, 300.0));
+    assert_eq!(
+        tall.with_aspect_ratio(2.0).clamp(800.0, 400.0),
+        (600.0, 300.0)
+    );
+    assert_eq!(
+        tall.with_aspect_ratio(0.0).clamp(400.0, 200.0),
+        (400.0, 200.0)
+    );
 }
 
 proptest! {
