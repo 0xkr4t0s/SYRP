@@ -1,22 +1,37 @@
 // SPDX-License-Identifier: AGPL-3.0-only OR BUSL-1.1
-//! Tests for work/specs/WP-2.1-05.md, increment 1 (B1–B2).
+//! Tests for work/specs/WP-2.1-05.md, increments 1–2 (B1–B4).
 
+use syrp_audio_basics::AudioBuffer;
 use syrp_audio_basics::voice::{
-    MAX_VOICES, NoteStart, Voice, VoiceHandle, VoicePool, VoicePoolError, VoiceSample,
+    MAX_FRAMES, MAX_VOICES, NoteStart, Voice, VoiceEvent, VoiceEventKind, VoiceHandle, VoicePool,
+    VoicePoolError, VoiceSample,
 };
 use syrp_error::Diagnostic;
+use syrp_rt::no_alloc;
 use syrp_simd::{F32x4, F32x8, Mask, Sample};
+
+#[global_allocator]
+static ALLOC: syrp_rt::GuardedAllocator = syrp_rt::GuardedAllocator;
 
 /// B1's test voice: a naive saw (-1 to 1, 220 Hz plus one hertz per note above 60) times a
 /// linear gate that ramps to the velocity in 8 samples on start and to zero on a tail-off.
-/// Logs every call except `render`.
+/// Logs every call except `render`, unless `quiet` (logging allocates).
 struct SawVoice<S> {
     phase: S,
     increment: S,
     gate: S,
     target: S,
     step: S,
+    quiet: bool,
     log: Vec<String>,
+}
+
+impl<S> SawVoice<S> {
+    fn say(&mut self, line: impl FnOnce() -> String) {
+        if !self.quiet {
+            self.log.push(line());
+        }
+    }
 }
 
 impl<S: VoiceSample> SawVoice<S> {
@@ -29,6 +44,7 @@ impl<S: VoiceSample> SawVoice<S> {
             gate: z,
             target: z,
             step: z,
+            quiet: false,
             log,
         }
     }
@@ -36,8 +52,7 @@ impl<S: VoiceSample> SawVoice<S> {
 
 impl<S: VoiceSample> Voice<S> for SawVoice<S> {
     fn prepare(&mut self, sample_rate: f64, max_frames: usize, out_channels: usize) {
-        self.log
-            .push(format!("prepare {sample_rate} {max_frames} {out_channels}"));
+        self.say(|| format!("prepare {sample_rate} {max_frames} {out_channels}"));
     }
     fn start(&mut self, lane: usize, n: &NoteStart<'_>) {
         let (ch, note, vel, wheel, cc7) = (
@@ -47,8 +62,7 @@ impl<S: VoiceSample> Voice<S> for SawVoice<S> {
             n.pitch_wheel(),
             n.controller(7),
         );
-        self.log
-            .push(format!("start {lane} {ch} {note} {vel} {wheel} {cc7}"));
+        self.say(|| format!("start {lane} {ch} {note} {vel} {wheel} {cc7}"));
         self.phase.set_lane(lane, -1.0);
         self.increment
             .set_lane(lane, (160.0 + f32::from(note)) / 24_000.0);
@@ -57,17 +71,17 @@ impl<S: VoiceSample> Voice<S> for SawVoice<S> {
         self.step.set_lane(lane, vel / 8.0);
     }
     fn stop(&mut self, lane: usize, _: f32, allow_tail_off: bool) {
-        self.log.push(format!("stop {lane} {allow_tail_off}"));
+        self.say(|| format!("stop {lane} {allow_tail_off}"));
         self.target.set_lane(lane, 0.0);
         if !allow_tail_off {
             self.gate.set_lane(lane, 0.0);
         }
     }
     fn pitch_wheel(&mut self, lane: usize, value: u16) {
-        self.log.push(format!("wheel {lane} {value}"));
+        self.say(|| format!("wheel {lane} {value}"));
     }
     fn controller(&mut self, lane: usize, number: u8, value: u8) {
-        self.log.push(format!("cc {lane} {number} {value}"));
+        self.say(|| format!("cc {lane} {number} {value}"));
     }
     fn render(&mut self, out: &mut [&mut [S]], frames: usize) {
         for i in 0..frames {
@@ -98,8 +112,22 @@ fn pool<S: VoiceSample>(voices: usize, max_frames: usize, channels: usize) -> Po
     pool
 }
 
+/// Renders `frames` frames of `events` into a buffer pre-filled with `fill`.
+fn run<S: VoiceSample>(
+    p: &mut Pool<S>,
+    chans: usize,
+    frames: usize,
+    fill: f32,
+    events: &[VoiceEvent],
+) -> AudioBuffer<f32> {
+    let mut buf = AudioBuffer::new(chans, frames).unwrap();
+    (0..chans).for_each(|c| buf.channel_mut(c).fill(fill));
+    p.render(buf.as_block_mut(), events);
+    buf
+}
+
 fn log<S: VoiceSample>(p: &mut Pool<S>, pack: usize) -> &[String] {
-    &p.voice_mut(VoiceHandle::new(pack, 0)).unwrap().log
+    &p.pack_mut(VoiceHandle::new(pack, 0)).unwrap().log
 }
 
 #[test]
@@ -198,8 +226,8 @@ fn b2_handles_address_one_voice() {
     let mut p = pool::<F32x8>(10, 16, 1);
     assert_eq!(p.handle(9), Some(VoiceHandle::new(1, 1)));
     assert_eq!(p.handle(10), None);
-    assert!(p.voice_mut(VoiceHandle::new(1, 1)).is_some());
-    assert!(p.voice_mut(VoiceHandle::new(1, 2)).is_none());
+    assert!(p.pack_mut(VoiceHandle::new(1, 1)).is_some());
+    assert!(p.pack_mut(VoiceHandle::new(1, 2)).is_none());
     let p = pool::<f32>(4, 16, 1);
     assert_eq!(p.handle(3), Some(VoiceHandle::new(3, 0)));
 }
@@ -225,6 +253,8 @@ fn b2_oversized_pools_fail_without_aborting() {
     );
     let mut p = pool::<F32x8>(8, 16, 1);
     assert!(p.prepare(48_000.0, usize::MAX, 2).is_err());
+    assert!(p.prepare(48_000.0, MAX_FRAMES + 1, 0).is_err());
+    assert!(p.prepare(48_000.0, MAX_FRAMES, 1).is_ok());
     let err = p.prepare(48_000.0, 16, 65).unwrap_err();
     assert!(matches!(
         err,
@@ -233,4 +263,283 @@ fn b2_oversized_pools_fail_without_aborting() {
             ..
         }
     ));
+}
+
+#[test]
+fn b3_events_are_sample_accurate() {
+    let mut p = pool::<f32>(4, 256, 1);
+    let out = run(&mut p, 1, 256, 0.0, &[VoiceEvent::note_on(100, 1, 60, 1.0)]);
+    let ch = out.channel(0);
+    assert!(ch[..100].iter().all(|&x| x == 0.0));
+    assert!(ch[100] != 0.0);
+}
+
+#[test]
+fn b3_short_splits_merge_forward() {
+    let mut p = pool::<f32>(4, 256, 1);
+    p.set_minimum_subdivision(32);
+    let out = run(&mut p, 1, 64, 0.0, &[VoiceEvent::note_on(10, 1, 60, 1.0)]);
+    assert!(
+        out.channel(0)[0] != 0.0,
+        "an event 10 samples in is applied at 0"
+    );
+    let mut p = pool::<f32>(4, 256, 1);
+    p.set_minimum_subdivision(32);
+    let out = run(&mut p, 1, 64, 0.0, &[VoiceEvent::note_on(40, 1, 60, 1.0)]);
+    assert!(out.channel(0)[39] == 0.0 && out.channel(0)[40] != 0.0);
+}
+
+#[test]
+fn b3_lanes_are_summed_and_added_to_every_channel() {
+    let notes = [
+        VoiceEvent::note_on(0, 1, 60, 1.0),
+        VoiceEvent::note_on(5, 1, 67, 0.5),
+    ];
+    let both = run(&mut pool::<F32x8>(8, 64, 2), 2, 64, 1.0, &notes);
+    let a = run(&mut pool::<F32x8>(8, 64, 2), 2, 64, 0.0, &notes[..1]);
+    let b = run(&mut pool::<F32x8>(8, 64, 2), 2, 64, 0.0, &notes[1..]);
+    for c in 0..2 {
+        for i in 0..64 {
+            let want = 1.0 + a.channel(0)[i] + b.channel(0)[i];
+            assert!(
+                (both.channel(c)[i] - want).abs() < 1e-6,
+                "channel {c} frame {i}"
+            );
+        }
+    }
+}
+
+#[test]
+fn b3_long_blocks_render_in_pieces() {
+    let events = [
+        VoiceEvent::note_on(3, 1, 60, 1.0),
+        VoiceEvent::note_off(250, 1, 60, 0.0),
+    ];
+    let whole = run(&mut pool::<F32x4>(4, 512, 1), 1, 300, 0.0, &events);
+    let pieces = run(&mut pool::<F32x4>(4, 64, 1), 1, 300, 0.0, &events);
+    assert_eq!(whole.channel(0), pieces.channel(0));
+}
+
+#[test]
+fn b3_note_off_tails_and_all_off_events() {
+    let mut p = pool::<F32x4>(4, 64, 1);
+    let ons = [(1, 61), (2, 62), (2, 63)].map(|(c, n)| VoiceEvent::note_on(0, c, n, 1.0));
+    run(&mut p, 1, 16, 0.0, &ons);
+    assert_eq!(p.active_voices(), 3);
+    run(&mut p, 1, 1, 0.0, &[VoiceEvent::note_off(0, 1, 61, 0.0)]);
+    assert_eq!(
+        p.active_voices(),
+        3,
+        "the released lane is still in its tail"
+    );
+    run(&mut p, 1, 16, 0.0, &[]);
+    assert_eq!(p.active_voices(), 2);
+    let off = VoiceEventKind::AllNotesOff { channel: Some(2) };
+    run(&mut p, 1, 16, 0.0, &[VoiceEvent::new(0, off)]);
+    assert_eq!(p.active_voices(), 0);
+    run(&mut p, 1, 16, 0.0, &ons);
+    let out = run(
+        &mut p,
+        1,
+        16,
+        0.0,
+        &[VoiceEvent::new(4, VoiceEventKind::AllSoundOff)],
+    );
+    assert_eq!(p.active_voices(), 0);
+    assert!(out.channel(0)[..4].iter().all(|&x| x != 0.0));
+    assert!(out.channel(0)[4..].iter().all(|&x| x == 0.0));
+}
+
+#[test]
+fn b3_render_before_prepare_applies_events_silently() {
+    let mut p = Pool::<F32x4>::new(4, |_| SawVoice::new()).unwrap();
+    let out = run(&mut p, 2, 64, 0.5, &[VoiceEvent::note_on(3, 1, 60, 1.0)]);
+    assert!(
+        out.channel(0)
+            .iter()
+            .chain(out.channel(1))
+            .all(|&x| x == 0.5)
+    );
+    assert_eq!(
+        p.active_voices(),
+        1,
+        "the note is assigned but nothing is rendered"
+    );
+    p.prepare(48_000.0, 64, 2).unwrap();
+    assert!(run(&mut p, 2, 64, 0.0, &[]).channel(1)[63] != 0.0);
+}
+
+#[test]
+fn b3_render_never_allocates() {
+    let mut p = pool::<F32x8>(16, 128, 2);
+    let mut buf = AudioBuffer::<f32>::new(2, 512).unwrap();
+    let events = [
+        VoiceEvent::note_on(0, 1, 60, 1.0),
+        VoiceEvent::new(
+            7,
+            VoiceEventKind::Sustain {
+                channel: 1,
+                down: true,
+            },
+        ),
+        VoiceEvent::new(
+            9,
+            VoiceEventKind::Sostenuto {
+                channel: 1,
+                down: true,
+            },
+        ),
+        VoiceEvent::new(
+            100,
+            VoiceEventKind::PitchWheel {
+                channel: 1,
+                value: 0,
+            },
+        ),
+        VoiceEvent::new(
+            120,
+            VoiceEventKind::Controller {
+                channel: 1,
+                number: 1,
+                value: 9,
+            },
+        ),
+        VoiceEvent::note_off(300, 1, 60, 0.0),
+        VoiceEvent::new(400, VoiceEventKind::AllNotesOff { channel: None }),
+        VoiceEvent::new(450, VoiceEventKind::AllSoundOff),
+    ];
+    for pack in 0..2 {
+        p.pack_mut(VoiceHandle::new(pack, 0)).unwrap().quiet = true;
+    }
+    no_alloc(|| p.render(buf.as_block_mut(), &events));
+    assert!(buf.channel(1)[299] != 0.0 && buf.channel(1)[450..].iter().all(|&x| x == 0.0));
+}
+
+/// Renders `events` in a 16-frame block, enough for any tail to end.
+fn step<S: VoiceSample>(p: &mut Pool<S>, events: &[VoiceEvent]) {
+    run(p, 1, 16, 0.0, events);
+}
+
+fn kind(offset: u32, kind: VoiceEventKind) -> VoiceEvent {
+    VoiceEvent::new(offset, kind)
+}
+
+fn notes<S: VoiceSample>(p: &Pool<S>) -> Vec<Option<(u8, u8)>> {
+    (0..p.voices())
+        .map(|i| p.note(p.handle(i).unwrap()))
+        .collect()
+}
+
+#[test]
+fn b4_note_on_takes_the_lowest_free_lane() {
+    let mut p = pool::<F32x4>(8, 64, 1);
+    step(
+        &mut p,
+        &[60, 62, 64].map(|n| VoiceEvent::note_on(0, 1, n, 1.0)),
+    );
+    step(&mut p, &[VoiceEvent::note_off(0, 1, 62, 0.0)]);
+    step(&mut p, &[]);
+    step(&mut p, &[VoiceEvent::note_on(0, 1, 65, 1.0)]);
+    let want = [Some((1, 60)), Some((1, 65)), Some((1, 64))];
+    assert_eq!(notes(&p)[..4], [want[0], want[1], want[2], None]);
+}
+
+#[test]
+fn b4_repeated_note_moves_to_a_free_lane_or_reuses_its_own() {
+    let mut p = pool::<F32x4>(4, 64, 1);
+    step(&mut p, &[VoiceEvent::note_on(0, 1, 60, 1.0)]);
+    run(&mut p, 1, 1, 0.0, &[VoiceEvent::note_on(0, 1, 60, 0.5)]);
+    assert_eq!(
+        log(&mut p, 0)[2..],
+        ["stop 0 true", "start 1 1 60 0.5 8192 0"]
+    );
+    assert_eq!(
+        notes(&p)[..2],
+        [Some((1, 60)), Some((1, 60))],
+        "lane 0 is in its tail"
+    );
+    let mut p = pool::<f32>(1, 64, 1);
+    step(&mut p, &[VoiceEvent::note_on(0, 1, 60, 1.0)]);
+    step(&mut p, &[VoiceEvent::note_on(0, 1, 60, 0.5)]);
+    assert_eq!(
+        log(&mut p, 0)[2..],
+        ["stop 0 true", "start 0 1 60 0.5 8192 0"]
+    );
+    assert_eq!(p.active_voices(), 1);
+}
+
+#[test]
+fn b4_note_off_stops_only_its_channel_and_note() {
+    let mut p = pool::<F32x4>(4, 64, 1);
+    let ons = [(1, 60), (2, 60), (1, 61)].map(|(c, n)| VoiceEvent::note_on(0, c, n, 1.0));
+    step(&mut p, &ons);
+    step(&mut p, &[VoiceEvent::note_off(0, 1, 60, 0.0)]);
+    step(&mut p, &[]);
+    assert_eq!(notes(&p), [None, Some((2, 60)), Some((1, 61)), None]);
+}
+
+#[test]
+fn b4_sustain_holds_released_keys_until_the_pedal_lifts() {
+    let mut p = pool::<F32x4>(4, 64, 1);
+    let down = |d| {
+        kind(
+            0,
+            VoiceEventKind::Sustain {
+                channel: 1,
+                down: d,
+            },
+        )
+    };
+    step(&mut p, &[down(true), VoiceEvent::note_on(0, 1, 60, 1.0)]);
+    step(&mut p, &[VoiceEvent::note_off(0, 1, 60, 0.0)]);
+    step(&mut p, &[]);
+    assert_eq!(p.active_voices(), 1);
+    assert!(!log(&mut p, 0).iter().any(|l| l.starts_with("stop")));
+    step(&mut p, &[down(false)]);
+    step(&mut p, &[]);
+    assert_eq!(
+        (p.active_voices(), log(&mut p, 0).last().unwrap().as_str()),
+        (0, "stop 0 true")
+    );
+}
+
+#[test]
+fn b4_sostenuto_holds_only_keys_down_when_pressed() {
+    let mut p = pool::<F32x4>(4, 64, 1);
+    let sos = |d| {
+        kind(
+            0,
+            VoiceEventKind::Sostenuto {
+                channel: 1,
+                down: d,
+            },
+        )
+    };
+    let sus = |d| {
+        kind(
+            0,
+            VoiceEventKind::Sustain {
+                channel: 1,
+                down: d,
+            },
+        )
+    };
+    step(&mut p, &[VoiceEvent::note_on(0, 1, 60, 1.0), sos(true)]);
+    step(&mut p, &[VoiceEvent::note_on(0, 1, 62, 1.0)]);
+    step(
+        &mut p,
+        &[60, 62].map(|n| VoiceEvent::note_off(0, 1, n, 0.0)),
+    );
+    step(&mut p, &[]);
+    assert_eq!(
+        notes(&p)[..2],
+        [Some((1, 60)), None],
+        "62 was pressed after the pedal"
+    );
+    step(&mut p, &[sus(true), sos(false)]);
+    step(&mut p, &[]);
+    assert_eq!(notes(&p)[0], Some((1, 60)), "sustain still holds it");
+    step(&mut p, &[sus(false)]);
+    step(&mut p, &[]);
+    assert_eq!(p.active_voices(), 0);
 }

@@ -4,17 +4,30 @@
 //! A [`Voice<S>`](Voice) is written once against a [`Sample`] type. `MyVoice<F32x8>` is eight
 //! voices in struct-of-arrays form, one per lane, and `MyVoice<f32>` is one voice. The pool
 //! keeps `ceil(voices / S::LANES)` such packs, assigns notes to lanes, and renders a whole pack
-//! per call. Its input is plain voice events, not MIDI: the compat layer and the processor
+//! per call. Its input is plain [`VoiceEvent`]s, not MIDI: the compat layer and the processor
 //! runtime translate MIDI into events. `VoicePool<f32, V>` (one lane per pack) is the scalar
 //! path that `syrp-compat-audio` builds JUCE's `Synthesiser` on.
 //!
-//! # Status
-//! Increment 1 of WP-2.1-05 (spec B1–B2): the [`Voice`] trait, [`NoteStart`], the pack types
-//! ([`VoiceSample`]) and the pool's packs, preparation and [`VoiceHandle`]s. Events, sample-
-//! accurate rendering, note assignment, stealing and sleep (B3–B6) follow.
+//! # Lane assignment
+//! These rules follow JUCE's `Synthesiser` documentation where it decides them; the rest are
+//! Syrp's own and are listed for the differential harness.
+//!
+//! - A note-on takes the lowest free lane, lowest pack first. A note-on for a channel and note
+//!   already held first stops that lane with tail-off; if no other lane is free the note
+//!   starts in that same lane. Otherwise, with every lane busy, the note is dropped (stealing,
+//!   spec B5, follows in the next increment).
+//! - A note-off stops, with tail-off, every lane holding its channel and note, unless the
+//!   channel's sustain pedal is down (the lane is stopped when the pedal lifts) or the lane is
+//!   held by sostenuto. Sostenuto holds only the notes whose keys were down when it was
+//!   pressed, and releases them when it lifts unless sustain still holds them.
+//! - A lane is free again once its voice reports it inactive after a render, and a pack with
+//!   no active lane is not rendered. `AllNotesOff` stops held lanes with tail-off regardless
+//!   of the pedals; `AllSoundOff` stops every lane without tail-off and frees it at once
+//!   (Syrp's rules).
 //!
 //! # Real-time safety
 //! [`VoicePool::new`] and [`VoicePool::prepare`] allocate; call them off the audio thread.
+//! [`VoicePool::render`] and the accessors never allocate, lock or do I/O.
 //!
 //! ```
 //! use syrp_audio_basics::voice::{NoteStart, Voice, VoicePool, VoiceSample};
@@ -38,15 +51,18 @@
 //! pool.prepare(48_000.0, 64, 2)?;
 //! let h = pool.handle(5).expect("voice 5 exists");
 //! assert_eq!((h.pack(), h.lane()), (1, 1));
-//! let pack = pool.voice_mut(h).expect("in range");
+//! let pack = pool.pack_mut(h).expect("in range");
 //! pack.start(h.lane(), &NoteStart::new(1, 60, 0.5));
 //! assert_eq!(pack.active().to_array(), [false, true, false, false]);
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
 
+mod event;
 mod pool;
 
-pub use pool::{MAX_OUT_CHANNELS, MAX_VOICES, VoicePool, VoicePoolError};
+pub use event::{VoiceEvent, VoiceEventKind};
+
+pub use pool::{MAX_FRAMES, MAX_OUT_CHANNELS, MAX_VOICES, VoicePool, VoicePoolError};
 
 use syrp_simd::{F32x4, F32x8, Sample};
 

@@ -1,0 +1,1 @@
+{"wp": "WP-2.1-05", "kind": "added", "summary": "syrp-audio-basics: VoiceEvent and sample-accurate VoicePool::render with minimum subdivision, lowest-free-lane assignment, retriggering, sustain and sostenuto (increment 2: B3-B4)."}
