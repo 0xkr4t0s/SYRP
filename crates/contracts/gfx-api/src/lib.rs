@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 //! The Syrp drawing contract (master plan §5.7, ADR 0003).
 //!
-//! This first increment holds the value types that drawing ops are recorded from:
+//! - [`DisplayList`]: recorded drawing ops (an op-tag stream, per-kind payload arrays and shared
+//!   arenas) read back as borrowed [`Op`] views, with [`Glyph`] runs, [`BlendMode`] layers and
+//!   [`ResamplingQuality`];
 //! - [`Path`] (a verb array plus a point array) with [`PathView`], and [`Stroke`] parameters;
 //! - [`Brush`]: a solid [`Colour`] or a linear, radial or two-point-conical gradient;
 //! - opaque [`ImageHandle`] and [`FontHandle`] ids that renderers resolve.
 //!
-//! `DisplayList`, `Renderer` and `RenderTarget` follow in the next increment of WP-0.2-07.
+//! `Renderer`, `RenderTarget`, the content hash and JSON follow in the next increment.
 //! Following ADR 0003 D3, every type keeps its fields private: owned types expose
 //! constructors and accessors, and borrowed views ([`PathView`], [`StrokeRef`], [`BrushRef`])
 //! are what a display list hands back, so storage can change without a contract change.
@@ -26,9 +28,11 @@
 //! ```
 
 mod brush;
+mod list;
 mod path;
 
 pub use brush::{Brush, BrushKind, BrushRef, Colour, GradientStop};
+pub use list::{BlendMode, DisplayList, Glyph, Op, ResamplingQuality};
 pub use path::{Cap, FillRule, Join, Path, PathEl, PathVerb, PathView, Stroke, StrokeRef};
 
 /// An opaque image id. Its owner (an image cache) assigns the raw value; renderers resolve it.

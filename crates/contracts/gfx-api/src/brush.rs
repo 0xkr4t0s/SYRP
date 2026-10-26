@@ -87,7 +87,7 @@ impl GradientStop {
     /// ```
     /// assert_eq!(syrp_gfx_api::GradientStop::new(0.25, Default::default()).offset(), 0.25);
     /// ```
-    pub fn offset(&self) -> f32 {
+    pub fn offset(self) -> f32 {
         self.offset
     }
 
@@ -96,7 +96,7 @@ impl GradientStop {
     /// use syrp_gfx_api::{Colour, GradientStop};
     /// assert_eq!(GradientStop::new(0.0, Colour::WHITE).colour(), Colour::WHITE);
     /// ```
-    pub fn colour(&self) -> Colour {
+    pub fn colour(self) -> Colour {
         self.colour
     }
 }
@@ -273,7 +273,7 @@ impl<'a> BrushRef<'a> {
     /// use syrp_gfx_api::{BrushKind, BrushRef, Colour};
     /// assert!(matches!(BrushRef::from(Colour::BLACK).kind(), BrushKind::Solid(_)));
     /// ```
-    pub fn kind(&self) -> BrushKind {
+    pub fn kind(self) -> BrushKind {
         self.kind
     }
 
@@ -281,7 +281,7 @@ impl<'a> BrushRef<'a> {
     /// ```
     /// assert!(syrp_gfx_api::BrushRef::from(syrp_gfx_api::Colour::BLACK).stops().is_empty());
     /// ```
-    pub fn stops(&self) -> &'a [GradientStop] {
+    pub fn stops(self) -> &'a [GradientStop] {
         self.stops
     }
 }
@@ -289,5 +289,11 @@ impl<'a> BrushRef<'a> {
 impl From<Colour> for BrushRef<'static> {
     fn from(colour: Colour) -> Self {
         BrushRef::new(BrushKind::Solid(colour), &[])
+    }
+}
+
+impl<'a> From<&'a Brush> for BrushRef<'a> {
+    fn from(brush: &'a Brush) -> Self {
+        brush.as_view()
     }
 }
