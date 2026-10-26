@@ -68,6 +68,7 @@
         {"class": "StatisticsAccumulator", "group": "maths", "summary": "Running mean, variance, min and max of samples."},
         {"class": "Tolerance", "group": "maths", "summary": "Absolute and relative tolerance for approximate comparison."},
         {"class": "TypeHelpers::ParameterType", "group": "maths", "summary": "Picks the best way to pass a type as a parameter."},
+        {"class": "TypeHelpers::SmallestFloatType", "group": "maths", "summary": "Picks the narrowest floating-point type that can hold a given type's values."},
         {"class": "TypeHelpers::UnsignedTypeWithSize", "group": "maths", "summary": "Maps a byte size to an unsigned integer type."},
         {"class": "Atomic", "group": "memory", "summary": "Atomic value wrapper with arithmetic and compare-exchange."},
         {"class": "ByteOrder", "group": "memory", "summary": "Endianness detection and byte-swapping helpers."},
