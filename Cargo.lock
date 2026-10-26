@@ -1012,6 +1012,8 @@ name = "syrp-simd"
 version = "0.0.1"
 dependencies = [
  "fearless_simd",
+ "proptest",
+ "syrp-rt",
 ]
 
 [[package]]

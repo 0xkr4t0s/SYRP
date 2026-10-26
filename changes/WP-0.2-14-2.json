@@ -1,0 +1,1 @@
+{"wp": "WP-0.2-14", "kind": "added", "summary": "syrp-simd (increment 2): DenormalGuard (FTZ/DAZ, FPCR.FZ), slice kernels add/mul/mul_add (in and out of place), copy_with_gain, find_min_max and abs_max for f32/f64 with proptests against the scalar reference at every level, and Callgrind instruction-count benches that fail on a regression to baseline codegen."}
