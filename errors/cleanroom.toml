@@ -1,0 +1,40 @@
+# Error catalogue: clean-room provenance and contamination scanning (master plan §10.9).
+# Codes are permanent: never reuse or renumber one.
+
+# SYRP-CR-0001 (similarity above threshold) and SYRP-CR-0002 (fingerprint database
+# invalid) are reserved for the scanner, which arrives in the next PR for WP-0.1-12.
+
+[[error]]
+code = "SYRP-CR-0003"
+title = "Commit is missing a provenance trailer"
+severity = "error"
+cause = "A commit in the range has no `WP:` (or `Change-Request:`) trailer, or no `Agent-Model:` trailer, in its last paragraph."
+fix = "Amend or reword the commit so its message ends with the trailers listed in AGENTS.md, then force-push the branch."
+
+[[error]]
+code = "SYRP-CR-0004"
+title = "New source file lacks the crate's SPDX header"
+severity = "error"
+cause = "A `.rs` file added in the range does not start with `// SPDX-License-Identifier: <licence>` matching its crate's Cargo.toml `license`."
+fix = "Make the file's first line the expected header shown in the diagnostic."
+
+[[error]]
+code = "SYRP-CR-0005"
+title = "Git command failed"
+severity = "error"
+cause = "The provenance check could not run git, or the commit range does not resolve."
+fix = "Run `git fetch origin main` and pass a range whose ends exist locally, e.g. origin/main..HEAD."
+
+[[error]]
+code = "SYRP-CR-0006"
+title = "Crate licence could not be resolved"
+severity = "error"
+cause = "A crate's Cargo.toml is unreadable or has no `license` (or `license.workspace = true` with no workspace.package.license)."
+fix = "Set `license.workspace = true` or an explicit SPDX expression in the crate's Cargo.toml."
+
+[[error]]
+code = "SYRP-CR-0007"
+title = "File unreadable"
+severity = "error"
+cause = "A file to check could not be read as UTF-8 text."
+fix = "Check the path exists in the checked-out head commit and is UTF-8."
