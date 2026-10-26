@@ -466,6 +466,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "keyboard-types"
+version = "0.8.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0fbe853b403ae61a04233030ae8a79d94975281ed9770a1f9e246732b534b28d"
+dependencies = [
+ "bitflags",
+ "serde",
+]
+
+[[package]]
 name = "kurbo"
 version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -649,6 +659,12 @@ checksum = "60aa6af80be32871323012e02e6e65f8a7cc7890931ae421d217ad8fe0df2ccf"
 dependencies = [
  "rand_core",
 ]
+
+[[package]]
+name = "raw-window-handle"
+version = "0.6.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "20675572f6f24e9e76ef639bc5552774ed45f1c30e2951e1e99c59888861c539"
 
 [[package]]
 name = "ref-cast"
@@ -1001,6 +1017,18 @@ dependencies = [
  "proptest",
  "syrp-error",
  "syrp-rt",
+]
+
+[[package]]
+name = "syrp-peer-api"
+version = "0.0.1"
+dependencies = [
+ "keyboard-types",
+ "raw-window-handle",
+ "syrp-error",
+ "syrp-geom",
+ "syrp-gfx-api",
+ "syrp-loop-api",
 ]
 
 [[package]]
