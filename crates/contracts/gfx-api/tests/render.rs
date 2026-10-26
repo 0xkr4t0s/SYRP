@@ -63,6 +63,12 @@ fn b5_bad_scales_and_sizes_are_rejected_with_a_code() {
         RenderTarget::with_pixels(u32::MAX, u32::MAX, 1.0),
         Err(RenderError::InvalidTarget)
     );
+    // 2^61 bytes is addressable on 64-bit but cannot be allocated: an error, not an abort.
+    #[cfg(target_pointer_width = "64")]
+    assert_eq!(
+        RenderTarget::with_pixels(1 << 30, 1 << 29, 1.0),
+        Err(RenderError::InvalidTarget)
+    );
     let codes = [
         RenderError::UnknownImage(ImageHandle::from_raw(1)),
         RenderError::UnknownFont(FontHandle::from_raw(1)),
