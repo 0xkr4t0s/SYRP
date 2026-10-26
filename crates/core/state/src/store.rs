@@ -53,6 +53,8 @@ pub(crate) struct Inner {
     pub(crate) capture_from: Option<u64>,
     /// Records captured for that call, each counting the nodes it names.
     pub(crate) captured: Vec<Change>,
+    /// Whether an `UndoManager` is replaying a transaction on this store.
+    pub(crate) undoing: bool,
 }
 
 impl Inner {
@@ -574,6 +576,18 @@ impl Store {
 
     pub(crate) fn rc(&self) -> &Rc<RefCell<Inner>> {
         &self.inner
+    }
+
+    /// Whether an [`UndoManager`](crate::UndoManager) is undoing or redoing on this store, so
+    /// a listener can tell a replayed change from a new one.
+    ///
+    /// ```
+    /// assert!(!syrp_state::Store::new().is_performing_undo_redo());
+    /// ```
+    #[doc(alias = "isPerformingUndoRedo")]
+    #[must_use]
+    pub fn is_performing_undo_redo(&self) -> bool {
+        self.inner.borrow().undoing
     }
 
     /// Another `Store` value over the same document.

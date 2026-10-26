@@ -22,7 +22,8 @@
 //! delivery rules. [`Store::deep_copy`] and [`Store::is_equivalent`] work on whole subtrees.
 //!
 //! Each logged mutation has a `*_with_undo` sibling that adds its records to an
-//! [`UndoManager`] transaction, for [`UndoManager::undo`] and [`UndoManager::redo`].
+//! [`UndoManager`] transaction, for [`UndoManager::undo`] and [`UndoManager::redo`]; work outside
+//! the store joins a transaction as an [`UndoableAction`].
 //!
 //! ```
 //! use syrp_state::Store;
@@ -45,6 +46,7 @@
 //! needs_send(syrp_state::Store::new());
 //! ```
 
+mod action;
 mod copy;
 mod delivery;
 mod error;
@@ -53,6 +55,7 @@ mod node;
 mod store;
 mod undo;
 
+pub use action::UndoableAction;
 pub use delivery::Subscription;
 pub use error::{StateError, StateErrorKind};
 pub use log::{Change, LogCursor, LogRecord};
