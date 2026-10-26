@@ -1,0 +1,1 @@
+{"wp": "WP-0.1-09", "kind": "added", "summary": "syrp-testkit v0 (first increment): render_offline/render_offline_no_alloc over AudioBlockMut with an offline ProcessConfig, assert_no_alloc, a float32/PCM16/PCM24 WAV writer, seeded SplitMix64 noise, and a new errors/testkit.toml domain (SYRP-TESTKIT-0001..0004)."}

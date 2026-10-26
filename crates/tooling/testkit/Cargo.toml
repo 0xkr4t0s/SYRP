@@ -1,0 +1,25 @@
+[package]
+name = "syrp-testkit"
+description = "Deterministic offline test helpers for Syrp: block-wise audio render, WAV output, numeric comparators with tolerance profiles and seeded noise."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "AGPL-3.0-only OR BUSL-1.1"
+repository.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[package.metadata.syrp]
+layer = "L6"
+wp = "WP-0.1-09"
+
+[dependencies]
+syrp-audio-api = { version = "0.0.1", path = "../../contracts/audio-api" }
+syrp-error = { version = "0.0.1", path = "../../foundation/error" }
+syrp-rt = { version = "0.0.1", path = "../../foundation/rt" }
+
+[dev-dependencies]
+toml.workspace = true
+
+[lints]
+workspace = true

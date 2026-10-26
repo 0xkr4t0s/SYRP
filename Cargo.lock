@@ -965,6 +965,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "syrp-format-api"
+version = "0.0.1"
+dependencies = [
+ "syrp-audio-api",
+ "syrp-error",
+]
+
+[[package]]
 name = "syrp-geom"
 version = "0.0.1"
 dependencies = [
@@ -1053,6 +1061,16 @@ name = "syrp-state-arena-spike"
 version = "0.0.1"
 dependencies = [
  "slotmap",
+]
+
+[[package]]
+name = "syrp-testkit"
+version = "0.0.1"
+dependencies = [
+ "syrp-audio-api",
+ "syrp-error",
+ "syrp-rt",
+ "toml",
 ]
 
 [[package]]

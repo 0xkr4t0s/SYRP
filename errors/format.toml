@@ -1,0 +1,36 @@
+# Error catalogue: audio file format contract (syrp-format-api) and the codecs. Never renumber.
+
+[[error]]
+code = "SYRP-FORMAT-0001"
+title = "Audio file I/O failed"
+severity = "error"
+cause = "The stream under an audio reader or writer returned an I/O error while reading, writing, seeking, flushing or finishing."
+fix = "Check that the file exists, is readable or writable, and that the disk is not full; the wrapped I/O error names the cause."
+
+[[error]]
+code = "SYRP-FORMAT-0002"
+title = "Audio data does not match the format"
+severity = "error"
+cause = "The bytes given to an AudioFormat are not a valid file of that format: a wrong magic number, a truncated or inconsistent header, or a corrupt chunk."
+fix = "Use AudioFormat::can_read on the header first, or try another format; if the file should be valid, it may be truncated or damaged."
+
+[[error]]
+code = "SYRP-FORMAT-0003"
+title = "Audio format cannot handle this stream"
+severity = "error"
+cause = "The format does not support the requested sample rate, bit depth, sample kind, channel layout or feature."
+fix = "Pick a value from AudioFormat::sample_rates and AudioFormat::bit_depths, or choose a format that supports it."
+
+[[error]]
+code = "SYRP-FORMAT-0004"
+title = "Invalid audio stream description"
+severity = "error"
+cause = "AudioSpec::new was given a sample rate that is not finite and positive, a disabled or empty channel set, or a bit depth outside 1 to 32 for integers or other than 32 or 64 for floats."
+fix = "Pass a real sample rate in Hz, at least one channel, and a bit depth the sample kind can hold."
+
+[[error]]
+code = "SYRP-FORMAT-0005"
+title = "Block channel count differs from the writer's"
+severity = "error"
+cause = "AudioWriter::write was given a block whose channel count is not the channel count the writer was created with."
+fix = "Write blocks with exactly AudioWriter::spec().channel_count() channels; slice or pad the block first."

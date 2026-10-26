@@ -214,6 +214,16 @@ impl MidiMessage {
         self
     }
 
+    /// A borrowed view of the bytes at sample offset 0 (the house accessor for views).
+    /// ```
+    /// use syrp_midi::MidiData; let m = syrp_midi::MidiMessage::note_on(1, 60, 1).unwrap();
+    /// assert_eq!((m.as_view().as_slice(), m.as_view().sample_offset()), (m.bytes(), 0));
+    /// ```
+    #[must_use]
+    pub fn as_view(&self) -> MidiMessageRef<'_> {
+        self.view(0)
+    }
+
     /// A borrowed view of the bytes, at the given sample offset.
     /// ```
     /// use syrp_midi::MidiData; let m = syrp_midi::MidiMessage::note_on(1, 60, 1).unwrap();
