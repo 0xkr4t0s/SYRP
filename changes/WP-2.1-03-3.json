@@ -1,0 +1,1 @@
+{"wp": "WP-2.1-03", "kind": "added", "summary": "syrp-audio-basics: lane-generic Adsr and AdsrParams (linear segments, per-lane gates), the f32/f64/F32x4/F32x8 test matrix, no_alloc tests and RtSafe for Adsr and SmoothedValue, and the control Callgrind bench (increment 3, final: B4-B6)."}

@@ -7,14 +7,20 @@
 //!   `Decibels`.
 //! - [`SmoothedValue`]: a linear or multiplicative ramp toward a target, in the role of JUCE's
 //!   `SmoothedValue`, with an optional control rate ([`SmoothedValue::with_control_rate`]).
+//! - [`Adsr`]: a linear attack, decay, sustain, release envelope, in the role of JUCE's `ADSR`.
 //!
 //! Module notes (WP-2.1-03; the crate `AGENTS.md` belongs to WP-2.1-01):
 //! - Lane-generic methods are `#[inline(always)]`, so they compile for the level of the
 //!   `syrp_simd::dispatch!` body that calls them (the `syrp-simd` inlining rule).
 //! - Per-lane state changes go through masks and [`Sample::select`]; the only branches are
-//!   uniform ones (no lane is smoothing, the control-rate segment counter).
-//! - Nothing here allocates after construction, except [`decibels::to_string`], which builds
-//!   a display `String` and is not for the audio thread.
+//!   uniform ones (no lane is active, a control-rate segment is due).
+//! - Thread affinity: any thread. [`SmoothedValue`] and [`Adsr`] are plain `Copy` data that
+//!   never allocate, lock or block, and implement `syrp_rt::RtSafe` (proved with
+//!   `syrp_rt::no_alloc` in `tests/control.rs`). The decibel conversions are RT-safe too;
+//!   [`decibels::to_string`] builds a display `String` and is not for the audio thread.
+//! - `benches/control.rs` counts Callgrind instructions for eight `Adsr<f32>` against one
+//!   `Adsr<F32x8>`, and for `SmoothedValue` per sample against a control rate of 16
+//!   (`cargo bench -p syrp-audio-basics --bench control`; needs Valgrind).
 //! - Parity notes: a [`Linear`] ramp computes each value back from the target
 //!   (`target - step * samples_left`) instead of adding the step, so long `f32` ramps do not
 //!   accumulate rounding; values agree with repeated addition up to that rounding. A
@@ -24,9 +30,7 @@
 //!   the default −100 dB floor (the spec's signature has no floor parameter).
 //!   [`SmoothedValue::reset`] truncates: the ramp is `floor(sample_rate * ramp_seconds)`
 //!   samples, so 10.9 samples' worth of time ramps over 10.
-//!
-//! Known gaps: `Adsr` (spec B4), the B5 matrix for it, and the allocation tests, `RtSafe` and
-//! benches (B6) land in the next increment of WP-2.1-03. Tests are in `tests/control.rs`.
+//!   [`Adsr`] segments are linear and have not been compared with JUCE yet.
 //!
 //! ```
 //! use syrp_audio_basics::control::{SmoothedValue, decibels};
@@ -37,12 +41,23 @@
 //! assert_eq!(ramp, [0.25, 0.5, 0.75, 1.0]);
 //! ```
 
+mod adsr;
 pub mod decibels;
 mod smoothed;
 
+use syrp_rt::RtSafe;
 use syrp_simd::{F32x4, F32x8, F64x2, F64x4, Sample};
 
+pub use adsr::{Adsr, AdsrParams};
 pub use smoothed::{Linear, Mapping, Multiplicative, SmoothedValue};
+
+// SAFETY: `SmoothedValue` and `Adsr` hold only `Copy` lane values, masks, integers and a
+// `PhantomData`, so they have no destructor and moving them never allocates. Every method
+// except construction is arithmetic on those fields: no allocation, lock, blocking or I/O
+// (the `b6_` tests run them under `syrp_rt::no_alloc`).
+unsafe impl<S: ControlSample, M: Mapping> RtSafe for SmoothedValue<S, M> {}
+// SAFETY: as above.
+unsafe impl<S: ControlSample> RtSafe for Adsr<S> {}
 
 /// A [`Sample`] type the control-rate types accept: `f32`, `f64` and every `syrp-simd` lane
 /// pack (`F32x4`, `F32x8`, `F64x2`, `F64x4`), which is every type that implements `Sample`.
@@ -69,6 +84,12 @@ mod lanes {
     pub trait Lanes: Sample {
         /// `n` in every lane.
         fn from_count(n: u32) -> Self;
+        /// `value` in every lane, rounded to nearest when narrowing.
+        fn from_f64(value: f64) -> Self;
+        /// Lane-wise rounding to the nearest whole number (half away from zero).
+        fn round(self) -> Self;
+        /// The smallest lane, as `f64`.
+        fn min_lane(self) -> f64;
         /// Lane-wise `self.powf(exponent)`.
         fn powf(self, exponent: Self) -> Self;
     }
@@ -87,6 +108,18 @@ impl lanes::Lanes for f32 {
         n as f32
     }
     #[inline(always)]
+    fn from_f64(value: f64) -> Self {
+        value as f32
+    }
+    #[inline(always)]
+    fn round(self) -> Self {
+        f32::round(self)
+    }
+    #[inline(always)]
+    fn min_lane(self) -> f64 {
+        f64::from(self)
+    }
+    #[inline(always)]
     fn powf(self, exponent: Self) -> Self {
         f32::powf(self, exponent)
     }
@@ -98,19 +131,43 @@ impl lanes::Lanes for f64 {
         f64::from(n)
     }
     #[inline(always)]
+    fn from_f64(value: f64) -> Self {
+        value
+    }
+    #[inline(always)]
+    fn round(self) -> Self {
+        f64::round(self)
+    }
+    #[inline(always)]
+    fn min_lane(self) -> f64 {
+        self
+    }
+    #[inline(always)]
     fn powf(self, exponent: Self) -> Self {
         f64::powf(self, exponent)
     }
 }
 
 // Macro justification: the four pack implementations differ only in the pack and element
-// type; each is two one-line methods that go through the scalar implementation lane by lane.
+// type; each is five short methods that go through the scalar implementation lane by lane.
 macro_rules! pack_lanes {
     ($($pack:ident: $elem:ty),*) => {$(
         impl lanes::Lanes for $pack {
             #[inline(always)]
             fn from_count(n: u32) -> Self {
                 Self::splat(<$elem as lanes::Lanes>::from_count(n))
+            }
+            #[inline(always)]
+            fn from_f64(value: f64) -> Self {
+                Self::splat(<$elem as lanes::Lanes>::from_f64(value))
+            }
+            #[inline(always)]
+            fn round(self) -> Self {
+                Self::from_array(self.to_array().map(<$elem>::round))
+            }
+            #[inline(always)]
+            fn min_lane(self) -> f64 {
+                self.to_array().into_iter().fold(f64::INFINITY, |m, x| m.min(f64::from(x)))
             }
             #[inline(always)]
             fn powf(self, exponent: Self) -> Self {
