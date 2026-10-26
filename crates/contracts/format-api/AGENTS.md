@@ -42,8 +42,5 @@ cargo syrp test --crate syrp-format-api
 ```
 
 ## Known gaps
-First increment: the `AudioFormat`, `AudioReader` and `AudioWriter` traits and the
-`AnyBlock`/`AnyBlockMut` view enums are the second increment of WP-0.2-04; the invariants above
-that name them describe that increment.
 Streams are `std::io` `Read + Seek` / `Write + Seek` until `syrp-io` lands. No mmap, subsection
 readers or manager (`syrp-formats`); no `bext` UMID or loudness fields (use `Other`).
