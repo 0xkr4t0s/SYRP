@@ -18,6 +18,7 @@
 
 pub mod buffer;
 pub mod control;
+mod sealed;
 pub mod vector_ops;
 pub mod voice;
 

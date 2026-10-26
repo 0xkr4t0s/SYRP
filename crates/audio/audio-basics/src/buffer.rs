@@ -13,35 +13,9 @@ use syrp_audio_api::{AudioBlock, AudioBlockMut, AudioSample, SIMD_ALIGN};
 use syrp_error::{Diagnostic, ErrorCode};
 use syrp_simd::{AlignedBuf, Zeroable, kernels};
 
-mod sealed {
-    /// Seals [`BufferSample`](super::BufferSample) and carries the lossless-or-rounding
-    /// conversion that `make_copy_of` uses.
-    pub trait Sealed: Copy {
-        fn to_f64(self) -> f64;
-        fn from_f64(value: f64) -> Self;
-    }
-    impl Sealed for f32 {
-        #[inline(always)]
-        fn to_f64(self) -> f64 {
-            f64::from(self)
-        }
-        #[inline(always)]
-        fn from_f64(value: f64) -> Self {
-            // Rounds to the nearest `f32`, as a C++ `double` to `float` conversion does.
-            value as f32
-        }
-    }
-    impl Sealed for f64 {
-        #[inline(always)]
-        fn to_f64(self) -> f64 {
-            self
-        }
-        #[inline(always)]
-        fn from_f64(value: f64) -> Self {
-            value
-        }
-    }
-}
+use crate::sealed;
+
+mod ops;
 
 /// The sample types an [`AudioBuffer`] holds: `f32` and `f64`. Sealed.
 ///
@@ -156,6 +130,8 @@ pub struct AudioBuffer<T: BufferSample> {
     channels: usize,
     frames: usize,
     stride: usize,
+    /// True when every sample in `0..frames` of every channel is known to be `0.0` (B3).
+    cleared: bool,
 }
 
 impl<T: BufferSample> AudioBuffer<T> {
@@ -177,6 +153,7 @@ impl<T: BufferSample> AudioBuffer<T> {
             channels,
             frames,
             stride,
+            cleared: true,
         })
     }
 
@@ -233,6 +210,7 @@ impl<T: BufferSample> AudioBuffer<T> {
     #[doc(alias = "getArrayOfWritePointers")]
     #[must_use]
     pub fn as_block_mut(&mut self) -> AudioBlockMut<'_, T> {
+        self.cleared = false;
         AudioBlockMut::new(&mut self.data, self.channels, self.frames, self.stride)
             .expect("AudioBuffer keeps channels * stride <= capacity and frames <= stride")
     }
@@ -268,6 +246,7 @@ impl<T: BufferSample> AudioBuffer<T> {
     #[doc(alias = "getWritePointer")]
     pub fn channel_mut(&mut self, ch: usize) -> &mut [T] {
         self.check_channel(ch);
+        self.cleared = false;
         &mut self.data[ch * self.stride..][..self.frames]
     }
 
@@ -291,7 +270,9 @@ impl<T: BufferSample> AudioBuffer<T> {
     ///   it, the buffer reallocates unless the new shape needs exactly the current capacity,
     ///   so it uses the minimum memory.
     ///
-    /// A newly allocated region always starts zeroed.
+    /// A newly allocated region always starts zeroed. The buffer stays
+    /// [clear](Self::is_clear) when it was clear (or nothing was kept) and no stale samples
+    /// can remain.
     ///
     /// # Errors
     /// [`BufferError::TooLarge`] when the new size does not fit in memory; the buffer is then
@@ -321,6 +302,7 @@ impl<T: BufferSample> AudioBuffer<T> {
             0
         };
         let keep_frames = self.frames.min(frames);
+        let kept_nothing = keep_channels == 0 || keep_frames == 0;
         let fits = if avoid_reallocating {
             len <= self.data.len()
         } else {
@@ -351,6 +333,8 @@ impl<T: BufferSample> AudioBuffer<T> {
         self.channels = channels;
         self.frames = frames;
         self.stride = stride;
+        // Known silent only if nothing non-zero was kept and nothing stale is left.
+        self.cleared = (self.cleared || kept_nothing) && (clear_extra || !fits);
         Ok(())
     }
 
@@ -385,6 +369,10 @@ impl<T: BufferSample> AudioBuffer<T> {
             false,
             avoid_reallocating,
         )?;
+        if other.cleared {
+            self.clear();
+            return Ok(());
+        }
         for ch in 0..self.channels {
             let src = other.channel(ch);
             for (d, &s) in self.channel_mut(ch).iter_mut().zip(src) {
@@ -408,6 +396,7 @@ impl<T: BufferSample> Default for AudioBuffer<T> {
             channels: 0,
             frames: 0,
             stride: SIMD_ALIGN / size_of::<T>(),
+            cleared: true,
         }
     }
 }
@@ -430,6 +419,7 @@ impl<T: BufferSample> Clone for AudioBuffer<T> {
             channels: self.channels,
             frames: self.frames,
             stride: self.stride,
+            cleared: self.cleared,
         }
     }
 }
@@ -441,6 +431,7 @@ impl<T: BufferSample> fmt::Debug for AudioBuffer<T> {
             .field("frames", &self.frames)
             .field("stride", &self.stride)
             .field("capacity", &self.data.len())
+            .field("cleared", &self.cleared)
             .finish_non_exhaustive()
     }
 }
