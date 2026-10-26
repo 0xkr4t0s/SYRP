@@ -300,8 +300,9 @@ impl ParamSpec {
         self.group.as_deref()
     }
 
-    /// Formats a plain value. The default prints as many decimals as the step needs (two
-    /// when continuous, at most six), then a space and the unit when there is one.
+    /// Formats a plain value. The default prints the fewest decimals (at most six) that show
+    /// every step from the range start exactly, two when continuous, then a space and the
+    /// unit when there is one.
     /// ```
     /// # use syrp_plugin_api::{ParamRange, ParamSpec};
     /// let p = ParamSpec::new("n", "N", ParamRange::new(0.0, 8.0).with_step(1.0));
@@ -312,10 +313,13 @@ impl ParamSpec {
         if let Some(f) = &self.to_text {
             return f(value);
         }
-        let step = self.range.step();
+        let (step, start) = (self.range.step(), self.range.start());
+        let whole = |x: f64| (x - x.round()).abs() <= 1e-6 * x.abs().max(1.0);
         let decimals = if step > 0.0 {
-            // `- 1e-9` keeps exact powers of ten (0.1, 0.01) from asking for an extra digit.
-            (-step.log10() - 1e-9).ceil().clamp(0.0, 6.0) as usize
+            let scaled = |d: i32| (step * 10f64.powi(d), start * 10f64.powi(d));
+            (0..6)
+                .find(|&d| matches!(scaled(d), (a, b) if whole(a) && whole(b)))
+                .unwrap_or(6) as usize
         } else {
             2
         };

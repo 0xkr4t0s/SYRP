@@ -36,10 +36,8 @@ fn b3_builder_records_every_field() {
     assert_eq!((s.id(), s.name(), s.unit()), ("gain", "Gain", "dB"));
     assert_eq!((s.group(), s.smoothing()), (Some("out/level"), smoothing));
     assert_eq!((*s.range(), s.default_value()), (range, -6.0));
-    assert_eq!(
-        (s.range().normalise(s.default_value()), s.is_automatable()),
-        (0.375, false)
-    );
+    assert_eq!(s.range().normalise(s.default_value()), 0.375);
+    assert!(!s.is_automatable());
 }
 
 #[test]
@@ -111,17 +109,23 @@ proptest! {
 fn b3_text_conversion_defaults_and_overrides() {
     let hz = ParamSpec::new("f", "F", ParamRange::new(20.0, 20e3)).with_unit("Hz");
     assert_eq!(hz.value_to_text(440.0), "440.00 Hz");
+    let parse = |t: &str| hz.text_to_value(t);
     assert_eq!(
-        [hz.text_to_value("440 Hz"), hz.text_to_value("5")],
-        [Some(440.0), Some(20.0)]
-    );
-    assert_eq!(
-        [hz.text_to_value("loud"), hz.text_to_value("NaN")],
-        [None, None]
+        [parse("440 Hz"), parse("5"), parse("loud"), parse("NaN")],
+        [Some(440.0), Some(20.0), None, None]
     );
     let stepped = ParamSpec::new("s", "S", ParamRange::new(0.0, 1.0).with_step(0.01));
     assert_eq!(stepped.value_to_text(0.5), "0.50");
     close(stepped.text_to_value("0.333").unwrap(), 0.33);
+    let shown = |start: f64, step: f64, v: f64| {
+        let r = ParamRange::new(start, 10.0).with_step(step);
+        ParamSpec::new("s", "S", r).value_to_text(v)
+    };
+    assert_eq!(shown(0.0, 0.25, 1.25), "1.25");
+    assert_eq!(shown(0.0, 0.125, 0.375), "0.375");
+    assert_eq!(shown(0.0, 0.025, 0.075), "0.075");
+    assert_eq!(shown(0.5, 1.0, 2.5), "2.5"); // an offset start needs its own decimals
+    assert_eq!([shown(0.0, 0.1, 0.3), shown(0.0, 1.0, 3.0)], ["0.3", "3"]);
     const MODES: [&str; 3] = ["Low", "Mid", "High"];
     let mode = ParamSpec::new("m", "M", ParamRange::new(0.0, 2.0).with_step(1.0))
         .with_value_to_text(|v| MODES[v as usize].to_owned())
@@ -189,10 +193,8 @@ fn b4_values_live_in_one_atomic_array_shared_across_threads() {
     assert_eq!(read, (0.75, Some(0.25), None));
     fn rt_safe<T: RtSafe>() {}
     rt_safe::<ParamIndex>();
-    assert_eq!(
-        PluginError::AllocationFailed.code().as_str(),
-        "SYRP-PLUGIN-0003"
-    );
+    let code = PluginError::AllocationFailed.code();
+    assert_eq!(code.as_str(), "SYRP-PLUGIN-0003");
 }
 
 #[test]
@@ -211,10 +213,8 @@ fn b8_contract_types_have_no_public_fields() {
         } else if line.starts_with('}') {
             in_struct = false;
         } else if in_struct {
-            assert!(
-                !line.trim_start().starts_with("pub"),
-                "public field: {line}"
-            );
+            let field = line.trim_start();
+            assert!(!field.starts_with("pub"), "public field: {line}");
         }
     }
 }
