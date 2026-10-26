@@ -2,10 +2,10 @@
 //! WP-2.1-03 increment 1: B1 (decibels), B2 (`SmoothedValue`) and B3 (control rate).
 //! Packs are checked lane by lane against scalar runs at the `f32-arith` tolerance.
 
-use crate::control::decibels::{
+use syrp_audio_basics::control::decibels::{
     DecibelFloat, MINUS_INFINITY_TEXT, decibels_to_gain, gain_to_decibels, to_string,
 };
-use crate::control::{Linear, Mapping, Multiplicative, SmoothedValue};
+use syrp_audio_basics::control::{Linear, Mapping, Multiplicative, SmoothedValue};
 use syrp_simd::{F32x4, F32x8, F64x4, Mask, Sample};
 
 /// The `f32-arith` profile: 4 ulp, or 1e-7 absolute near zero.
@@ -18,7 +18,7 @@ fn nonlinear(got: f32, want: f32) -> bool {
     (got - want).abs() <= 1e-5 * want.abs().max(1.0)
 }
 
-fn ramp<S: crate::control::ControlSample, M: Mapping>(
+fn ramp<S: syrp_audio_basics::control::ControlSample, M: Mapping>(
     v: &mut SmoothedValue<S, M>,
     n: usize,
 ) -> Vec<S> {
@@ -73,6 +73,14 @@ fn b1_to_string_formats_with_suffix_and_minus_infinity_text() {
     assert_eq!(to_string(-100.0_f32, 2, MINUS_INFINITY_TEXT), "-INF");
     assert_eq!(to_string(-150.0_f64, 2, "off"), "off");
     assert_eq!(to_string(-99.5_f64, 1, "off"), "-99.5 dB");
+    // NaN reads as silence, as `gain_to_decibels` maps a NaN gain to the floor.
+    assert_eq!(to_string(f32::NAN, 2, MINUS_INFINITY_TEXT), "-INF");
+    assert_eq!(to_string(f64::NAN, 1, "off"), "off");
+    // The cutoff is the default floor whatever floor the value was converted with.
+    assert_eq!(
+        to_string(gain_to_decibels(0.0_f32, -60.0), 0, "off"),
+        "-60 dB"
+    );
 }
 
 #[test]
@@ -202,7 +210,7 @@ const SCRIPT: [(f32, f32, f32, usize); 8] = [
 
 /// Runs the script with `M` on a pack (one lane per entry) and on scalar values, and checks
 /// each lane against its scalar run at `f32-arith`, the smoothing masks included.
-fn lanes_match<P: crate::control::ControlSample, M: Mapping, const N: usize>(
+fn lanes_match<P: syrp_audio_basics::control::ControlSample, M: Mapping, const N: usize>(
     pack: fn([f32; N]) -> P,
     lanes: fn(P) -> [f32; N],
     smoothing: fn(P::Mask) -> [bool; N],
@@ -303,7 +311,7 @@ fn b2_pack_lanes_match_scalar_runs() {
 /// above 1, including a restart a third of the way in.
 fn control_tracks<S, M>(from: S, to: S, steps: u32, n: u32, tol: f64)
 where
-    S: crate::control::ControlSample + Into<f64>,
+    S: syrp_audio_basics::control::ControlSample + Into<f64>,
     M: Mapping,
 {
     let mut fine = SmoothedValue::<S, M>::new(from);
