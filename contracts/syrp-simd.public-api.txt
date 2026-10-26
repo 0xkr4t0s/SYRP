@@ -1,0 +1,484 @@
+pub mod syrp_simd
+pub use syrp_simd::fearless_simd
+pub mod syrp_simd::kernels
+pub trait syrp_simd::kernels::Element: syrp_simd::Sample<Element = Self> + fearless_simd::traits::SimdFloatElement
+impl syrp_simd::kernels::Element for f32
+impl syrp_simd::kernels::Element for f64
+pub fn syrp_simd::kernels::abs_max<E: syrp_simd::kernels::Element>(syrp_simd::Level, &[E]) -> E
+pub fn syrp_simd::kernels::add<E: syrp_simd::kernels::Element>(syrp_simd::Level, &mut [E], &[E])
+pub fn syrp_simd::kernels::add_into<E: syrp_simd::kernels::Element>(syrp_simd::Level, &mut [E], &[E], &[E])
+pub fn syrp_simd::kernels::copy_with_gain<E: syrp_simd::kernels::Element>(syrp_simd::Level, &mut [E], &[E], E)
+pub fn syrp_simd::kernels::find_min_max<E: syrp_simd::kernels::Element>(syrp_simd::Level, &[E]) -> core::option::Option<(E, E)>
+pub fn syrp_simd::kernels::mul<E: syrp_simd::kernels::Element>(syrp_simd::Level, &mut [E], &[E])
+pub fn syrp_simd::kernels::mul_add<E: syrp_simd::kernels::Element>(syrp_simd::Level, &mut [E], &[E], &[E])
+pub fn syrp_simd::kernels::mul_add_into<E: syrp_simd::kernels::Element>(syrp_simd::Level, &mut [E], &[E], &[E], &[E])
+pub fn syrp_simd::kernels::mul_into<E: syrp_simd::kernels::Element>(syrp_simd::Level, &mut [E], &[E], &[E])
+pub macro syrp_simd::dispatch!
+#[non_exhaustive] pub enum syrp_simd::Level
+pub syrp_simd::Level::Avx2
+pub syrp_simd::Level::Avx512
+pub syrp_simd::Level::Neon
+pub syrp_simd::Level::Scalar
+pub syrp_simd::Level::Sse2
+pub syrp_simd::Level::Sse4_2
+pub syrp_simd::Level::WasmSimd128
+impl syrp_simd::Level
+pub fn syrp_simd::Level::best() -> syrp_simd::Level
+pub fn syrp_simd::Level::detect() -> syrp_simd::Level
+pub fn syrp_simd::Level::is_supported(self) -> bool
+pub fn syrp_simd::Level::supported() -> impl core::iter::traits::iterator::Iterator<Item = syrp_simd::Level>
+pub fn syrp_simd::Level::to_fearless(self) -> core::option::Option<fearless_simd::Level>
+pub struct syrp_simd::AlignedBuf<T: syrp_simd::Zeroable>
+impl<T: syrp_simd::Zeroable> syrp_simd::AlignedBuf<T>
+pub fn syrp_simd::AlignedBuf<T>::as_mut_slice(&mut self) -> &mut [T]
+pub fn syrp_simd::AlignedBuf<T>::as_slice(&self) -> &[T]
+pub fn syrp_simd::AlignedBuf<T>::is_empty(&self) -> bool
+pub fn syrp_simd::AlignedBuf<T>::len(&self) -> usize
+pub fn syrp_simd::AlignedBuf<T>::zeroed(usize) -> Self
+impl<T: syrp_simd::Zeroable + core::fmt::Debug> core::fmt::Debug for syrp_simd::AlignedBuf<T>
+pub fn syrp_simd::AlignedBuf<T>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<T: syrp_simd::Zeroable + core::marker::Send> core::marker::Send for syrp_simd::AlignedBuf<T>
+impl<T: syrp_simd::Zeroable + core::marker::Sync> core::marker::Sync for syrp_simd::AlignedBuf<T>
+impl<T: syrp_simd::Zeroable> core::ops::deref::Deref for syrp_simd::AlignedBuf<T>
+pub type syrp_simd::AlignedBuf<T>::Target = [T]
+pub fn syrp_simd::AlignedBuf<T>::deref(&self) -> &[T]
+impl<T: syrp_simd::Zeroable> core::ops::deref::DerefMut for syrp_simd::AlignedBuf<T>
+pub fn syrp_simd::AlignedBuf<T>::deref_mut(&mut self) -> &mut [T]
+impl<T: syrp_simd::Zeroable> core::ops::drop::Drop for syrp_simd::AlignedBuf<T>
+pub fn syrp_simd::AlignedBuf<T>::drop(&mut self)
+pub struct syrp_simd::DenormalGuard
+impl syrp_simd::DenormalGuard
+pub fn syrp_simd::DenormalGuard::is_active(&self) -> bool
+pub unsafe fn syrp_simd::DenormalGuard::new() -> Self
+impl core::ops::drop::Drop for syrp_simd::DenormalGuard
+pub fn syrp_simd::DenormalGuard::drop(&mut self)
+impl syrp_rt::RtSafe for syrp_simd::DenormalGuard
+#[repr(C, align(16))] pub struct syrp_simd::F32x4(_)
+impl syrp_simd::F32x4
+pub const fn syrp_simd::F32x4::from_array([f32; 4]) -> Self
+pub const fn syrp_simd::F32x4::lane(self, usize) -> f32
+pub const fn syrp_simd::F32x4::to_array(self) -> [f32; 4]
+impl core::ops::arith::Add for syrp_simd::F32x4
+pub type syrp_simd::F32x4::Output = syrp_simd::F32x4
+pub fn syrp_simd::F32x4::add(self, Self) -> Self
+impl core::ops::arith::AddAssign for syrp_simd::F32x4
+pub fn syrp_simd::F32x4::add_assign(&mut self, Self)
+impl core::ops::arith::Div for syrp_simd::F32x4
+pub type syrp_simd::F32x4::Output = syrp_simd::F32x4
+pub fn syrp_simd::F32x4::div(self, Self) -> Self
+impl core::ops::arith::DivAssign for syrp_simd::F32x4
+pub fn syrp_simd::F32x4::div_assign(&mut self, Self)
+impl core::ops::arith::Mul for syrp_simd::F32x4
+pub type syrp_simd::F32x4::Output = syrp_simd::F32x4
+pub fn syrp_simd::F32x4::mul(self, Self) -> Self
+impl core::ops::arith::MulAssign for syrp_simd::F32x4
+pub fn syrp_simd::F32x4::mul_assign(&mut self, Self)
+impl core::ops::arith::Neg for syrp_simd::F32x4
+pub type syrp_simd::F32x4::Output = syrp_simd::F32x4
+pub fn syrp_simd::F32x4::neg(self) -> Self
+impl core::ops::arith::Sub for syrp_simd::F32x4
+pub type syrp_simd::F32x4::Output = syrp_simd::F32x4
+pub fn syrp_simd::F32x4::sub(self, Self) -> Self
+impl core::ops::arith::SubAssign for syrp_simd::F32x4
+pub fn syrp_simd::F32x4::sub_assign(&mut self, Self)
+impl syrp_simd::Sample for syrp_simd::F32x4
+pub type syrp_simd::F32x4::Element = f32
+pub type syrp_simd::F32x4::Mask = syrp_simd::Mask32x4
+pub const syrp_simd::F32x4::LANES: usize
+pub fn syrp_simd::F32x4::abs(self) -> Self
+pub fn syrp_simd::F32x4::max(self, Self) -> Self
+pub fn syrp_simd::F32x4::min(self, Self) -> Self
+pub fn syrp_simd::F32x4::mul_add(self, Self, Self) -> Self
+pub fn syrp_simd::F32x4::one() -> Self
+pub fn syrp_simd::F32x4::select(syrp_simd::Mask32x4, Self, Self) -> Self
+pub fn syrp_simd::F32x4::simd_eq(self, Self) -> syrp_simd::Mask32x4
+pub fn syrp_simd::F32x4::simd_ge(self, Self) -> syrp_simd::Mask32x4
+pub fn syrp_simd::F32x4::simd_gt(self, Self) -> syrp_simd::Mask32x4
+pub fn syrp_simd::F32x4::simd_le(self, Self) -> syrp_simd::Mask32x4
+pub fn syrp_simd::F32x4::simd_lt(self, Self) -> syrp_simd::Mask32x4
+pub fn syrp_simd::F32x4::splat(f32) -> Self
+pub fn syrp_simd::F32x4::sqrt(self) -> Self
+pub fn syrp_simd::F32x4::zero() -> Self
+impl syrp_simd::Zeroable for syrp_simd::F32x4
+#[repr(C, align(32))] pub struct syrp_simd::F32x8(_)
+impl syrp_simd::F32x8
+pub const fn syrp_simd::F32x8::from_array([f32; 8]) -> Self
+pub const fn syrp_simd::F32x8::lane(self, usize) -> f32
+pub const fn syrp_simd::F32x8::to_array(self) -> [f32; 8]
+impl core::ops::arith::Add for syrp_simd::F32x8
+pub type syrp_simd::F32x8::Output = syrp_simd::F32x8
+pub fn syrp_simd::F32x8::add(self, Self) -> Self
+impl core::ops::arith::AddAssign for syrp_simd::F32x8
+pub fn syrp_simd::F32x8::add_assign(&mut self, Self)
+impl core::ops::arith::Div for syrp_simd::F32x8
+pub type syrp_simd::F32x8::Output = syrp_simd::F32x8
+pub fn syrp_simd::F32x8::div(self, Self) -> Self
+impl core::ops::arith::DivAssign for syrp_simd::F32x8
+pub fn syrp_simd::F32x8::div_assign(&mut self, Self)
+impl core::ops::arith::Mul for syrp_simd::F32x8
+pub type syrp_simd::F32x8::Output = syrp_simd::F32x8
+pub fn syrp_simd::F32x8::mul(self, Self) -> Self
+impl core::ops::arith::MulAssign for syrp_simd::F32x8
+pub fn syrp_simd::F32x8::mul_assign(&mut self, Self)
+impl core::ops::arith::Neg for syrp_simd::F32x8
+pub type syrp_simd::F32x8::Output = syrp_simd::F32x8
+pub fn syrp_simd::F32x8::neg(self) -> Self
+impl core::ops::arith::Sub for syrp_simd::F32x8
+pub type syrp_simd::F32x8::Output = syrp_simd::F32x8
+pub fn syrp_simd::F32x8::sub(self, Self) -> Self
+impl core::ops::arith::SubAssign for syrp_simd::F32x8
+pub fn syrp_simd::F32x8::sub_assign(&mut self, Self)
+impl syrp_simd::Sample for syrp_simd::F32x8
+pub type syrp_simd::F32x8::Element = f32
+pub type syrp_simd::F32x8::Mask = syrp_simd::Mask32x8
+pub const syrp_simd::F32x8::LANES: usize
+pub fn syrp_simd::F32x8::abs(self) -> Self
+pub fn syrp_simd::F32x8::max(self, Self) -> Self
+pub fn syrp_simd::F32x8::min(self, Self) -> Self
+pub fn syrp_simd::F32x8::mul_add(self, Self, Self) -> Self
+pub fn syrp_simd::F32x8::one() -> Self
+pub fn syrp_simd::F32x8::select(syrp_simd::Mask32x8, Self, Self) -> Self
+pub fn syrp_simd::F32x8::simd_eq(self, Self) -> syrp_simd::Mask32x8
+pub fn syrp_simd::F32x8::simd_ge(self, Self) -> syrp_simd::Mask32x8
+pub fn syrp_simd::F32x8::simd_gt(self, Self) -> syrp_simd::Mask32x8
+pub fn syrp_simd::F32x8::simd_le(self, Self) -> syrp_simd::Mask32x8
+pub fn syrp_simd::F32x8::simd_lt(self, Self) -> syrp_simd::Mask32x8
+pub fn syrp_simd::F32x8::splat(f32) -> Self
+pub fn syrp_simd::F32x8::sqrt(self) -> Self
+pub fn syrp_simd::F32x8::zero() -> Self
+impl syrp_simd::Zeroable for syrp_simd::F32x8
+#[repr(C, align(16))] pub struct syrp_simd::F64x2(_)
+impl syrp_simd::F64x2
+pub const fn syrp_simd::F64x2::from_array([f64; 2]) -> Self
+pub const fn syrp_simd::F64x2::lane(self, usize) -> f64
+pub const fn syrp_simd::F64x2::to_array(self) -> [f64; 2]
+impl core::ops::arith::Add for syrp_simd::F64x2
+pub type syrp_simd::F64x2::Output = syrp_simd::F64x2
+pub fn syrp_simd::F64x2::add(self, Self) -> Self
+impl core::ops::arith::AddAssign for syrp_simd::F64x2
+pub fn syrp_simd::F64x2::add_assign(&mut self, Self)
+impl core::ops::arith::Div for syrp_simd::F64x2
+pub type syrp_simd::F64x2::Output = syrp_simd::F64x2
+pub fn syrp_simd::F64x2::div(self, Self) -> Self
+impl core::ops::arith::DivAssign for syrp_simd::F64x2
+pub fn syrp_simd::F64x2::div_assign(&mut self, Self)
+impl core::ops::arith::Mul for syrp_simd::F64x2
+pub type syrp_simd::F64x2::Output = syrp_simd::F64x2
+pub fn syrp_simd::F64x2::mul(self, Self) -> Self
+impl core::ops::arith::MulAssign for syrp_simd::F64x2
+pub fn syrp_simd::F64x2::mul_assign(&mut self, Self)
+impl core::ops::arith::Neg for syrp_simd::F64x2
+pub type syrp_simd::F64x2::Output = syrp_simd::F64x2
+pub fn syrp_simd::F64x2::neg(self) -> Self
+impl core::ops::arith::Sub for syrp_simd::F64x2
+pub type syrp_simd::F64x2::Output = syrp_simd::F64x2
+pub fn syrp_simd::F64x2::sub(self, Self) -> Self
+impl core::ops::arith::SubAssign for syrp_simd::F64x2
+pub fn syrp_simd::F64x2::sub_assign(&mut self, Self)
+impl syrp_simd::Sample for syrp_simd::F64x2
+pub type syrp_simd::F64x2::Element = f64
+pub type syrp_simd::F64x2::Mask = syrp_simd::Mask64x2
+pub const syrp_simd::F64x2::LANES: usize
+pub fn syrp_simd::F64x2::abs(self) -> Self
+pub fn syrp_simd::F64x2::max(self, Self) -> Self
+pub fn syrp_simd::F64x2::min(self, Self) -> Self
+pub fn syrp_simd::F64x2::mul_add(self, Self, Self) -> Self
+pub fn syrp_simd::F64x2::one() -> Self
+pub fn syrp_simd::F64x2::select(syrp_simd::Mask64x2, Self, Self) -> Self
+pub fn syrp_simd::F64x2::simd_eq(self, Self) -> syrp_simd::Mask64x2
+pub fn syrp_simd::F64x2::simd_ge(self, Self) -> syrp_simd::Mask64x2
+pub fn syrp_simd::F64x2::simd_gt(self, Self) -> syrp_simd::Mask64x2
+pub fn syrp_simd::F64x2::simd_le(self, Self) -> syrp_simd::Mask64x2
+pub fn syrp_simd::F64x2::simd_lt(self, Self) -> syrp_simd::Mask64x2
+pub fn syrp_simd::F64x2::splat(f64) -> Self
+pub fn syrp_simd::F64x2::sqrt(self) -> Self
+pub fn syrp_simd::F64x2::zero() -> Self
+impl syrp_simd::Zeroable for syrp_simd::F64x2
+#[repr(C, align(32))] pub struct syrp_simd::F64x4(_)
+impl syrp_simd::F64x4
+pub const fn syrp_simd::F64x4::from_array([f64; 4]) -> Self
+pub const fn syrp_simd::F64x4::lane(self, usize) -> f64
+pub const fn syrp_simd::F64x4::to_array(self) -> [f64; 4]
+impl core::ops::arith::Add for syrp_simd::F64x4
+pub type syrp_simd::F64x4::Output = syrp_simd::F64x4
+pub fn syrp_simd::F64x4::add(self, Self) -> Self
+impl core::ops::arith::AddAssign for syrp_simd::F64x4
+pub fn syrp_simd::F64x4::add_assign(&mut self, Self)
+impl core::ops::arith::Div for syrp_simd::F64x4
+pub type syrp_simd::F64x4::Output = syrp_simd::F64x4
+pub fn syrp_simd::F64x4::div(self, Self) -> Self
+impl core::ops::arith::DivAssign for syrp_simd::F64x4
+pub fn syrp_simd::F64x4::div_assign(&mut self, Self)
+impl core::ops::arith::Mul for syrp_simd::F64x4
+pub type syrp_simd::F64x4::Output = syrp_simd::F64x4
+pub fn syrp_simd::F64x4::mul(self, Self) -> Self
+impl core::ops::arith::MulAssign for syrp_simd::F64x4
+pub fn syrp_simd::F64x4::mul_assign(&mut self, Self)
+impl core::ops::arith::Neg for syrp_simd::F64x4
+pub type syrp_simd::F64x4::Output = syrp_simd::F64x4
+pub fn syrp_simd::F64x4::neg(self) -> Self
+impl core::ops::arith::Sub for syrp_simd::F64x4
+pub type syrp_simd::F64x4::Output = syrp_simd::F64x4
+pub fn syrp_simd::F64x4::sub(self, Self) -> Self
+impl core::ops::arith::SubAssign for syrp_simd::F64x4
+pub fn syrp_simd::F64x4::sub_assign(&mut self, Self)
+impl syrp_simd::Sample for syrp_simd::F64x4
+pub type syrp_simd::F64x4::Element = f64
+pub type syrp_simd::F64x4::Mask = syrp_simd::Mask64x4
+pub const syrp_simd::F64x4::LANES: usize
+pub fn syrp_simd::F64x4::abs(self) -> Self
+pub fn syrp_simd::F64x4::max(self, Self) -> Self
+pub fn syrp_simd::F64x4::min(self, Self) -> Self
+pub fn syrp_simd::F64x4::mul_add(self, Self, Self) -> Self
+pub fn syrp_simd::F64x4::one() -> Self
+pub fn syrp_simd::F64x4::select(syrp_simd::Mask64x4, Self, Self) -> Self
+pub fn syrp_simd::F64x4::simd_eq(self, Self) -> syrp_simd::Mask64x4
+pub fn syrp_simd::F64x4::simd_ge(self, Self) -> syrp_simd::Mask64x4
+pub fn syrp_simd::F64x4::simd_gt(self, Self) -> syrp_simd::Mask64x4
+pub fn syrp_simd::F64x4::simd_le(self, Self) -> syrp_simd::Mask64x4
+pub fn syrp_simd::F64x4::simd_lt(self, Self) -> syrp_simd::Mask64x4
+pub fn syrp_simd::F64x4::splat(f64) -> Self
+pub fn syrp_simd::F64x4::sqrt(self) -> Self
+pub fn syrp_simd::F64x4::zero() -> Self
+impl syrp_simd::Zeroable for syrp_simd::F64x4
+pub struct syrp_simd::Mask32x4(_)
+impl syrp_simd::Mask32x4
+pub const fn syrp_simd::Mask32x4::from_array([bool; 4]) -> Self
+pub const fn syrp_simd::Mask32x4::lane(self, usize) -> bool
+pub const fn syrp_simd::Mask32x4::to_array(self) -> [bool; 4]
+impl core::ops::bit::BitAnd for syrp_simd::Mask32x4
+pub type syrp_simd::Mask32x4::Output = syrp_simd::Mask32x4
+pub fn syrp_simd::Mask32x4::bitand(self, Self) -> Self
+impl core::ops::bit::BitOr for syrp_simd::Mask32x4
+pub type syrp_simd::Mask32x4::Output = syrp_simd::Mask32x4
+pub fn syrp_simd::Mask32x4::bitor(self, Self) -> Self
+impl core::ops::bit::Not for syrp_simd::Mask32x4
+pub type syrp_simd::Mask32x4::Output = syrp_simd::Mask32x4
+pub fn syrp_simd::Mask32x4::not(self) -> Self
+impl syrp_simd::Mask for syrp_simd::Mask32x4
+pub fn syrp_simd::Mask32x4::all(self) -> bool
+pub fn syrp_simd::Mask32x4::any(self) -> bool
+pub fn syrp_simd::Mask32x4::none(self) -> bool
+pub fn syrp_simd::Mask32x4::splat(bool) -> Self
+pub struct syrp_simd::Mask32x8(_)
+impl syrp_simd::Mask32x8
+pub const fn syrp_simd::Mask32x8::from_array([bool; 8]) -> Self
+pub const fn syrp_simd::Mask32x8::lane(self, usize) -> bool
+pub const fn syrp_simd::Mask32x8::to_array(self) -> [bool; 8]
+impl core::ops::bit::BitAnd for syrp_simd::Mask32x8
+pub type syrp_simd::Mask32x8::Output = syrp_simd::Mask32x8
+pub fn syrp_simd::Mask32x8::bitand(self, Self) -> Self
+impl core::ops::bit::BitOr for syrp_simd::Mask32x8
+pub type syrp_simd::Mask32x8::Output = syrp_simd::Mask32x8
+pub fn syrp_simd::Mask32x8::bitor(self, Self) -> Self
+impl core::ops::bit::Not for syrp_simd::Mask32x8
+pub type syrp_simd::Mask32x8::Output = syrp_simd::Mask32x8
+pub fn syrp_simd::Mask32x8::not(self) -> Self
+impl syrp_simd::Mask for syrp_simd::Mask32x8
+pub fn syrp_simd::Mask32x8::all(self) -> bool
+pub fn syrp_simd::Mask32x8::any(self) -> bool
+pub fn syrp_simd::Mask32x8::none(self) -> bool
+pub fn syrp_simd::Mask32x8::splat(bool) -> Self
+pub struct syrp_simd::Mask64x2(_)
+impl syrp_simd::Mask64x2
+pub const fn syrp_simd::Mask64x2::from_array([bool; 2]) -> Self
+pub const fn syrp_simd::Mask64x2::lane(self, usize) -> bool
+pub const fn syrp_simd::Mask64x2::to_array(self) -> [bool; 2]
+impl core::ops::bit::BitAnd for syrp_simd::Mask64x2
+pub type syrp_simd::Mask64x2::Output = syrp_simd::Mask64x2
+pub fn syrp_simd::Mask64x2::bitand(self, Self) -> Self
+impl core::ops::bit::BitOr for syrp_simd::Mask64x2
+pub type syrp_simd::Mask64x2::Output = syrp_simd::Mask64x2
+pub fn syrp_simd::Mask64x2::bitor(self, Self) -> Self
+impl core::ops::bit::Not for syrp_simd::Mask64x2
+pub type syrp_simd::Mask64x2::Output = syrp_simd::Mask64x2
+pub fn syrp_simd::Mask64x2::not(self) -> Self
+impl syrp_simd::Mask for syrp_simd::Mask64x2
+pub fn syrp_simd::Mask64x2::all(self) -> bool
+pub fn syrp_simd::Mask64x2::any(self) -> bool
+pub fn syrp_simd::Mask64x2::none(self) -> bool
+pub fn syrp_simd::Mask64x2::splat(bool) -> Self
+pub struct syrp_simd::Mask64x4(_)
+impl syrp_simd::Mask64x4
+pub const fn syrp_simd::Mask64x4::from_array([bool; 4]) -> Self
+pub const fn syrp_simd::Mask64x4::lane(self, usize) -> bool
+pub const fn syrp_simd::Mask64x4::to_array(self) -> [bool; 4]
+impl core::ops::bit::BitAnd for syrp_simd::Mask64x4
+pub type syrp_simd::Mask64x4::Output = syrp_simd::Mask64x4
+pub fn syrp_simd::Mask64x4::bitand(self, Self) -> Self
+impl core::ops::bit::BitOr for syrp_simd::Mask64x4
+pub type syrp_simd::Mask64x4::Output = syrp_simd::Mask64x4
+pub fn syrp_simd::Mask64x4::bitor(self, Self) -> Self
+impl core::ops::bit::Not for syrp_simd::Mask64x4
+pub type syrp_simd::Mask64x4::Output = syrp_simd::Mask64x4
+pub fn syrp_simd::Mask64x4::not(self) -> Self
+impl syrp_simd::Mask for syrp_simd::Mask64x4
+pub fn syrp_simd::Mask64x4::all(self) -> bool
+pub fn syrp_simd::Mask64x4::any(self) -> bool
+pub fn syrp_simd::Mask64x4::none(self) -> bool
+pub fn syrp_simd::Mask64x4::splat(bool) -> Self
+pub const syrp_simd::ALIGN: usize
+pub const syrp_simd::ENV_VAR: &str
+pub trait syrp_simd::Mask: core::marker::Copy + core::marker::Send + core::marker::Sync + 'static + core::fmt::Debug + core::cmp::PartialEq + core::ops::bit::BitAnd<Output = Self> + core::ops::bit::BitOr<Output = Self> + core::ops::bit::Not<Output = Self> + syrp_simd::sample::sealed::Sealed
+pub fn syrp_simd::Mask::all(self) -> bool
+pub fn syrp_simd::Mask::any(self) -> bool
+pub fn syrp_simd::Mask::none(self) -> bool
+pub fn syrp_simd::Mask::splat(bool) -> Self
+impl syrp_simd::Mask for bool
+pub fn bool::all(self) -> bool
+pub fn bool::any(self) -> bool
+pub fn bool::none(self) -> bool
+pub fn bool::splat(bool) -> Self
+impl syrp_simd::Mask for syrp_simd::Mask32x4
+pub fn syrp_simd::Mask32x4::all(self) -> bool
+pub fn syrp_simd::Mask32x4::any(self) -> bool
+pub fn syrp_simd::Mask32x4::none(self) -> bool
+pub fn syrp_simd::Mask32x4::splat(bool) -> Self
+impl syrp_simd::Mask for syrp_simd::Mask32x8
+pub fn syrp_simd::Mask32x8::all(self) -> bool
+pub fn syrp_simd::Mask32x8::any(self) -> bool
+pub fn syrp_simd::Mask32x8::none(self) -> bool
+pub fn syrp_simd::Mask32x8::splat(bool) -> Self
+impl syrp_simd::Mask for syrp_simd::Mask64x2
+pub fn syrp_simd::Mask64x2::all(self) -> bool
+pub fn syrp_simd::Mask64x2::any(self) -> bool
+pub fn syrp_simd::Mask64x2::none(self) -> bool
+pub fn syrp_simd::Mask64x2::splat(bool) -> Self
+impl syrp_simd::Mask for syrp_simd::Mask64x4
+pub fn syrp_simd::Mask64x4::all(self) -> bool
+pub fn syrp_simd::Mask64x4::any(self) -> bool
+pub fn syrp_simd::Mask64x4::none(self) -> bool
+pub fn syrp_simd::Mask64x4::splat(bool) -> Self
+pub trait syrp_simd::Sample: core::marker::Copy + core::marker::Send + core::marker::Sync + 'static + core::fmt::Debug + core::default::Default + core::cmp::PartialEq + core::ops::arith::Add<Output = Self> + core::ops::arith::Sub<Output = Self> + core::ops::arith::Mul<Output = Self> + core::ops::arith::Div<Output = Self> + core::ops::arith::Neg<Output = Self> + core::ops::arith::AddAssign + core::ops::arith::SubAssign + core::ops::arith::MulAssign + core::ops::arith::DivAssign + syrp_simd::sample::sealed::Sealed
+pub type syrp_simd::Sample::Element: syrp_simd::Sample<Element = Self::Element>
+pub type syrp_simd::Sample::Mask: syrp_simd::Mask
+pub const syrp_simd::Sample::LANES: usize
+pub fn syrp_simd::Sample::abs(self) -> Self
+pub fn syrp_simd::Sample::max(self, Self) -> Self
+pub fn syrp_simd::Sample::min(self, Self) -> Self
+pub fn syrp_simd::Sample::mul_add(self, Self, Self) -> Self
+pub fn syrp_simd::Sample::one() -> Self
+pub fn syrp_simd::Sample::select(Self::Mask, Self, Self) -> Self
+pub fn syrp_simd::Sample::simd_eq(self, Self) -> Self::Mask
+pub fn syrp_simd::Sample::simd_ge(self, Self) -> Self::Mask
+pub fn syrp_simd::Sample::simd_gt(self, Self) -> Self::Mask
+pub fn syrp_simd::Sample::simd_le(self, Self) -> Self::Mask
+pub fn syrp_simd::Sample::simd_lt(self, Self) -> Self::Mask
+pub fn syrp_simd::Sample::splat(Self::Element) -> Self
+pub fn syrp_simd::Sample::sqrt(self) -> Self
+pub fn syrp_simd::Sample::zero() -> Self
+impl syrp_simd::Sample for f32
+pub type f32::Element = f32
+pub type f32::Mask = bool
+pub const f32::LANES: usize
+pub fn f32::abs(self) -> Self
+pub fn f32::max(self, Self) -> Self
+pub fn f32::min(self, Self) -> Self
+pub fn f32::mul_add(self, Self, Self) -> Self
+pub fn f32::one() -> Self
+pub fn f32::select(bool, Self, Self) -> Self
+pub fn f32::simd_eq(self, Self) -> bool
+pub fn f32::simd_ge(self, Self) -> bool
+pub fn f32::simd_gt(self, Self) -> bool
+pub fn f32::simd_le(self, Self) -> bool
+pub fn f32::simd_lt(self, Self) -> bool
+pub fn f32::splat(f32) -> Self
+pub fn f32::sqrt(self) -> Self
+pub fn f32::zero() -> Self
+impl syrp_simd::Sample for f64
+pub type f64::Element = f64
+pub type f64::Mask = bool
+pub const f64::LANES: usize
+pub fn f64::abs(self) -> Self
+pub fn f64::max(self, Self) -> Self
+pub fn f64::min(self, Self) -> Self
+pub fn f64::mul_add(self, Self, Self) -> Self
+pub fn f64::one() -> Self
+pub fn f64::select(bool, Self, Self) -> Self
+pub fn f64::simd_eq(self, Self) -> bool
+pub fn f64::simd_ge(self, Self) -> bool
+pub fn f64::simd_gt(self, Self) -> bool
+pub fn f64::simd_le(self, Self) -> bool
+pub fn f64::simd_lt(self, Self) -> bool
+pub fn f64::splat(f64) -> Self
+pub fn f64::sqrt(self) -> Self
+pub fn f64::zero() -> Self
+impl syrp_simd::Sample for syrp_simd::F32x4
+pub type syrp_simd::F32x4::Element = f32
+pub type syrp_simd::F32x4::Mask = syrp_simd::Mask32x4
+pub const syrp_simd::F32x4::LANES: usize
+pub fn syrp_simd::F32x4::abs(self) -> Self
+pub fn syrp_simd::F32x4::max(self, Self) -> Self
+pub fn syrp_simd::F32x4::min(self, Self) -> Self
+pub fn syrp_simd::F32x4::mul_add(self, Self, Self) -> Self
+pub fn syrp_simd::F32x4::one() -> Self
+pub fn syrp_simd::F32x4::select(syrp_simd::Mask32x4, Self, Self) -> Self
+pub fn syrp_simd::F32x4::simd_eq(self, Self) -> syrp_simd::Mask32x4
+pub fn syrp_simd::F32x4::simd_ge(self, Self) -> syrp_simd::Mask32x4
+pub fn syrp_simd::F32x4::simd_gt(self, Self) -> syrp_simd::Mask32x4
+pub fn syrp_simd::F32x4::simd_le(self, Self) -> syrp_simd::Mask32x4
+pub fn syrp_simd::F32x4::simd_lt(self, Self) -> syrp_simd::Mask32x4
+pub fn syrp_simd::F32x4::splat(f32) -> Self
+pub fn syrp_simd::F32x4::sqrt(self) -> Self
+pub fn syrp_simd::F32x4::zero() -> Self
+impl syrp_simd::Sample for syrp_simd::F32x8
+pub type syrp_simd::F32x8::Element = f32
+pub type syrp_simd::F32x8::Mask = syrp_simd::Mask32x8
+pub const syrp_simd::F32x8::LANES: usize
+pub fn syrp_simd::F32x8::abs(self) -> Self
+pub fn syrp_simd::F32x8::max(self, Self) -> Self
+pub fn syrp_simd::F32x8::min(self, Self) -> Self
+pub fn syrp_simd::F32x8::mul_add(self, Self, Self) -> Self
+pub fn syrp_simd::F32x8::one() -> Self
+pub fn syrp_simd::F32x8::select(syrp_simd::Mask32x8, Self, Self) -> Self
+pub fn syrp_simd::F32x8::simd_eq(self, Self) -> syrp_simd::Mask32x8
+pub fn syrp_simd::F32x8::simd_ge(self, Self) -> syrp_simd::Mask32x8
+pub fn syrp_simd::F32x8::simd_gt(self, Self) -> syrp_simd::Mask32x8
+pub fn syrp_simd::F32x8::simd_le(self, Self) -> syrp_simd::Mask32x8
+pub fn syrp_simd::F32x8::simd_lt(self, Self) -> syrp_simd::Mask32x8
+pub fn syrp_simd::F32x8::splat(f32) -> Self
+pub fn syrp_simd::F32x8::sqrt(self) -> Self
+pub fn syrp_simd::F32x8::zero() -> Self
+impl syrp_simd::Sample for syrp_simd::F64x2
+pub type syrp_simd::F64x2::Element = f64
+pub type syrp_simd::F64x2::Mask = syrp_simd::Mask64x2
+pub const syrp_simd::F64x2::LANES: usize
+pub fn syrp_simd::F64x2::abs(self) -> Self
+pub fn syrp_simd::F64x2::max(self, Self) -> Self
+pub fn syrp_simd::F64x2::min(self, Self) -> Self
+pub fn syrp_simd::F64x2::mul_add(self, Self, Self) -> Self
+pub fn syrp_simd::F64x2::one() -> Self
+pub fn syrp_simd::F64x2::select(syrp_simd::Mask64x2, Self, Self) -> Self
+pub fn syrp_simd::F64x2::simd_eq(self, Self) -> syrp_simd::Mask64x2
+pub fn syrp_simd::F64x2::simd_ge(self, Self) -> syrp_simd::Mask64x2
+pub fn syrp_simd::F64x2::simd_gt(self, Self) -> syrp_simd::Mask64x2
+pub fn syrp_simd::F64x2::simd_le(self, Self) -> syrp_simd::Mask64x2
+pub fn syrp_simd::F64x2::simd_lt(self, Self) -> syrp_simd::Mask64x2
+pub fn syrp_simd::F64x2::splat(f64) -> Self
+pub fn syrp_simd::F64x2::sqrt(self) -> Self
+pub fn syrp_simd::F64x2::zero() -> Self
+impl syrp_simd::Sample for syrp_simd::F64x4
+pub type syrp_simd::F64x4::Element = f64
+pub type syrp_simd::F64x4::Mask = syrp_simd::Mask64x4
+pub const syrp_simd::F64x4::LANES: usize
+pub fn syrp_simd::F64x4::abs(self) -> Self
+pub fn syrp_simd::F64x4::max(self, Self) -> Self
+pub fn syrp_simd::F64x4::min(self, Self) -> Self
+pub fn syrp_simd::F64x4::mul_add(self, Self, Self) -> Self
+pub fn syrp_simd::F64x4::one() -> Self
+pub fn syrp_simd::F64x4::select(syrp_simd::Mask64x4, Self, Self) -> Self
+pub fn syrp_simd::F64x4::simd_eq(self, Self) -> syrp_simd::Mask64x4
+pub fn syrp_simd::F64x4::simd_ge(self, Self) -> syrp_simd::Mask64x4
+pub fn syrp_simd::F64x4::simd_gt(self, Self) -> syrp_simd::Mask64x4
+pub fn syrp_simd::F64x4::simd_le(self, Self) -> syrp_simd::Mask64x4
+pub fn syrp_simd::F64x4::simd_lt(self, Self) -> syrp_simd::Mask64x4
+pub fn syrp_simd::F64x4::splat(f64) -> Self
+pub fn syrp_simd::F64x4::sqrt(self) -> Self
+pub fn syrp_simd::F64x4::zero() -> Self
+pub trait syrp_simd::Zeroable: core::marker::Copy + syrp_simd::sample::sealed::Sealed
+impl syrp_simd::Zeroable for f32
+impl syrp_simd::Zeroable for f64
+impl syrp_simd::Zeroable for syrp_simd::F32x4
+impl syrp_simd::Zeroable for syrp_simd::F32x8
+impl syrp_simd::Zeroable for syrp_simd::F64x2
+impl syrp_simd::Zeroable for syrp_simd::F64x4
