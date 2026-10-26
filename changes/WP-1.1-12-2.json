@@ -1,0 +1,1 @@
+{"wp": "WP-1.1-12", "kind": "added", "summary": "syrp-sys increment 2: Time ISO 8601 parsing and output and strftime-style formatting, Uuid (random v4, parse/format, bytes), the first SystemStats queries (CPU count and features, memory and page size, environment variables), and the errors/sys.toml domain (SYRP-SYS-0001..0003)."}

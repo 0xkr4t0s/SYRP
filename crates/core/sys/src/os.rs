@@ -118,3 +118,56 @@ pub(crate) fn local_offset_seconds(utc_seconds: i64) -> Option<i32> {
 pub(crate) fn local_offset_seconds(_utc_seconds: i64) -> Option<i32> {
     None
 }
+
+/// The memory page size in bytes, if the OS reports one.
+#[cfg(unix)]
+pub(crate) fn page_size() -> Option<usize> {
+    // SAFETY: `sysconf` takes no pointers and only reads a configuration value.
+    usize::try_from(unsafe { libc::sysconf(libc::_SC_PAGESIZE) })
+        .ok()
+        .filter(|&n| n > 0)
+}
+
+/// Installed physical memory in bytes, if the OS reports it.
+#[cfg(unix)]
+pub(crate) fn memory_bytes() -> Option<u64> {
+    // SAFETY: `sysconf` takes no pointers and only reads a configuration value.
+    let pages = u64::try_from(unsafe { libc::sysconf(libc::_SC_PHYS_PAGES) }).ok()?;
+    pages.checked_mul(u64::try_from(page_size()?).ok()?)
+}
+
+/// The memory page size in bytes, if the OS reports one.
+#[cfg(windows)]
+pub(crate) fn page_size() -> Option<usize> {
+    use windows_sys::Win32::System::SystemInformation::{GetSystemInfo, SYSTEM_INFO};
+    // SAFETY: SYSTEM_INFO is plain C data, so the all-zero bit pattern is a valid value.
+    let mut info: SYSTEM_INFO = unsafe { std::mem::zeroed() };
+    // SAFETY: `info` is a live, aligned, non-null local of the type the call writes; it
+    // cannot fail.
+    unsafe { GetSystemInfo(&mut info) };
+    usize::try_from(info.dwPageSize).ok().filter(|&n| n > 0)
+}
+
+/// Installed physical memory in bytes, if the OS reports it.
+#[cfg(windows)]
+pub(crate) fn memory_bytes() -> Option<u64> {
+    use windows_sys::Win32::System::SystemInformation::{GlobalMemoryStatusEx, MEMORYSTATUSEX};
+    // SAFETY: MEMORYSTATUSEX is plain C data, so the all-zero bit pattern is a valid value.
+    let mut status: MEMORYSTATUSEX = unsafe { std::mem::zeroed() };
+    status.dwLength = std::mem::size_of::<MEMORYSTATUSEX>() as u32;
+    // SAFETY: `status` is a live, aligned, non-null local with `dwLength` set to its size, as
+    // the call requires; it only writes to it.
+    (unsafe { GlobalMemoryStatusEx(&mut status) } != 0).then_some(status.ullTotalPhys)
+}
+
+/// Fallback: the page size is unknown.
+#[cfg(not(any(unix, windows)))]
+pub(crate) fn page_size() -> Option<usize> {
+    None
+}
+
+/// Fallback: the memory size is unknown.
+#[cfg(not(any(unix, windows)))]
+pub(crate) fn memory_bytes() -> Option<u64> {
+    None
+}

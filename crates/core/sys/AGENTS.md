@@ -17,14 +17,20 @@ juce_core/Time, juce_core/RelativeTime, juce_core/Uuid, juce_core/SystemStats, j
   the monotonic clock and one primitive, the local UTC offset at an instant. Local fields are
   the UTC fields of `millis + offset`; local-to-UTC tries the offset twice.
 - When the OS cannot convert an instant (or on targets other than Unix and Windows), local
-  time is UTC.
+  time is UTC. On Unix the C library caches `TZ` after the first local-time call, so
+  changing it later in the process may not take effect.
+- `ticks()` is the single clock behind every counter; on fallback targets its first call
+  initialises a `OnceLock` (call it once off the audio thread).
+- ISO 8601 text without an offset is local time; output always has an offset.
+- `Uuid` bytes are in written order; ordering and hashing are by bytes. `Uuid::random` sets
+  version 4 and the RFC variant on OS entropy (`getrandom`).
 - Every `unsafe` block has a `// SAFETY:` comment (clippy `undocumented_unsafe_blocks`).
 
 ## Thread affinity
 Any thread. RT-safe (lock-free, no allocation, no blocking): `Time::millisecond_counter`,
 `millisecond_counter_hi_res`, `high_resolution_ticks`, `high_resolution_ticks_per_second`, and
 the `Copy` accessors of `Time`, `DateTime` and `RelativeTime` that return numbers. Not RT-safe:
-`RelativeTime::description`, local-time conversion (the C library may lock), and
+anything returning `String`, `SystemStats`, local-time conversion (the C library may lock), and
 `wait_for_millisecond_counter` (sleeps).
 
 ## Stability
@@ -39,6 +45,10 @@ allocate. `tests/local_time.rs` is its own binary with one test because it sets 
 only; it prints a skip message elsewhere).
 
 ## Known gaps
-Increment 1 covers B1, B3 and the calendar part of B2. Still to come in WP-1.1-12:
-`Time::to_iso8601`/`from_iso8601` and `formatted` (B2) with `errors/sys.toml` and
-`SYRP-SYS-0001` (B7), `Uuid` (B4), `SystemStats` (B5), `Logger` and `WriterLogger` (B6).
+Increments 1-2 cover B1-B4, B7 and part of B5 (`is_64_bit`, `num_cpus`, `memory_size_mb`,
+`page_size`, `has_cpu_feature`, `environment_variable`). Still to come in WP-1.1-12:
+`operating_system_type`/`_name`, `num_physical_cpus`, `cpu_vendor`/`_model`/`_speed_mhz`,
+`user_login_name`, `full_user_name`, `computer_name`, `stack_backtrace` (B5) and `Logger`
+with `WriterLogger` (B6). `num_cpus` follows `available_parallelism` (affinity and quotas).
+`%Z` prints the numeric offset, not a zone name. `errors/sys.toml` is not yet in the CLI's
+embedded catalogue.

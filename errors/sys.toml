@@ -1,0 +1,22 @@
+# Error catalogue: system layer (syrp-sys). Codes are permanent: never reuse or renumber one.
+
+[[error]]
+code = "SYRP-SYS-0001"
+title = "Invalid ISO 8601 date and time"
+severity = "error"
+cause = "Time::from_iso8601 was given text that is not `YYYY-MM-DD` or `YYYYMMDD`, optionally followed by `T`, a time of day (`hh:mm[:ss[.fff]]` or `hhmm[ss[.fff]]`) and a zone (`Z`, `+hh:mm`, `+hhmm` or `+hh`), or a field is out of range (month 1-12, a day that exists in that month, hour 0-23, minute and second 0-59)."
+fix = "Correct the text at the byte offset the message names. Text without a zone is read as local time."
+
+[[error]]
+code = "SYRP-SYS-0002"
+title = "Invalid UUID text"
+severity = "error"
+cause = "Uuid::parse (or `str::parse::<Uuid>`) was given text that is neither 36 characters in the hyphenated 8-4-4-4-12 form nor 32 hex digits, or a character that should be a hex digit is not one."
+fix = "Pass a UUID such as 123e4567-e89b-12d3-a456-426614174000 or 123e4567e89b12d3a456426614174000. Upper- and lower-case hex are both accepted; braces and `urn:uuid:` prefixes are not."
+
+[[error]]
+code = "SYRP-SYS-0003"
+title = "OS random source unavailable"
+severity = "error"
+cause = "Uuid::random asked the operating system for random bytes (getrandom(2) or /dev/urandom on Linux, the system RNG on macOS and Windows) and the call failed."
+fix = "Retry. If it keeps failing, the process may be sandboxed without access to the random device; the message carries the OS error code."

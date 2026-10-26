@@ -179,6 +179,10 @@ impl Time {
 
     /// Calendar fields in the local time zone.
     ///
+    /// On Unix the C library reads `TZ` once and caches the zone (glibc does not re-read it
+    /// on every call), so changing `TZ` while the process runs may not take effect: set it
+    /// before the first local-time call.
+    ///
     /// ```
     /// # use syrp_sys::Time;
     /// let t = Time::now();
@@ -206,7 +210,9 @@ impl Time {
     /// start-up). It wraps around after about 49.7 days, so compare readings with
     /// `wrapping_sub`.
     ///
-    /// RT-safe: lock-free, allocation-free and non-blocking, like the other counters.
+    /// RT-safe: lock-free, allocation-free and non-blocking, like the other counters. On
+    /// targets other than Linux, Apple and Windows the counters measure from first use, and
+    /// that first call initialises a `OnceLock`, so make one call off the audio thread first.
     ///
     /// ```
     /// # use syrp_sys::Time;

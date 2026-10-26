@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only OR BUSL-1.1
-//! Behaviour tests for syrp-sys (WP-1.1-12), increment 1: B1, B3 and the calendar part of B2.
+//! Behaviour tests for syrp-sys (WP-1.1-12): B1-B4, part of B5 and the B7 error codes.
 
+use std::collections::HashSet;
 use syrp_rt::{GuardedAllocator, no_alloc};
-use syrp_sys::{RelativeTime, Time};
+use syrp_sys::{CpuFeature, Diagnostic, RelativeTime, SysError, SystemStats, Time, Uuid};
 
 #[global_allocator]
 static ALLOC: GuardedAllocator = GuardedAllocator;
@@ -113,6 +114,92 @@ fn b2_arithmetic_with_relative_time() {
 }
 
 #[test]
+fn b2_iso8601_parses_both_forms_and_round_trips() {
+    let want = utc(2024, 0, 31, 11, 34, 56, 789);
+    for text in [
+        "2024-01-31T12:34:56.789+01:00",
+        "20240131T123456.789+0100",
+        "2024-01-31T11:34:56.789Z",
+        "2024-01-31T11:34:56,7891Z",
+        "2024-01-31T06:34:56.789-05",
+    ] {
+        assert_eq!(Time::from_iso8601(text), Ok(want), "{text}");
+    }
+    assert_eq!(
+        Time::from_iso8601("2024-01-31T11:34Z"),
+        Ok(utc(2024, 0, 31, 11, 34, 0, 0))
+    );
+    assert_eq!(
+        Time::from_iso8601("20240131T1134Z"),
+        Ok(utc(2024, 0, 31, 11, 34, 0, 0))
+    );
+    assert_eq!(
+        Time::from_iso8601("2024-01-31"),
+        Ok(Time::from_components(2024, 0, 31, 0, 0, 0, 0, true))
+    );
+    for t in [
+        want,
+        Time::from_millis(0),
+        utc(1900, 1, 28, 1, 2, 3, 4),
+        Time::now(),
+    ] {
+        assert_eq!(Time::from_iso8601(&t.to_iso8601(true)), Ok(t));
+        assert_eq!(Time::from_iso8601(&t.to_iso8601(false)), Ok(t));
+    }
+    let text = Time::from_millis(0).to_iso8601(true);
+    assert_eq!(text.len(), "1970-01-01T00:00:00.000+00:00".len());
+    assert_eq!(
+        Time::from_millis(0).to_iso8601(false).len(),
+        "19700101T000000.000+0000".len()
+    );
+}
+
+#[test]
+fn b2_iso8601_rejects_malformed_text_with_a_code() {
+    for (text, pos) in [
+        ("", 0),
+        ("24-01-01", 0),
+        ("2024-13-01", 5),
+        ("2023-02-29", 8),
+        ("2024-01-31T24:00", 11),
+        ("2024-01-31T12:60", 14),
+        ("2024-01-31T12:30:00.", 20),
+        ("2024-01-31T12:30+1", 17),
+        ("2024-01-31 12:30", 10),
+        ("2024-01-31T12:30Zjunk", 17),
+        ("2024-0131", 7),
+    ] {
+        let err = Time::from_iso8601(text).unwrap_err();
+        assert_eq!(err.code().as_str(), "SYRP-SYS-0001", "{text}");
+        let SysError::InvalidIso8601 { position, .. } = err else {
+            unreachable!()
+        };
+        assert_eq!(position, pos, "{text}");
+    }
+}
+
+#[test]
+fn b2_formatted_utc_fields() {
+    // Format a local time built from local components, so the result is zone-independent
+    // except for %z.
+    let t = Time::from_components(2024, 2, 3, 14, 5, 9, 0, true); // Sunday 3 March 2024
+    assert_eq!(
+        t.formatted("%a %A %b %B %d %H %I %j %m %M %p %S %U %W %w %y %Y"),
+        "Sun Sunday Mar March 03 14 02 063 03 05 PM 09 09 09 0 24 2024"
+    );
+    let week = |y, d| Time::from_components(y, 0, d, 12, 0, 0, 0, true).formatted("%U %W");
+    assert_eq!(week(2024, 1), "00 01"); // a Monday
+    assert_eq!(week(2023, 1), "01 00"); // a Sunday
+    assert_eq!(
+        t.formatted("%c|%x|%X|%%|%q|%"),
+        "Sun Mar 03 14:05:09 2024|03/03/24|14:05:09|%|%q|%"
+    );
+    let z = t.formatted("%z");
+    assert_eq!(z.len(), 5);
+    assert!(z.starts_with('+') || z.starts_with('-'));
+}
+
+#[test]
 fn b3_counters_are_monotonic() {
     let tps = Time::high_resolution_ticks_per_second();
     assert!(tps >= 1000);
@@ -162,4 +249,145 @@ fn b3_wait_for_millisecond_counter() {
     let before = Time::millisecond_counter_hi_res();
     Time::wait_for_millisecond_counter(Time::millisecond_counter().wrapping_sub(1000));
     assert!(Time::millisecond_counter_hi_res() - before < 100.0);
+}
+
+#[test]
+fn b4_random_uuids_are_version_4_and_distinct() {
+    let ids: Vec<Uuid> = (0..1000).map(|_| Uuid::random().unwrap()).collect();
+    for id in &ids {
+        assert_eq!(id.version(), 4);
+        assert_eq!(id.to_bytes()[8] & 0xc0, 0x80);
+        assert!(!id.is_nil());
+    }
+    let unique: HashSet<Uuid> = ids.iter().copied().collect();
+    assert_eq!(unique.len(), ids.len());
+}
+
+#[test]
+fn b4_text_and_byte_forms_round_trip() {
+    let bytes = [
+        0x12, 0x3e, 0x45, 0x67, 0xe8, 0x9b, 0x12, 0xd3, 0xa4, 0x56, 0x42, 0x66, 0x14, 0x17, 0x40,
+        0x00,
+    ];
+    let id = Uuid::from_bytes(bytes);
+    assert_eq!(id.to_bytes(), bytes);
+    assert_eq!(id.to_string(), "123e4567-e89b-12d3-a456-426614174000");
+    assert_eq!(id.to_hyphenated_string(), id.to_string());
+    assert_eq!(
+        id.to_undelimited_string(),
+        "123e4567e89b12d3a456426614174000"
+    );
+    assert_eq!(Uuid::parse("123E4567-E89B-12D3-A456-426614174000"), Ok(id));
+    assert_eq!("123e4567e89b12d3a456426614174000".parse(), Ok(id));
+    let r = Uuid::random().unwrap();
+    assert_eq!(Uuid::parse(&r.to_undelimited_string()), Ok(r));
+    assert_eq!(Uuid::nil(), Uuid::from_bytes([0; 16]));
+    assert!(Uuid::nil().is_nil());
+}
+
+#[test]
+fn b4_ordering_and_hashing_follow_bytes() {
+    let mut b = [0_u8; 16];
+    b[15] = 1;
+    let low = Uuid::from_bytes(b);
+    b[0] = 1;
+    let high = Uuid::from_bytes(b);
+    assert!(Uuid::nil() < low && low < high);
+    let mut set = HashSet::new();
+    assert!(set.insert(high));
+    assert!(!set.insert(Uuid::from_bytes(high.to_bytes())));
+}
+
+#[test]
+fn b4_parse_rejects_malformed_text_with_a_code() {
+    for (text, pos) in [
+        ("", 0),
+        ("123e4567-e89b-12d3-a456-42661417400", 0),
+        ("123e4567e89b12d3a456426614174000a", 0),
+        ("123e4567+e89b-12d3-a456-426614174000", 8),
+        ("123e4567-e89b-12d3-a456-42661417400g", 35),
+        ("123e4567e89b12d3a45642661417400-", 31),
+        ("{23e4567-e89b-12d3-a456-426614174000", 0),
+    ] {
+        let err = Uuid::parse(text).unwrap_err();
+        assert_eq!(err.code().as_str(), "SYRP-SYS-0002", "{text}");
+        let SysError::InvalidUuid { position, .. } = err else {
+            unreachable!()
+        };
+        assert_eq!(position, pos, "{text}");
+    }
+}
+
+#[test]
+fn b7_errors_carry_sys_codes_and_hints() {
+    let iso = Time::from_iso8601("x").unwrap_err();
+    let uuid = Uuid::parse("x").unwrap_err();
+    assert_eq!((iso.code().domain(), uuid.code().domain()), ("SYS", "SYS"));
+    for err in [iso, uuid] {
+        assert!(err.hint().is_some());
+        assert!(err.to_string().starts_with(err.code().as_str()));
+    }
+    let catalogue = include_str!("../../../../errors/sys.toml");
+    for code in ["SYRP-SYS-0001", "SYRP-SYS-0002", "SYRP-SYS-0003"] {
+        assert!(catalogue.contains(&format!("code = \"{code}\"")), "{code}");
+    }
+}
+
+#[test]
+fn b5_machine_facts_are_plausible() {
+    assert_eq!(SystemStats::is_64_bit(), size_of::<usize>() == 8);
+    assert!(SystemStats::num_cpus() >= 1);
+    let page = SystemStats::page_size();
+    assert!(page.is_power_of_two() && page >= 4096, "{page}");
+    if cfg!(any(target_os = "linux", target_os = "macos", windows)) {
+        let mb = SystemStats::memory_size_mb().expect("memory size on a supported OS");
+        assert!((64..1 << 30).contains(&mb), "{mb}");
+    }
+}
+
+#[test]
+fn b5_cpu_features_match_the_architecture() {
+    let all = [
+        CpuFeature::Sse,
+        CpuFeature::Sse2,
+        CpuFeature::Sse3,
+        CpuFeature::Ssse3,
+        CpuFeature::Sse41,
+        CpuFeature::Sse42,
+        CpuFeature::Avx,
+        CpuFeature::Avx2,
+        CpuFeature::Avx512F,
+        CpuFeature::Neon,
+    ];
+    let x86 = cfg!(any(target_arch = "x86", target_arch = "x86_64"));
+    for f in all {
+        let has = SystemStats::has_cpu_feature(f);
+        if f == CpuFeature::Neon {
+            assert_eq!(has, cfg!(target_arch = "aarch64"));
+        } else if !x86 {
+            assert!(!has, "{f:?}");
+        }
+    }
+    if cfg!(target_arch = "x86_64") {
+        assert!(SystemStats::has_cpu_feature(CpuFeature::Sse2));
+    }
+    // Each level implies the one below it.
+    for pair in all[..9].windows(2) {
+        if SystemStats::has_cpu_feature(pair[1]) && pair[1] != CpuFeature::Avx512F {
+            assert!(SystemStats::has_cpu_feature(pair[0]), "{pair:?}");
+        }
+    }
+}
+
+#[test]
+fn b5_environment_variable_or_default() {
+    let path = SystemStats::environment_variable("PATH", "none");
+    assert_eq!(
+        path,
+        std::env::var("PATH").unwrap_or_else(|_| "none".into())
+    );
+    assert_eq!(
+        SystemStats::environment_variable("SYRP_TEST_UNSET_42", "dflt"),
+        "dflt"
+    );
 }
