@@ -52,7 +52,7 @@ fn b2_one_renderer_reused_ten_times_gives_identical_bytes() {
 #[test]
 fn b2_vello_simd_levels_differ_by_at_most_one_unit() {
     // vello_cpu's output depends on the SIMD level (measured: 11 of 80 renders differ by one
-    // unit between SSE2 and AVX2), which is why the deterministic mode pins the level.
+    // unit between SSE2 and AVX-512), which is why the deterministic mode pins the level.
     for scene in scenes() {
         let mut base = scene.target(1.0).unwrap();
         let mut native = scene.target(1.0).unwrap();
@@ -98,24 +98,27 @@ const X86_64: [(&str, u64, [u64; 4]); 20] = [
     ("layer_blend", 0xae84af5f8d03e434, [0x811a8f3d896173a9, 0x33b1a2984b1f5ac7, 0xceb4c88ed286dd25, 0x3ba42207b76039f4]),
 ];
 
-fn base64(bytes: &[u8]) -> String {
-    const ABC: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-    let mut out = String::new();
-    for c in bytes.chunks(3) {
-        let n = c
-            .iter()
-            .enumerate()
-            .fold(0_u32, |n, (i, &b)| n | u32::from(b) << (16 - 8 * i));
-        for i in 0..=c.len() {
-            out.push(ABC[(n >> (18 - 6 * i) & 63) as usize] as char);
-        }
-    }
-    out
-}
+/// Renders whose bytes differ, by one unit on a few pixels, when vello_cpu runs at a
+/// fused-multiply-add SIMD level: measured identical on aarch64 (NEON, macos-15 CI) and x86_64
+/// AVX-512. Every other render matches [`X86_64`] there too.
+const FMA_LEVELS: [(&str, f64, u64); 11] = [
+    ("path_cubic_blob", 1.5, 0x7dc1_e9e3_cb43_e1f6),
+    ("path_cubic_blob", 2.0, 0xb77f_e0d6_526f_7d3f),
+    ("gradient_conical", 1.25, 0x1e4f_d5fd_09e0_56f1),
+    ("gradient_conical", 1.5, 0xe239_d6a9_ab4e_c5c3),
+    ("gradient_conical", 2.0, 0xcec8_517c_682c_1042),
+    ("glyphs_solid", 1.25, 0x815c_8742_a2a7_e41b),
+    ("image_stretched", 1.0, 0xb561_4d47_f80a_2514),
+    ("image_alpha_centred", 1.5, 0x3b2a_b2fc_49b5_b3cf),
+    ("layer_opacity", 1.5, 0xfc7d_2068_39ba_f5b3),
+    ("layer_opacity", 2.0, 0xa829_7c65_6165_ad38),
+    ("layer_blend", 1.25, 0xb6b3_65bc_53b1_f9c9),
+];
 
-#[test]
-fn b2_vello_deterministic_renders_match_the_x86_64_fingerprints() {
-    let (mut matched, mut dumps) = (0, Vec::new());
+/// Counts the renders in `mode` whose fingerprints match the table for the SSE2 baseline
+/// (`fma == false`) or for fused-multiply-add levels (`fma == true`).
+fn matching(mode: VelloMode, fma: bool) -> usize {
+    let mut matched = 0;
     for (scene, (name, input, prints)) in scenes().iter().zip(X86_64) {
         assert_eq!(
             (scene.name(), scene.list().content_hash()),
@@ -123,30 +126,40 @@ fn b2_vello_deterministic_renders_match_the_x86_64_fingerprints() {
             "scene input"
         );
         for (scale, print) in SCALES.into_iter().zip(prints) {
+            let fma_print = FMA_LEVELS
+                .iter()
+                .find(|(n, k, _)| (*n, *k) == (name, scale));
+            let expected = match fma_print {
+                Some(&(_, _, p)) if fma => p,
+                _ => print,
+            };
             let mut t = scene.target(scale).unwrap();
-            VelloCpuRenderer::new(VelloMode::Deterministic)
+            VelloCpuRenderer::new(mode)
                 .render(scene.list(), &mut t)
                 .unwrap();
-            if fingerprint(&t) == print {
-                matched += 1;
-                continue;
-            }
-            let mut png_bytes = Vec::new();
-            let mut enc = png::Encoder::new(&mut png_bytes, t.width(), t.height());
-            enc.set_color(png::ColorType::Rgba);
-            enc.write_header()
-                .unwrap()
-                .write_image_data(t.pixels().unwrap())
-                .unwrap();
-            dumps.push(format!("DUMP {name} {scale} {}", base64(&png_bytes)));
+            matched += usize::from(fingerprint(&t) == expected);
         }
     }
-    let arch = std::env::consts::ARCH;
-    assert!(
-        dumps.is_empty(),
-        "{}\nRESULT {arch}: {matched}/80 match",
-        dumps.join("\n")
-    );
+    matched
+}
+
+#[test]
+fn b2_vello_deterministic_renders_are_pinned_per_simd_family() {
+    match std::env::consts::ARCH {
+        // Baseline SSE2: the reference table, byte for byte (Linux and Windows CI agree).
+        "x86_64" => assert_eq!(matching(VelloMode::Deterministic, false), 80),
+        // NEON: 69 of 80 match x86_64 SSE2, the other 11 are one unit off; all 80 match the
+        // fused-multiply-add family.
+        "aarch64" => {
+            assert_eq!(matching(VelloMode::Deterministic, false), 69);
+            assert_eq!(matching(VelloMode::Deterministic, true), 80);
+        }
+        _ => {}
+    }
+    // Where the best x86_64 level is AVX-512, it reproduces the aarch64 bytes exactly.
+    if format!("{:?}", vello_cpu::Level::new()).starts_with("Avx512") {
+        assert_eq!(matching(VelloMode::NativeSimd, true), 80);
+    }
 }
 
 #[test]

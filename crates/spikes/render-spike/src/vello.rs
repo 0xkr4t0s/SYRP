@@ -29,7 +29,7 @@ pub enum VelloMode {
     /// The architecture's baseline SIMD level (SSE2 on x86_64, NEON on aarch64), single
     /// threaded, u8 pipeline: the same code path on every CPU of one architecture.
     Deterministic,
-    /// The best SIMD level the running CPU supports (AVX2 where present), single threaded.
+    /// The best SIMD level the running CPU supports (AVX2 or AVX-512 where present), single threaded.
     NativeSimd,
 }
 

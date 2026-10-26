@@ -9,10 +9,12 @@
   goldens, and what should the golden comparator look like?
 
 **Short answer: keep `vello_cpu`, in a pinned deterministic mode, with tolerance-based goldens.** It
-was 1.7x faster over the scene set at 1x and 1.9x at 2x, has native layers, clips and blend modes,
-and was byte-identical across 10 runs of every scene. Byte identity does *not* survive a change of
-SIMD level, so goldens must be compared with a small tolerance, never by hash, once more than one
-machine produces them. Keep `tiny-skia` as an independent cross-check in tests, not as a backend.
+was 1.7x faster over the scene set at 1x and 1.7–2.0x at 2x, has native layers, clips and blend
+modes, and was byte-identical across 10 runs of every scene. Across SIMD levels and architectures
+its output splits into two families that differ by at most one unit on at most 0.32% of pixels
+(x86_64 SSE2 on one side; aarch64 NEON and x86_64 AVX-512 on the other, bit-identical to each
+other). One golden set compared with a one-unit tolerance therefore holds everywhere we measured;
+a hash does not. Keep `tiny-skia` as an independent cross-check in tests, not as a backend.
 
 
 ## What was built
@@ -39,34 +41,35 @@ machine produces them. Keep `tiny-skia` as an independent cross-check in tests, 
   output bytes; wall-clock medians after one warm-up render.
 
 ## Results
-Machine: x86_64, Intel Xeon @ 2.10 GHz (AVX2 and AVX-512 present), 4 vCPUs, shared VM; release
-build; single thread; median of 51 renders, including target allocation. Absolute numbers are
-noisy on this VM (two runs differed by up to 1.9x on a few small scenes); the totals agreed within
-2% and the ratios were stable.
+Machine: x86_64, Intel Xeon @ 2.10 GHz (vello's best level here is AVX-512), 4 vCPUs, shared VM;
+release build; single thread; median of 51 renders into one target cleared outside the timed
+region. Absolute numbers are noisy on this VM: two runs differed by up to 1.9x on single scenes
+and by 5–29% on the totals (the second run gave 1782 / 3061 / 4827 / 9692 µs); vello_cpu was
+faster on 17 of 20 scenes at 1x in both runs and on 18–19 at 2x.
 
 | scene | vello 1x | skia 1x | vello 2x | skia 2x | differing @1x (tol 8 / 32) |
 |---|---:|---:|---:|---:|---:|
-| rects_solid | 13 µs | 28 µs | 35 µs | 63 µs | 1.28% / 0.00% |
-| path_star_nonzero | 17 µs | 23 µs | 45 µs | 49 µs | 0.99% / 0.04% |
-| path_star_evenodd | 21 µs | 28 µs | 51 µs | 60 µs | 1.26% / 0.06% |
-| path_cubic_blob | 20 µs | 25 µs | 44 µs | 55 µs | 2.45% / 0.94% |
-| stroke_joins_caps | 58 µs | 135 µs | 126 µs | 264 µs | 1.35% / 0.06% |
-| stroke_dashes | 126 µs | 106 µs | 187 µs | 313 µs | 4.84% / 1.68% |
-| stroke_hairlines | 83 µs | 55 µs | 120 µs | 194 µs | 10.35% / 0.00% |
-| gradient_linear | 40 µs | 133 µs | 131 µs | 497 µs | 39.17% / 30.00% |
-| gradient_radial | 45 µs | 141 µs | 148 µs | 515 µs | 0.00% / 0.00% |
-| gradient_conical | 33 µs | 54 µs | 88 µs | 165 µs | 1.86% / 0.52% |
-| gradient_hard_stop_path | 53 µs | 95 µs | 95 µs | 230 µs | 0.98% / 0.00% |
-| glyphs_solid | 58 µs | 90 µs | 93 µs | 177 µs | 2.88% / 0.45% |
-| glyphs_gradient_rotated | 66 µs | 164 µs | 156 µs | 470 µs | 0.60% / 0.02% |
-| image_stretched | 138 µs | 143 µs | 506 µs | 604 µs | 0.00% / 0.00% |
-| image_nearest_rotated | 37 µs | 51 µs | 120 µs | 160 µs | 0.45% / 0.00% |
-| image_alpha_centred | 391 µs | 335 µs | 1492 µs | 1352 µs | 0.00% / 0.00% |
-| clip_rects_nested | 44 µs | 178 µs | 115 µs | 578 µs | 0.00% / 0.00% |
-| clip_path_mixed | 77 µs | 226 µs | 223 µs | 873 µs | 1.16% / 0.00% |
-| layer_opacity | 61 µs | 180 µs | 174 µs | 627 µs | 1.47% / 0.00% |
-| layer_blend | 114 µs | 284 µs | 370 µs | 1097 µs | 1.52% / 0.00% |
-| **total** | **1495 µs** | **2474 µs** | **4319 µs** | **8343 µs** | |
+| rects_solid | 12 µs | 27 µs | 32 µs | 59 µs | 1.28% / 0.00% |
+| path_star_nonzero | 17 µs | 22 µs | 42 µs | 45 µs | 0.99% / 0.04% |
+| path_star_evenodd | 21 µs | 27 µs | 48 µs | 54 µs | 1.26% / 0.06% |
+| path_cubic_blob | 19 µs | 24 µs | 41 µs | 51 µs | 2.45% / 0.94% |
+| stroke_joins_caps | 39 µs | 96 µs | 79 µs | 144 µs | 1.35% / 0.06% |
+| stroke_dashes | 93 µs | 58 µs | 133 µs | 184 µs | 4.84% / 1.68% |
+| stroke_hairlines | 55 µs | 55 µs | 112 µs | 211 µs | 10.35% / 0.00% |
+| gradient_linear | 39 µs | 132 µs | 125 µs | 493 µs | 39.17% / 30.00% |
+| gradient_radial | 42 µs | 137 µs | 141 µs | 513 µs | 0.00% / 0.00% |
+| gradient_conical | 33 µs | 54 µs | 84 µs | 167 µs | 1.86% / 0.52% |
+| gradient_hard_stop_path | 53 µs | 93 µs | 92 µs | 234 µs | 0.98% / 0.00% |
+| glyphs_solid | 57 µs | 90 µs | 89 µs | 164 µs | 2.88% / 0.45% |
+| glyphs_gradient_rotated | 63 µs | 160 µs | 150 µs | 441 µs | 0.60% / 0.02% |
+| image_stretched | 131 µs | 143 µs | 499 µs | 589 µs | 0.00% / 0.00% |
+| image_nearest_rotated | 37 µs | 50 µs | 115 µs | 150 µs | 0.45% / 0.00% |
+| image_alpha_centred | 386 µs | 336 µs | 1956 µs | 1511 µs | 0.00% / 0.00% |
+| clip_rects_nested | 44 µs | 182 µs | 117 µs | 600 µs | 0.00% / 0.00% |
+| clip_path_mixed | 79 µs | 231 µs | 228 µs | 842 µs | 1.14% / 0.00% |
+| layer_opacity | 60 µs | 178 µs | 168 µs | 622 µs | 1.47% / 0.00% |
+| layer_blend | 116 µs | 285 µs | 363 µs | 984 µs | 1.52% / 0.00% |
+| **total** | **1394 µs** | **2380 µs** | **4615 µs** | **8059 µs** | |
 
 Each renderer converts the built-in images once and shares them across draws, so these numbers
 contain no per-draw image copies. The image scenes are still the slowest because they resample
@@ -77,13 +80,21 @@ most of the canvas (bicubic for the upscaled sprite), where the two crates are l
   backends** (`b2_ten_runs_give_identical_bytes_on_both_backends`). Reusing one renderer for
   10 runs is also identical.
 - **SIMD level matters for `vello_cpu`.** With the level pinned to the baseline (SSE2) versus
-  the CPU's best (AVX2), 69 of 80 renders were identical and 11 differed by exactly one unit
-  in up to 0.3% of pixels (`b2_vello_simd_levels_differ_by_at_most_one_unit`). The u8
-  pipeline rounds differently per instruction set. So a hash golden recorded on one CPU can
-  fail on another CPU of the same architecture unless the level is pinned, and will almost
-  certainly fail on another architecture.
-- **Across x86_64 and aarch64: open.** CI gave this spike only x86_64. Expect at least the
-  one-unit drift above (NEON is a different code path); measure when an aarch64 runner exists.
+  the CPU's best (AVX-512 on the spike machine), 69 of 80 renders were identical and 11 differed
+  by exactly one unit in up to 0.32% of pixels (`b2_vello_simd_levels_differ_by_at_most_one_unit`).
+  The u8 pipeline rounds differently per instruction set.
+- **Across x86_64 and aarch64 (macos-15 CI, Apple silicon), measured.** The deterministic-mode
+  fingerprints of all 80 x86_64 renders are pinned in the test; on aarch64 69 of 80 match and
+  the same 11 renders differ by at most one unit (worst: `image_stretched` at 1x, 34 pixels,
+  0.32%). Those 11 aarch64 renders are bit-identical to x86_64 AVX-512 output, so all 80 aarch64
+  renders equal the AVX-512 ones: the split follows the SIMD family, not the architecture. Both
+  NEON and AVX-512 have fused multiply-add and SSE2 does not, which is the likely cause (not
+  traced). Linux and Windows x86_64 CI reproduce the SSE2 table exactly
+  (`b2_vello_deterministic_renders_are_pinned_per_simd_family`). Scene geometry is built
+  without the platform libm, so these are renderer differences, not input differences.
+- On aarch64, `Level::baseline()` and `Level::new()` both resolve to NEON, so
+  `b2_vello_simd_levels_differ_by_at_most_one_unit` passes there trivially (it passed on
+  macos-15).
 - `tiny-skia` picks its SIMD path at compile time from target features, so the same binary is
   stable, but a build with other target features (or another architecture) can drift the same
   way. Not measured.
@@ -103,17 +114,20 @@ flattening and dash phase arithmetic). The exception is a **semantic** one:
   anti-aliased mask. Worth a parity scenario too.
 
 ## Recommendation
-1. **Reference renderer: `vello_cpu`** (as master plan §5.7 assumes). Faster on 16–17 of 20 scenes
-   at 1x and 19 of 20 at 2x (1.7x and 1.9x over the whole set, across two runs), native clip and
+1. **Reference renderer: `vello_cpu`** (as master plan §5.7 assumes). Faster on 17 of 20 scenes
+   at 1x and 18–19 of 20 at 2x (1.7x and 1.7–2.0x over the whole set), native clip and
    layer stacks, the same code family as `vello_gpu`, and all 16 blend modes. `tiny-skia` needs
    offscreen layers and full-size clip masks emulated on top, uses `f32` transforms, and releases
    rarely (0.11.4 in 2024, 0.12.0 in February 2026).
 2. **Deterministic mode** for goldens = single thread, u8 pipeline, SIMD level pinned to the
-   architecture baseline (`Level::baseline()`), exact crate version pinned. Use it in CI.
-3. **Goldens are per architecture and compared with tolerance**, not by hash: start with
-   `per_channel = 1`, `max_ratio = 0.005` for same-renderer goldens (covers the SIMD drift),
-   and a separate looser profile (for example 32 / 0.02) for cross-renderer checks. Ship the
-   comparator here as the seed of `syrp-testkit`'s image comparison.
+   architecture baseline (`Level::baseline()`), exact crate version pinned. Use it in CI. It is
+   byte-stable per SIMD family, not across families (see Determinism).
+3. **One golden set for every platform, compared with tolerance**, not by hash:
+   `per_channel = 1`, `max_ratio = 0.005` for same-renderer goldens (the measured cross-family
+   worst is one unit on 0.32% of pixels), and a separate looser profile (for example 32 / 0.02)
+   for cross-renderer checks. If byte-exact goldens are ever needed, keep one set per SIMD
+   family (SSE2; NEON or AVX-512), not per architecture. Ship the comparator here as the seed of
+   `syrp-testkit`'s image comparison.
 4. **Keep `tiny-skia` as a test-only oracle** to catch gross regressions in `syrp-render-cpu`;
    do not ship it as a backend.
 5. **Risks to track:** `vello_cpu` is pre-1.0 (0.1 in July 2026, 0.3 in October) so API and
@@ -121,7 +135,8 @@ flattening and dash phase arithmetic). The exception is a **semantic** one:
    support is incomplete (complex filter graphs panic), which matters for `DropShadow`/`Glow`.
 
 ## Open
-- aarch64 determinism (no runner).
+- x86_64 AVX2 (without AVX-512) was not measured; it has fused multiply-add, so it probably
+  joins the NEON / AVX-512 family.
 - The gradient interpolation space and fractional clip-edge behaviour need JUCE parity
   scenarios before goldens are frozen.
 - Real text (parley/skrifa glyphs, hinting) was replaced by synthetic outlines; text fidelity,
