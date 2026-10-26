@@ -1,0 +1,1 @@
+{"wp": "WP-1.1-01", "kind": "added", "summary": "syrp-var increment 1: Identifier (process-wide interned 4-byte names with lock-free as_str), Var (16-byte Rc-based dynamic value, !Send/!Sync) with VarView, constructors, predicates and borrowing accessors, and NamedValueSet/DynamicObject type stubs."}
