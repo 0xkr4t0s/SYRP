@@ -18,7 +18,7 @@ None (tooling).
 - The closure gets an offline `ProcessConfig` (`max_block_size == block_size`) and processes the
   `AudioBlockMut` in place; output shape always equals input shape.
 - Profiles: `exact` = bit-identical; `dsp-default` = max |err| <= 1e-6; `dsp-loose` = RMS err
-  <= -96 dBFS. Limits are inclusive; NaN never passes.
+  <= -96 dBFS. Limits are inclusive; NaN never passes a numeric profile (`exact` stays bitwise).
 - JSON shape `syrp.testkit.verdict/v1` is documented on `Verdict`; non-finite numbers are
   `null`. Serialisers destructure every field, so a new field breaks the build.
 - WAV output is little-endian, interleaved; PCM clamps to [-1, 1], scales by 2^(n-1)-1 and

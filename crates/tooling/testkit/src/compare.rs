@@ -101,8 +101,8 @@ pub struct Comparison {
 /// Compares `actual` with `expected` sample by sample (spec B3). Fails with
 /// `SYRP-TESTKIT-0005` when their channel counts or lengths differ.
 ///
-/// A sample pair whose bits differ and whose difference is NaN counts as an infinite error;
-/// identical NaNs count as zero.
+/// A sample pair where either side is NaN counts as an infinite error, even when the bits
+/// match, so numeric profiles never pass NaN. Bit-exactness stays purely bitwise.
 /// ```
 /// let c = syrp_testkit::compare(&[1.0_f32, 1.0], &[1.0_f32, 1.0])?;
 /// assert!(c.is_bit_exact());
@@ -128,10 +128,11 @@ where
     let mut sum_sq = 0.0_f64;
     for (ch, (ca, ce)) in a.iter().zip(e.iter()).enumerate() {
         for (frame, (&x, &y)) in ca.iter().zip(ce).enumerate() {
-            if x.to_bits() == y.to_bits() {
+            let same_bits = x.to_bits() == y.to_bits();
+            bit_exact &= same_bits;
+            if same_bits && !x.is_nan() {
                 continue;
             }
-            bit_exact = false;
             let d = (f64::from(x) - f64::from(y)).abs();
             let d = if d.is_nan() { f64::INFINITY } else { d };
             sum_sq += d * d;
@@ -200,8 +201,8 @@ impl Comparison {
         self.max_abs_error
     }
 
-    /// `(channel, frame)` of the first sample with the largest error, or `None` when
-    /// bit-exact.
+    /// `(channel, frame)` of the first sample with the largest error, or `None` when no
+    /// sample has an error (bit-exact and free of NaN).
     /// ```
     /// assert_eq!(syrp_testkit::compare(&[0.0_f32], &[0.0_f32])?.max_abs_error_at(), None);
     /// # Ok::<(), syrp_testkit::TestkitError>(())

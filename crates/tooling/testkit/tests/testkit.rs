@@ -188,7 +188,14 @@ fn b3_comparators_measure_errors() {
 
     let nan = compare(&[f32::NAN], &[0.0_f32]).unwrap();
     assert_eq!(nan.max_abs_error(), f64::INFINITY);
-    assert!(compare(&[f32::NAN], &[f32::NAN]).unwrap().is_bit_exact());
+    // Identical NaNs are bit-exact but an infinite numeric error: a NaN golden can't lock in NaN.
+    let nan_nan = compare(&[0.0_f32, f32::NAN], &[0.0_f32, f32::NAN]).unwrap();
+    assert!(nan_nan.is_bit_exact());
+    assert_eq!(nan_nan.max_abs_error(), f64::INFINITY);
+    assert_eq!(nan_nan.max_abs_error_at(), Some((0, 1)));
+    assert!(nan_nan.judge(Tolerance::exact()).passed());
+    assert!(!nan_nan.judge(Tolerance::dsp_default()).passed());
+    assert!(!nan_nan.judge(Tolerance::dsp_loose()).passed());
 
     let err = compare(&[0.0_f32; 2], &[0.0_f32; 3]).unwrap_err();
     assert_eq!(err.code().as_str(), "SYRP-TESTKIT-0005");
