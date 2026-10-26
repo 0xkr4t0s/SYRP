@@ -2,9 +2,10 @@
 //! The [`Sample`] trait, its [`Mask`] companion, and the lane packs.
 //!
 //! Every operation is lane-wise. Packs keep their lanes private (ADR 0003 D3) and are moved in
-//! and out with `from_array`, `to_array` and `lane`. Pack methods are `#[inline(always)]`, so a
-//! lane-generic function called inside [`dispatch!`](crate::dispatch) is compiled for the
-//! selected instruction set.
+//! and out with `from_array`, `to_array` and `lane`. Pack methods are `#[inline(always)]`; a
+//! lane-generic function is compiled for the level selected by [`dispatch!`](crate::dispatch)
+//! only when it, and every function between it and the `dispatch!` body, is
+//! `#[inline(always)]` too (see the crate docs, "The inlining rule").
 
 use core::fmt::Debug;
 use core::ops::{
@@ -71,12 +72,16 @@ impl Mask for bool {
 ///
 /// A struct generic over `S: Sample` is its own lane pack: `Voice<F32x8>` is eight voices in
 /// struct-of-arrays form. Branches are written with masks and [`select`](Sample::select).
+/// Mark lane-generic functions `#[inline(always)]` and call them from a
+/// [`dispatch!`](crate::dispatch) body; otherwise they run at the baseline level (see the
+/// crate docs, "The inlining rule").
 /// The trait is sealed; the implementors are `f32`, `f64`, [`F32x4`], [`F32x8`], [`F64x2`]
 /// and [`F64x4`].
 ///
 /// ```
 /// use syrp_simd::{F32x8, Sample};
 /// /// Hard clip written once for every sample type.
+/// #[inline(always)]
 /// fn clip<S: Sample>(x: S, limit: S) -> S {
 ///     S::select(x.abs().simd_gt(limit), limit.min(x.max(-limit)), x)
 /// }
@@ -120,7 +125,9 @@ pub trait Sample:
     /// Every lane `1.0`.
     fn one() -> Self;
     /// `self * a + b` with a single rounding (fused), the same result as `f32::mul_add`
-    /// on every dispatch level, whether or not the CPU has an FMA instruction.
+    /// on every dispatch level, whether or not the CPU has an FMA instruction. Without hardware
+    /// FMA (`Sse2`, `Sse4_2`, or code not inlined into a `dispatch!` body) this is a software
+    /// `fma` call per lane and slow; write `self * a + b` where fusion is not needed.
     fn mul_add(self, a: Self, b: Self) -> Self;
     /// Lane-wise minimum; a NaN lane yields the other operand (as `f32::min`).
     fn min(self, other: Self) -> Self;

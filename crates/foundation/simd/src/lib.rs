@@ -8,9 +8,18 @@
 //! re-exported for code that wants explicit vectors. The denormal guard and slice kernels with
 //! scalar references follow in the next increment of WP-0.2-14.
 //!
+//! # The inlining rule
+//! `#[target_feature]` does not reach a function that is not inlined. Every function on the
+//! path from a [`dispatch!`] body down to the [`Sample`] operations must be
+//! `#[inline(always)]`; that is what makes it compile once per level. A function that is not
+//! inlined is compiled once, for the baseline (SSE2 on x86-64): its `F32x8` operations become
+//! pairs of 128-bit instructions and its `mul_add` a software `fma` call per lane, even on an
+//! AVX-512 CPU. `fearless_simd` has the same rule.
+//!
 //! ```
 //! use syrp_simd::{dispatch, F32x4, Level, Sample};
 //! /// A one-pole smoother, written once for every sample type.
+//! #[inline(always)] // required to be compiled for the dispatched level
 //! fn smooth<S: Sample>(state: &mut S, target: S, coeff: S) -> S {
 //!     *state = coeff.mul_add(*state - target, target);
 //!     *state

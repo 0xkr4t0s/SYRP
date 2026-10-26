@@ -31,6 +31,7 @@ unsafe impl GlobalAlloc for Counting {
 #[global_allocator]
 static GLOBAL: Counting = Counting;
 
+#[inline(always)]
 fn ramp<S: Sample>(xs: &mut [S], step: S) -> S::Mask {
     for x in xs.iter_mut() {
         *x = x.mul_add(S::one(), step).min(S::one()).sqrt();

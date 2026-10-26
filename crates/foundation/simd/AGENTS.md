@@ -17,6 +17,9 @@ None (L0 infrastructure; no ledger rows in WP-0.2-14).
   every dispatch level, with or without hardware FMA.
 - Pack and mask methods are `#[inline(always)]` so code inlined into `dispatch!` gets the
   level's target features. Lane storage is private and may change (e.g. to native vectors).
+- Inlining rule: every function on the path from a `dispatch!` body to the `Sample`
+  operations must be `#[inline(always)]`. A non-inlined function compiles once at the baseline
+  (no ymm/zmm, `mul_add` as a software `fma` call per lane) even when `Avx512` is selected.
 - `Level::Scalar` is the reference path; `SYRP_SIMD=scalar` forces it, read once per process.
 - `AlignedBuf` never reallocates; non-empty buffers start on a 64-byte boundary. Every
   `unsafe` block has a `// SAFETY:` comment.
@@ -41,3 +44,5 @@ Next increment of WP-0.2-14: `DenormalGuard` (B4), slice kernels (`add`, `mul`, 
 `find_min_max`, `abs_max`) with proptest against the scalar reference (B5), Callgrind
 instruction-count benches (B6), and the kernel and guard half of B7. `F32x16`/`F64x8` packs (AVX-512)
 are deferred to a later WP; `Level::Avx512` already exists. No Miri job in CI yet.
+B5 kernels will be generic `#[inline(always)]` functions called through `dispatch!`, as users
+write them; B6 adds a codegen-regression check that can fail (Avx2 vs Sse2 instruction counts).

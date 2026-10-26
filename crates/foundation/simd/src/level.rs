@@ -102,7 +102,8 @@ impl Level {
     }
 
     /// The `fearless_simd` level to dispatch on, or `None` for [`Level::Scalar`] and for levels
-    /// this CPU does not support. Used by [`dispatch!`](crate::dispatch).
+    /// this CPU does not support. Used by [`dispatch!`](crate::dispatch); the CPU probe is
+    /// cached, so after the first call this is an atomic load and a match.
     ///
     /// ```
     /// assert!(syrp_simd::Level::Scalar.to_fearless().is_none());
@@ -110,7 +111,8 @@ impl Level {
     pub fn to_fearless(self) -> Option<fearless_simd::Level> {
         #[cfg(any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64"))]
         use fearless_simd::Simd;
-        let best = fearless_simd::Level::new();
+        static BEST: OnceLock<fearless_simd::Level> = OnceLock::new();
+        let best = *BEST.get_or_init(fearless_simd::Level::new);
         match self {
             Level::Scalar => None,
             #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
@@ -143,13 +145,17 @@ fn resolve(env: Option<&str>, best: Level) -> Level {
 /// [`Level::Scalar`](crate::Level::Scalar) and for levels this CPU does not support.
 ///
 /// `$simd` binds a `fearless_simd` token (`impl fearless_simd::Simd`) that the body can use
-/// for explicit vectors; lane-generic code over [`Sample`](crate::Sample) can ignore it and is
-/// still compiled with the level's target features, because pack methods are always inlined.
-/// This is the entry point from ADR 0003 D5: pick the level once, then call a monomorphised
-/// kernel.
+/// for explicit vectors; lane-generic code over [`Sample`](crate::Sample) can ignore it. This
+/// is the entry point from ADR 0003 D5: pick the level once, then call a monomorphised kernel.
+///
+/// **Only code inlined into the body is compiled for the level.** Every function on the path
+/// from the body to the `Sample` operations must be `#[inline(always)]`. A function that is not
+/// inlined is compiled once for the baseline and every arm calls that one copy: no 256-bit
+/// instructions, and `mul_add` becomes a software `fma` call per lane.
 ///
 /// ```
 /// use syrp_simd::{dispatch, F32x8, Level, Sample};
+/// #[inline(always)] // required: see above
 /// fn gain<S: Sample>(xs: &mut [S], g: S) {
 ///     for x in xs {
 ///         *x *= g;

@@ -3,6 +3,7 @@
 
 use syrp_simd::{F32x8, Level, Sample, dispatch};
 
+#[inline(always)]
 fn gain<S: Sample>(xs: &mut [S], g: S) {
     for x in xs {
         *x = x.mul_add(g, S::one());
