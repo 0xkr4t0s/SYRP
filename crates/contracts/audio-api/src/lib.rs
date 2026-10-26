@@ -3,10 +3,10 @@
 //!
 //! - [`AudioBlock`] and [`AudioBlockMut`]: non-owning views over planar channels stored in one
 //!   region with a fixed channel stride, for `f32` and `f64` ([`AudioSample`]).
+//! - [`ChannelSet`], [`Speaker`], [`Bus`], [`BusLayout`] and [`LayoutResponse`]: channel
+//!   layouts and bus negotiation.
 //! - [`ProcessConfig`]: what a processor is prepared with.
-//!
-//! `ChannelSet`, `BusLayout` and the play-head types (spec B2 and B4) arrive in the next
-//! increment of WP-0.2-02.
+//! - [`PlayHeadInfo`] and [`PlayHead`]: transport position as reported by a host.
 //!
 //! Types used on the audio thread implement [`syrp_rt::RtSafe`] and have no public fields
 //! (ADR 0003 D3), so their storage can change without a contract change.
@@ -26,10 +26,14 @@ use std::fmt;
 use syrp_error::{Diagnostic, ErrorCode};
 
 mod block;
+mod channels;
 mod config;
+mod playhead;
 
 pub use block::{AudioBlock, AudioBlockMut, AudioSample, ChannelsMut, SIMD_ALIGN};
+pub use channels::{Bus, BusLayout, ChannelSet, LayoutResponse, Speaker};
 pub use config::{Precision, ProcessConfig, ProcessMode};
+pub use playhead::{LoopPoints, PlayHead, PlayHeadInfo, TimeSignature};
 
 /// Errors from building audio views and configurations, catalogued in `errors/audio.toml`.
 /// ```

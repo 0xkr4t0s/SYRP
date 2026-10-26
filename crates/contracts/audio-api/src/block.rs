@@ -473,6 +473,51 @@ impl<'a, T: AudioSample> AudioBlockMut<'a, T> {
         }
     }
 
+    /// Turns the view into a read-only view of the same samples for the full `'a`.
+    #[must_use]
+    pub fn into_block(self) -> AudioBlock<'a, T> {
+        AudioBlock::wrap(self.raw)
+    }
+
+    /// Turns the view into channel `ch` for writing, `frames()` samples, for the full `'a`.
+    /// Panics when `ch >= channels()`.
+    /// ```
+    /// let mut data = [0.0_f32; 4];
+    /// let block = syrp_audio_api::AudioBlockMut::new(&mut data, 2, 2, 2)?;
+    /// block.into_channel_mut(1).fill(1.0);
+    /// assert_eq!(data, [0.0, 0.0, 1.0, 1.0]);
+    /// # Ok::<(), syrp_audio_api::AudioError>(())
+    /// ```
+    #[must_use]
+    pub fn into_channel_mut(self, ch: usize) -> &'a mut [T] {
+        // SAFETY: `start` checked `ch`; consuming the only view makes this the only borrow.
+        unsafe { slice::from_raw_parts_mut(self.raw.start(ch), self.raw.frames) }
+    }
+
+    /// Turns the view into its disjoint mutable channels for the full `'a`.
+    #[must_use]
+    pub fn into_split_channels_mut(self) -> ChannelsMut<'a, T> {
+        ChannelsMut {
+            raw: self.raw,
+            next: 0,
+            _p: PhantomData,
+        }
+    }
+
+    /// Turns the view into the frames in `range` for the full `'a`. Panics when the range is
+    /// out of bounds.
+    #[must_use]
+    pub fn into_slice_frames(self, range: Range<usize>) -> AudioBlockMut<'a, T> {
+        Self::wrap(self.raw.slice_frames(range))
+    }
+
+    /// Turns the view into the channels in `range` for the full `'a`. Panics when the range is
+    /// out of bounds.
+    #[must_use]
+    pub fn into_slice_channels(self, range: Range<usize>) -> AudioBlockMut<'a, T> {
+        Self::wrap(self.raw.slice_channels(range))
+    }
+
     /// The frames in `range` of every channel. Panics when the range is out of bounds.
     #[must_use]
     pub fn slice_frames_mut(&mut self, range: Range<usize>) -> AudioBlockMut<'_, T> {

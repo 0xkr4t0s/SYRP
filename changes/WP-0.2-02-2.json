@@ -1,0 +1,1 @@
+{"wp": "WP-0.2-02", "kind": "added", "summary": "syrp-audio-api (final increment): ChannelSet (mono to 7.1.4 and discrete N) with Speaker positions, Bus, BusLayout and LayoutResponse; PlayHeadInfo, TimeSignature, LoopPoints and the PlayHead trait; by-value AudioBlockMut::into_* accessors. The public-API snapshot is committed separately by a contract-change PR."}
