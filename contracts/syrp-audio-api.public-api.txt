@@ -1,0 +1,197 @@
+pub mod syrp_audio_api
+#[non_exhaustive] pub enum syrp_audio_api::AudioError
+pub syrp_audio_api::AudioError::BufferTooShort
+pub syrp_audio_api::AudioError::BufferTooShort::len: usize
+pub syrp_audio_api::AudioError::BufferTooShort::needed: usize
+pub syrp_audio_api::AudioError::FramesExceedStride
+pub syrp_audio_api::AudioError::FramesExceedStride::frames: usize
+pub syrp_audio_api::AudioError::FramesExceedStride::stride: usize
+pub syrp_audio_api::AudioError::InvalidBlockSize
+pub syrp_audio_api::AudioError::InvalidSampleRate
+impl core::error::Error for syrp_audio_api::AudioError
+impl core::fmt::Display for syrp_audio_api::AudioError
+pub fn syrp_audio_api::AudioError::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl syrp_error::Diagnostic for syrp_audio_api::AudioError
+pub fn syrp_audio_api::AudioError::code(&self) -> syrp_error::ErrorCode
+#[non_exhaustive] pub enum syrp_audio_api::LayoutResponse
+pub syrp_audio_api::LayoutResponse::Accepted
+pub syrp_audio_api::LayoutResponse::Proposed(syrp_audio_api::BusLayout)
+pub syrp_audio_api::LayoutResponse::Rejected
+#[non_exhaustive] pub enum syrp_audio_api::Precision
+pub syrp_audio_api::Precision::Double
+pub syrp_audio_api::Precision::Single
+impl syrp_rt::RtSafe for syrp_audio_api::Precision
+#[non_exhaustive] pub enum syrp_audio_api::ProcessMode
+pub syrp_audio_api::ProcessMode::Offline
+pub syrp_audio_api::ProcessMode::Realtime
+impl syrp_rt::RtSafe for syrp_audio_api::ProcessMode
+#[non_exhaustive] pub enum syrp_audio_api::Speaker
+pub syrp_audio_api::Speaker::Centre
+pub syrp_audio_api::Speaker::CentreSurround
+pub syrp_audio_api::Speaker::Discrete(u32)
+pub syrp_audio_api::Speaker::Left
+pub syrp_audio_api::Speaker::LeftRearSurround
+pub syrp_audio_api::Speaker::LeftSurround
+pub syrp_audio_api::Speaker::Lfe
+pub syrp_audio_api::Speaker::Right
+pub syrp_audio_api::Speaker::RightRearSurround
+pub syrp_audio_api::Speaker::RightSurround
+pub syrp_audio_api::Speaker::TopFrontLeft
+pub syrp_audio_api::Speaker::TopFrontRight
+pub syrp_audio_api::Speaker::TopRearLeft
+pub syrp_audio_api::Speaker::TopRearRight
+impl syrp_rt::RtSafe for syrp_audio_api::Speaker
+pub struct syrp_audio_api::AudioBlock<'a, T>
+impl<'a, T: syrp_audio_api::AudioSample> syrp_audio_api::AudioBlock<'a, T>
+pub fn syrp_audio_api::AudioBlock<'a, T>::channel(&self, usize) -> &'a [T]
+pub fn syrp_audio_api::AudioBlock<'a, T>::channel_padded(&self, usize) -> &'a [T]
+pub fn syrp_audio_api::AudioBlock<'a, T>::channels(&self) -> usize
+pub fn syrp_audio_api::AudioBlock<'a, T>::frames(&self) -> usize
+pub unsafe fn syrp_audio_api::AudioBlock<'a, T>::from_raw_parts(*const T, usize, usize, usize) -> Self
+pub unsafe fn syrp_audio_api::AudioBlock<'a, T>::from_raw_parts_aligned(*const T, usize, usize, usize) -> Self
+pub fn syrp_audio_api::AudioBlock<'a, T>::is_simd_aligned(&self) -> bool
+pub fn syrp_audio_api::AudioBlock<'a, T>::iter(&self) -> impl core::iter::traits::exact_size::ExactSizeIterator<Item = &'a [T]> + use<'a, T>
+pub fn syrp_audio_api::AudioBlock<'a, T>::new(&'a [T], usize, usize, usize) -> core::result::Result<Self, syrp_audio_api::AudioError>
+pub fn syrp_audio_api::AudioBlock<'a, T>::padded_frames(&self) -> usize
+pub fn syrp_audio_api::AudioBlock<'a, T>::slice_channels(&self, core::ops::range::Range<usize>) -> syrp_audio_api::AudioBlock<'a, T>
+pub fn syrp_audio_api::AudioBlock<'a, T>::slice_frames(&self, core::ops::range::Range<usize>) -> syrp_audio_api::AudioBlock<'a, T>
+pub fn syrp_audio_api::AudioBlock<'a, T>::stride(&self) -> usize
+impl<T: core::marker::Sync> core::marker::Send for syrp_audio_api::AudioBlock<'_, T>
+impl<T: core::marker::Sync> core::marker::Sync for syrp_audio_api::AudioBlock<'_, T>
+impl<T: syrp_audio_api::AudioSample> syrp_rt::RtSafe for syrp_audio_api::AudioBlock<'_, T>
+pub struct syrp_audio_api::AudioBlockMut<'a, T>
+impl<'a, T: syrp_audio_api::AudioSample> syrp_audio_api::AudioBlockMut<'a, T>
+pub fn syrp_audio_api::AudioBlockMut<'a, T>::as_block(&self) -> syrp_audio_api::AudioBlock<'_, T>
+pub fn syrp_audio_api::AudioBlockMut<'a, T>::channel(&self, usize) -> &[T]
+pub fn syrp_audio_api::AudioBlockMut<'a, T>::channel_mut(&mut self, usize) -> &mut [T]
+pub fn syrp_audio_api::AudioBlockMut<'a, T>::channel_padded_mut(&mut self, usize) -> &mut [T]
+pub fn syrp_audio_api::AudioBlockMut<'a, T>::channels(&self) -> usize
+pub fn syrp_audio_api::AudioBlockMut<'a, T>::fill(&mut self, T)
+pub fn syrp_audio_api::AudioBlockMut<'a, T>::frames(&self) -> usize
+pub unsafe fn syrp_audio_api::AudioBlockMut<'a, T>::from_raw_parts(*mut T, usize, usize, usize) -> Self
+pub unsafe fn syrp_audio_api::AudioBlockMut<'a, T>::from_raw_parts_aligned(*mut T, usize, usize, usize) -> Self
+pub fn syrp_audio_api::AudioBlockMut<'a, T>::into_block(self) -> syrp_audio_api::AudioBlock<'a, T>
+pub fn syrp_audio_api::AudioBlockMut<'a, T>::into_channel_mut(self, usize) -> &'a mut [T]
+pub fn syrp_audio_api::AudioBlockMut<'a, T>::into_slice_channels(self, core::ops::range::Range<usize>) -> syrp_audio_api::AudioBlockMut<'a, T>
+pub fn syrp_audio_api::AudioBlockMut<'a, T>::into_slice_frames(self, core::ops::range::Range<usize>) -> syrp_audio_api::AudioBlockMut<'a, T>
+pub fn syrp_audio_api::AudioBlockMut<'a, T>::into_split_channels_mut(self) -> syrp_audio_api::ChannelsMut<'a, T>
+pub fn syrp_audio_api::AudioBlockMut<'a, T>::is_simd_aligned(&self) -> bool
+pub fn syrp_audio_api::AudioBlockMut<'a, T>::new(&'a mut [T], usize, usize, usize) -> core::result::Result<Self, syrp_audio_api::AudioError>
+pub fn syrp_audio_api::AudioBlockMut<'a, T>::padded_frames(&self) -> usize
+pub fn syrp_audio_api::AudioBlockMut<'a, T>::reborrow(&mut self) -> syrp_audio_api::AudioBlockMut<'_, T>
+pub fn syrp_audio_api::AudioBlockMut<'a, T>::slice_channels_mut(&mut self, core::ops::range::Range<usize>) -> syrp_audio_api::AudioBlockMut<'_, T>
+pub fn syrp_audio_api::AudioBlockMut<'a, T>::slice_frames_mut(&mut self, core::ops::range::Range<usize>) -> syrp_audio_api::AudioBlockMut<'_, T>
+pub fn syrp_audio_api::AudioBlockMut<'a, T>::split_channels_mut(&mut self) -> syrp_audio_api::ChannelsMut<'_, T>
+pub fn syrp_audio_api::AudioBlockMut<'a, T>::stride(&self) -> usize
+impl<T: core::fmt::Debug> core::fmt::Debug for syrp_audio_api::AudioBlockMut<'_, T>
+pub fn syrp_audio_api::AudioBlockMut<'_, T>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<T: core::marker::Send> core::marker::Send for syrp_audio_api::AudioBlockMut<'_, T>
+impl<T: core::marker::Sync> core::marker::Sync for syrp_audio_api::AudioBlockMut<'_, T>
+impl<T: syrp_audio_api::AudioSample> syrp_rt::RtSafe for syrp_audio_api::AudioBlockMut<'_, T>
+pub struct syrp_audio_api::Bus
+impl syrp_audio_api::Bus
+pub fn syrp_audio_api::Bus::channel_count(&self) -> usize
+pub fn syrp_audio_api::Bus::channel_set(&self) -> syrp_audio_api::ChannelSet
+pub fn syrp_audio_api::Bus::name(&self) -> &str
+pub fn syrp_audio_api::Bus::new(impl core::convert::Into<alloc::string::String>, syrp_audio_api::ChannelSet) -> Self
+pub struct syrp_audio_api::BusLayout
+impl syrp_audio_api::BusLayout
+pub fn syrp_audio_api::BusLayout::input_channels(&self) -> usize
+pub fn syrp_audio_api::BusLayout::inputs(&self) -> &[syrp_audio_api::Bus]
+pub fn syrp_audio_api::BusLayout::new() -> Self
+pub fn syrp_audio_api::BusLayout::output_channels(&self) -> usize
+pub fn syrp_audio_api::BusLayout::outputs(&self) -> &[syrp_audio_api::Bus]
+pub fn syrp_audio_api::BusLayout::same_channel_sets(&self, &syrp_audio_api::BusLayout) -> bool
+pub fn syrp_audio_api::BusLayout::set_input(&mut self, usize, syrp_audio_api::ChannelSet)
+pub fn syrp_audio_api::BusLayout::set_output(&mut self, usize, syrp_audio_api::ChannelSet)
+pub fn syrp_audio_api::BusLayout::with_input(self, impl core::convert::Into<alloc::string::String>, syrp_audio_api::ChannelSet) -> Self
+pub fn syrp_audio_api::BusLayout::with_output(self, impl core::convert::Into<alloc::string::String>, syrp_audio_api::ChannelSet) -> Self
+pub struct syrp_audio_api::ChannelSet
+impl syrp_audio_api::ChannelSet
+pub const fn syrp_audio_api::ChannelSet::canonical(u32) -> Self
+pub fn syrp_audio_api::ChannelSet::channel_count(&self) -> usize
+pub const fn syrp_audio_api::ChannelSet::disabled() -> Self
+pub const fn syrp_audio_api::ChannelSet::discrete(u32) -> Self
+pub fn syrp_audio_api::ChannelSet::index_of(&self, syrp_audio_api::Speaker) -> core::option::Option<usize>
+pub fn syrp_audio_api::ChannelSet::is_disabled(&self) -> bool
+pub fn syrp_audio_api::ChannelSet::is_discrete(&self) -> bool
+pub const fn syrp_audio_api::ChannelSet::lcr() -> Self
+pub const fn syrp_audio_api::ChannelSet::mono() -> Self
+pub fn syrp_audio_api::ChannelSet::name(&self) -> &'static str
+pub const fn syrp_audio_api::ChannelSet::quadraphonic() -> Self
+pub fn syrp_audio_api::ChannelSet::speaker(&self, usize) -> core::option::Option<syrp_audio_api::Speaker>
+pub fn syrp_audio_api::ChannelSet::speakers(&self) -> impl core::iter::traits::exact_size::ExactSizeIterator<Item = syrp_audio_api::Speaker> + use<>
+pub const fn syrp_audio_api::ChannelSet::stereo() -> Self
+pub const fn syrp_audio_api::ChannelSet::surround_5_0() -> Self
+pub const fn syrp_audio_api::ChannelSet::surround_5_1() -> Self
+pub const fn syrp_audio_api::ChannelSet::surround_6_0() -> Self
+pub const fn syrp_audio_api::ChannelSet::surround_6_1() -> Self
+pub const fn syrp_audio_api::ChannelSet::surround_7_0() -> Self
+pub const fn syrp_audio_api::ChannelSet::surround_7_1() -> Self
+pub const fn syrp_audio_api::ChannelSet::surround_7_1_4() -> Self
+impl syrp_rt::RtSafe for syrp_audio_api::ChannelSet
+pub struct syrp_audio_api::ChannelsMut<'b, T>
+impl<'b, T> core::iter::traits::iterator::Iterator for syrp_audio_api::ChannelsMut<'b, T>
+pub type syrp_audio_api::ChannelsMut<'b, T>::Item = &'b mut [T]
+pub fn syrp_audio_api::ChannelsMut<'b, T>::next(&mut self) -> core::option::Option<&'b mut [T]>
+pub fn syrp_audio_api::ChannelsMut<'b, T>::size_hint(&self) -> (usize, core::option::Option<usize>)
+impl<T: core::marker::Send> core::marker::Send for syrp_audio_api::ChannelsMut<'_, T>
+impl<T: syrp_audio_api::AudioSample> syrp_rt::RtSafe for syrp_audio_api::ChannelsMut<'_, T>
+impl<T> core::iter::traits::exact_size::ExactSizeIterator for syrp_audio_api::ChannelsMut<'_, T>
+pub struct syrp_audio_api::LoopPoints
+impl syrp_audio_api::LoopPoints
+pub const fn syrp_audio_api::LoopPoints::end_ppq(&self) -> f64
+pub const fn syrp_audio_api::LoopPoints::new(f64, f64) -> Self
+pub const fn syrp_audio_api::LoopPoints::start_ppq(&self) -> f64
+impl syrp_rt::RtSafe for syrp_audio_api::LoopPoints
+pub struct syrp_audio_api::PlayHeadInfo
+impl syrp_audio_api::PlayHeadInfo
+pub const fn syrp_audio_api::PlayHeadInfo::bar_start_ppq(&self) -> core::option::Option<f64>
+pub const fn syrp_audio_api::PlayHeadInfo::bpm(&self) -> core::option::Option<f64>
+pub const fn syrp_audio_api::PlayHeadInfo::host_time_ns(&self) -> core::option::Option<u64>
+pub const fn syrp_audio_api::PlayHeadInfo::is_looping(&self) -> bool
+pub const fn syrp_audio_api::PlayHeadInfo::is_playing(&self) -> bool
+pub const fn syrp_audio_api::PlayHeadInfo::is_recording(&self) -> bool
+pub const fn syrp_audio_api::PlayHeadInfo::loop_points(&self) -> core::option::Option<syrp_audio_api::LoopPoints>
+pub fn syrp_audio_api::PlayHeadInfo::new() -> Self
+pub const fn syrp_audio_api::PlayHeadInfo::ppq_position(&self) -> core::option::Option<f64>
+pub const fn syrp_audio_api::PlayHeadInfo::sample_position(&self) -> core::option::Option<i64>
+pub fn syrp_audio_api::PlayHeadInfo::time_in_seconds(&self, f64) -> core::option::Option<f64>
+pub const fn syrp_audio_api::PlayHeadInfo::time_signature(&self) -> core::option::Option<syrp_audio_api::TimeSignature>
+pub const fn syrp_audio_api::PlayHeadInfo::with_bar_start_ppq(self, f64) -> Self
+pub const fn syrp_audio_api::PlayHeadInfo::with_bpm(self, f64) -> Self
+pub const fn syrp_audio_api::PlayHeadInfo::with_host_time_ns(self, u64) -> Self
+pub const fn syrp_audio_api::PlayHeadInfo::with_loop_points(self, syrp_audio_api::LoopPoints) -> Self
+pub const fn syrp_audio_api::PlayHeadInfo::with_looping(self, bool) -> Self
+pub const fn syrp_audio_api::PlayHeadInfo::with_playing(self, bool) -> Self
+pub const fn syrp_audio_api::PlayHeadInfo::with_ppq_position(self, f64) -> Self
+pub const fn syrp_audio_api::PlayHeadInfo::with_recording(self, bool) -> Self
+pub const fn syrp_audio_api::PlayHeadInfo::with_sample_position(self, i64) -> Self
+pub const fn syrp_audio_api::PlayHeadInfo::with_time_signature(self, syrp_audio_api::TimeSignature) -> Self
+impl syrp_rt::RtSafe for syrp_audio_api::PlayHeadInfo
+pub struct syrp_audio_api::ProcessConfig
+impl syrp_audio_api::ProcessConfig
+pub fn syrp_audio_api::ProcessConfig::is_offline(&self) -> bool
+pub fn syrp_audio_api::ProcessConfig::max_block_size(&self) -> usize
+pub fn syrp_audio_api::ProcessConfig::mode(&self) -> syrp_audio_api::ProcessMode
+pub fn syrp_audio_api::ProcessConfig::new(f64, usize) -> core::result::Result<Self, syrp_audio_api::AudioError>
+pub fn syrp_audio_api::ProcessConfig::precision(&self) -> syrp_audio_api::Precision
+pub fn syrp_audio_api::ProcessConfig::sample_rate(&self) -> f64
+pub fn syrp_audio_api::ProcessConfig::with_mode(self, syrp_audio_api::ProcessMode) -> Self
+pub fn syrp_audio_api::ProcessConfig::with_precision(self, syrp_audio_api::Precision) -> Self
+impl syrp_rt::RtSafe for syrp_audio_api::ProcessConfig
+pub struct syrp_audio_api::TimeSignature
+impl syrp_audio_api::TimeSignature
+pub const fn syrp_audio_api::TimeSignature::denominator(&self) -> u32
+pub const fn syrp_audio_api::TimeSignature::new(u32, u32) -> core::option::Option<Self>
+pub const fn syrp_audio_api::TimeSignature::numerator(&self) -> u32
+impl syrp_rt::RtSafe for syrp_audio_api::TimeSignature
+pub const syrp_audio_api::SIMD_ALIGN: usize
+pub trait syrp_audio_api::AudioSample: syrp_audio_api::block::sealed::Sealed + core::marker::Copy + core::default::Default + core::cmp::PartialEq + core::fmt::Debug + core::marker::Send + core::marker::Sync + syrp_rt::RtSafe + 'static
+pub const syrp_audio_api::AudioSample::PRECISION: syrp_audio_api::Precision
+impl syrp_audio_api::AudioSample for f32
+pub const f32::PRECISION: syrp_audio_api::Precision
+impl syrp_audio_api::AudioSample for f64
+pub const f64::PRECISION: syrp_audio_api::Precision
+pub trait syrp_audio_api::PlayHead
+pub fn syrp_audio_api::PlayHead::position(&self) -> core::option::Option<syrp_audio_api::PlayHeadInfo>
