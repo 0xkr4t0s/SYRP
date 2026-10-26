@@ -1,0 +1,1 @@
+{"wp": "WP-0.1-09", "kind": "added", "summary": "syrp-testkit (final increment): compare/assert_close with max absolute error, RMS error and peak dBFS difference, the exact, dsp-default and dsp-loose tolerance profiles, a documented JSON verdict shape (syrp.testkit.verdict/v1), and SYRP-TESTKIT-0005 for shape mismatches."}
