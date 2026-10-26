@@ -20,7 +20,8 @@ project owner; a hand-built draft was reviewed before this spec.
   `[<id>]`; otherwise `parked` when its wave is disabled; otherwise `planned`.
 - B2. Every module in the inventory gets one cell per class. A class's status is `verified` when
   its ledger row is `done` or `mapped`, `gap` when the row is `gap` or `deviation`, `inwork` when
-  the row has an `owner_wp` whose shown status is `done` or `active`, and `todo` otherwise. A
+  the row is `partial` or has an `owner_wp` whose shown status is `done` or `active`, and `todo`
+  otherwise. A
   class missing from the ledger is `todo`. A module's `complete` flag is copied from the inventory.
 - B3. Merged PRs are the first-parent commits whose subject ends in `(#<n>)`, oldest first, with
   the commit time in UTC, the subject without the suffix, and the WP id from a leading `[WP-...]`.
