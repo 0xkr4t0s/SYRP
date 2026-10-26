@@ -1,0 +1,9 @@
+# Error catalogue: numeric types (syrp-maths). `cargo syrp explain <code>` renders these.
+# Codes are permanent: never reuse or renumber one.
+
+[[error]]
+code = "SYRP-MATHS-0001"
+title = "Invalid NormalisableRange parameters"
+severity = "error"
+cause = "A NormalisableRange was built with an end that is not greater than its start, a negative or non-finite interval, a skew that is not a finite positive number, or a centre that is not strictly between start and end."
+fix = "Pass finite values with start < end, interval >= 0 (0 means continuous), skew > 0 (1 is linear) and, for with_centre, start < centre < end."
