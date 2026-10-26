@@ -6,7 +6,7 @@ use std::marker::PhantomData;
 use syrp_audio_api::{AudioBlock, AudioBlockMut};
 use syrp_rt::RtSafe;
 
-use crate::{DeviceError, DeviceInfo};
+use crate::DeviceError;
 
 const WORDS: usize = 4;
 
@@ -37,20 +37,11 @@ impl ChannelMask {
     /// ```
     #[must_use]
     pub const fn first(n: u32) -> Self {
-        let mut words = [0; WORDS];
-        let mut i = 0;
-        while i < WORDS {
-            let lo = 64 * i as u32;
-            words[i] = if n >= lo + 64 {
-                u64::MAX
-            } else if n > lo {
-                (1 << (n - lo)) - 1
-            } else {
-                0
-            };
-            i += 1;
+        let (mut mask, mut c) = (ChannelMask { words: [0; WORDS] }, 0);
+        while c < n && c < Self::MAX_CHANNELS {
+            (mask, c) = (mask.with(c), c + 1);
         }
-        ChannelMask { words }
+        mask
     }
 
     /// Channels 0 to 63 from `bits` (bit `c` is channel `c`); higher channels are inactive.
@@ -94,13 +85,8 @@ impl ChannelMask {
     /// ```
     #[must_use]
     pub const fn count(self) -> u32 {
-        let mut n = 0;
-        let mut i = 0;
-        while i < WORDS {
-            n += self.words[i].count_ones();
-            i += 1;
-        }
-        n
+        let w = self.words;
+        w[0].count_ones() + w[1].count_ones() + w[2].count_ones() + w[3].count_ones()
     }
 
     /// Whether channel `channel` is active.
@@ -140,14 +126,6 @@ impl ChannelMask {
             mask: self,
             next: 0,
         }
-    }
-}
-
-impl IntoIterator for ChannelMask {
-    type Item = u32;
-    type IntoIter = ChannelIter;
-    fn into_iter(self) -> ChannelIter {
-        self.iter()
     }
 }
 
@@ -200,7 +178,7 @@ impl AudioDeviceSetup {
     /// ```
     #[must_use]
     pub const fn new(sample_rate: f64, buffer_size: u32) -> Self {
-        let none = ChannelMask { words: [0; WORDS] };
+        let none = ChannelMask::from_low_bits(0);
         AudioDeviceSetup {
             sample_rate,
             buffer_size,
@@ -417,29 +395,6 @@ where
 /// ```
 #[doc(alias = "AudioIODevice")]
 pub trait AudioDevice: Send {
-    /// The device's id and name.
-    /// ```
-    /// # use syrp_device_api::{AudioDevice, fake::{FakeAudioDevice, FakeAudioSpec}};
-    /// assert_eq!(FakeAudioDevice::new(FakeAudioSpec::new("A", 1, 1)).info().name(), "A");
-    /// ```
-    fn info(&self) -> &DeviceInfo;
-
-    /// One name per hardware input channel.
-    /// ```
-    /// # use syrp_device_api::{AudioDevice, fake::{FakeAudioDevice, FakeAudioSpec}};
-    /// assert_eq!(FakeAudioDevice::new(FakeAudioSpec::new("A", 2, 0)).input_channel_names().len(), 2);
-    /// ```
-    #[doc(alias = "getInputChannelNames")]
-    fn input_channel_names(&self) -> Vec<String>;
-
-    /// One name per hardware output channel.
-    /// ```
-    /// # use syrp_device_api::{AudioDevice, fake::{FakeAudioDevice, FakeAudioSpec}};
-    /// assert_eq!(FakeAudioDevice::new(FakeAudioSpec::new("A", 2, 0)).output_channel_names().len(), 0);
-    /// ```
-    #[doc(alias = "getOutputChannelNames")]
-    fn output_channel_names(&self) -> Vec<String>;
-
     /// The sample rates `open` accepts, in Hz, ascending.
     /// ```
     /// # use syrp_device_api::{AudioDevice, fake::{FakeAudioDevice, FakeAudioSpec}};

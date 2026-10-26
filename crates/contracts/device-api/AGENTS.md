@@ -5,7 +5,7 @@ The L1 device backend contract (master plan §3, `juce_audio_devices`): traits t
 and MIDI backend crate implements, plus in-memory fakes for tests. No platform code lives here.
 Increment 1 has `AudioDevice` (open with an `AudioDeviceSetup` of rate, buffer size and
 `ChannelMask`s; start with an `AudioCallback`; stop; latency, xruns, rates and sizes),
-`AudioCallback` and its `DeviceRtCtx`, `DeviceId`/`DeviceInfo`, `DeviceError`, and
+`AudioCallback` and its `DeviceRtCtx`, `DeviceId`, `DeviceError`, and
 `fake::{FakeAudioDevice, FakeAudioSpec, FakeAudioDriver}`. Covers JUCE's AudioIODevice,
 AudioIODeviceCallback and AudioDeviceManager::AudioDeviceSetup.
 
@@ -13,7 +13,7 @@ AudioIODeviceCallback and AudioDeviceManager::AudioDeviceSetup.
 juce_audio_devices/AudioIODevice, juce_audio_devices/AudioIODeviceCallback
 
 ## Invariants
-- Contract types have no public fields (ADR 0003 D3); the `b7_` test scans the sources.
+- Contract types have no public fields (ADR 0003 D3).
 - `DeviceId`s come from persistent backend identifiers, never enumeration indices.
 - The callback's input and output blocks have one channel per active mask bit, in ascending
   channel order, `frames() <= buffer_size`; the output is zeroed before `process`.

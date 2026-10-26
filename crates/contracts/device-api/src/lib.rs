@@ -6,7 +6,7 @@
 //!
 //! - [`AudioDevice`]: open with an [`AudioDeviceSetup`], run an [`AudioCallback`] with a
 //!   [`DeviceRtCtx`], stop, and report latency, xruns and the rates and sizes it supports.
-//! - [`DeviceId`]: names a device stably across runs; [`DeviceInfo`] adds a display name.
+//! - [`DeviceId`]: names a device stably across runs.
 //! - [`fake`]: in-memory devices for tests, with no hardware.
 //!
 //! Device types (enumeration), MIDI ports and device-change notifications arrive in the next
@@ -69,52 +69,6 @@ impl fmt::Display for DeviceId {
     }
 }
 
-/// One device or port as enumerated by a backend: its stable id and a display name.
-/// ```
-/// use syrp_device_api::{DeviceId, DeviceInfo};
-/// let info = DeviceInfo::new(DeviceId::new("fake:A"), "A");
-/// assert_eq!((info.id().as_str(), info.name()), ("fake:A", "A"));
-/// ```
-#[doc(alias = "MidiDeviceInfo")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct DeviceInfo {
-    id: DeviceId,
-    name: String,
-}
-
-impl DeviceInfo {
-    /// Describes a device.
-    /// ```
-    /// let _info = syrp_device_api::DeviceInfo::new(syrp_device_api::DeviceId::new("a"), "A");
-    /// ```
-    pub fn new(id: DeviceId, name: impl Into<String>) -> Self {
-        DeviceInfo {
-            id,
-            name: name.into(),
-        }
-    }
-
-    /// The stable identifier; pass it back to the backend to create or open the device.
-    /// ```
-    /// # use syrp_device_api::{DeviceId, DeviceInfo};
-    /// assert_eq!(DeviceInfo::new(DeviceId::new("a"), "A").id(), &DeviceId::new("a"));
-    /// ```
-    #[must_use]
-    pub fn id(&self) -> &DeviceId {
-        &self.id
-    }
-
-    /// The name to show to users. Not unique and not stable: never store it as a key.
-    /// ```
-    /// # use syrp_device_api::{DeviceId, DeviceInfo};
-    /// assert_eq!(DeviceInfo::new(DeviceId::new("a"), "A").name(), "A");
-    /// ```
-    #[must_use]
-    pub fn name(&self) -> &str {
-        &self.name
-    }
-}
-
 /// Errors from device backends, catalogued in `errors/device.toml`.
 /// ```
 /// use syrp_error::Diagnostic;
@@ -135,15 +89,23 @@ pub enum DeviceError {
     Disconnected,
 }
 
+impl DeviceError {
+    const fn parts(self) -> (&'static str, &'static str) {
+        match self {
+            DeviceError::NotFound => ("SYRP-DEVICE-0001", "no device has that id"),
+            DeviceError::UnsupportedSetup => {
+                ("SYRP-DEVICE-0002", "the device does not support that setup")
+            }
+            DeviceError::NotOpen => ("SYRP-DEVICE-0003", "the device is not open"),
+            DeviceError::AlreadyRunning => ("SYRP-DEVICE-0004", "the device is already running"),
+            DeviceError::Disconnected => ("SYRP-DEVICE-0005", "the device was disconnected"),
+        }
+    }
+}
+
 impl fmt::Display for DeviceError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(match self {
-            DeviceError::NotFound => "no device has that id",
-            DeviceError::UnsupportedSetup => "the device does not support that setup",
-            DeviceError::NotOpen => "the device is not open",
-            DeviceError::AlreadyRunning => "the device is already running",
-            DeviceError::Disconnected => "the device was disconnected",
-        })
+        f.write_str(self.parts().1)
     }
 }
 
@@ -151,12 +113,6 @@ impl std::error::Error for DeviceError {}
 
 impl Diagnostic for DeviceError {
     fn code(&self) -> ErrorCode {
-        ErrorCode::new(match self {
-            DeviceError::NotFound => "SYRP-DEVICE-0001",
-            DeviceError::UnsupportedSetup => "SYRP-DEVICE-0002",
-            DeviceError::NotOpen => "SYRP-DEVICE-0003",
-            DeviceError::AlreadyRunning => "SYRP-DEVICE-0004",
-            DeviceError::Disconnected => "SYRP-DEVICE-0005",
-        })
+        ErrorCode::new(self.parts().0)
     }
 }
