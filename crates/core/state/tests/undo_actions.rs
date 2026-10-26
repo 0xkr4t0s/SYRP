@@ -273,3 +273,36 @@ fn b4_an_action_after_undo_starts_a_new_transaction() {
         assert_eq!(undo.undo_description(), Some("a"));
     });
 }
+
+#[test]
+fn b5_undo_current_transaction_only_does_nothing_after_undo_or_redo() {
+    with_mt(|mt| {
+        let store = Store::new();
+        let mut undo = UndoManager::new();
+        let n = store.create(mt, id("N"));
+        for name in ["a", "b"] {
+            undo.begin_new_transaction(name);
+            store
+                .set_property_with_undo(mt, &mut undo, &n, id(name), 1)
+                .unwrap();
+        }
+        undo.undo(mt).unwrap();
+        assert!(!undo.undo_current_transaction_only(mt).unwrap()); // "a" is history now
+        assert!(store.has_property(&n, id("a")).unwrap());
+        assert_eq!(
+            (undo.undo_description(), undo.redo_description()),
+            (Some("a"), Some("b"))
+        );
+        undo.redo(mt).unwrap();
+        assert!(!undo.undo_current_transaction_only(mt).unwrap()); // so is "b" after a redo
+        assert!(store.has_property(&n, id("b")).unwrap());
+        assert_eq!(undo.undo_descriptions(), ["b", "a"]);
+        // New work opens a current transaction again.
+        store
+            .set_property_with_undo(mt, &mut undo, &n, id("c"), 1)
+            .unwrap();
+        assert!(undo.undo_current_transaction_only(mt).unwrap());
+        assert!(!store.has_property(&n, id("c")).unwrap());
+        assert_eq!(undo.undo_descriptions(), ["b", "a"]);
+    });
+}

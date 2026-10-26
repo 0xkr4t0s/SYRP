@@ -329,6 +329,10 @@ impl UndoManager {
     /// Reverses the last transaction's items, newest first, and moves it to the redo list.
     /// Returns `Ok(false)` if there was nothing to undo or an action's `undo` failed.
     ///
+    /// `Ok(false)` therefore has two meanings. Tell them apart with [`UndoManager::can_undo`]
+    /// before the call: if it was `true`, the transaction was attempted, an action failed
+    /// part-way, the items before it stay reversed, and the transaction is now on the redo list.
+    ///
     /// Records are reversed through ordinary store mutations: they are logged and delivered
     /// to listeners, and not recorded. If the store was changed since without this manager so
     /// that a record no longer applies (say a removed child now has another parent), the error
@@ -356,8 +360,10 @@ impl UndoManager {
     }
 
     /// Re-applies the last undone transaction's items, oldest first, and moves it back to the
-    /// undo list. Returns `Ok(false)` if there was nothing to redo or an action failed. Errors
-    /// as for [`UndoManager::undo`].
+    /// undo list. Returns `Ok(false)` if there was nothing to redo or an action failed
+    /// part-way (check [`UndoManager::can_redo`] before the call to tell which; after a failure
+    /// the transaction is back on the undo list, partly re-applied). Errors as for
+    /// [`UndoManager::undo`].
     ///
     /// ```
     /// # use syrp_var::Identifier; syrp_loop_api::ManualLoop::new().with_token(|mt| { let store = syrp_state::Store::new();
@@ -380,8 +386,10 @@ impl UndoManager {
     }
 
     /// Undoes the current transaction and discards it, so it cannot be redone. Does nothing,
-    /// returning `Ok(false)`, if [`UndoManager::begin_new_transaction`] was called since its
-    /// last item (the new transaction has no items yet).
+    /// returning `Ok(false)`, when there is no current transaction: when
+    /// [`UndoManager::begin_new_transaction`] was called since its last item (the new
+    /// transaction has no items yet), or after an [`UndoManager::undo`] or
+    /// [`UndoManager::redo`] (the top transaction is then history, not current work).
     ///
     /// ```
     /// # use syrp_var::Identifier; syrp_loop_api::ManualLoop::new().with_token(|mt| { let store = syrp_state::Store::new();
@@ -397,7 +405,7 @@ impl UndoManager {
         &mut self,
         mt: &MessageThread<'_>,
     ) -> Result<bool, StateError> {
-        if self.next_name.is_some() {
+        if self.next_name.is_some() || !self.open {
             return Ok(false);
         }
         let Some(mut t) = self.undo.pop() else {
