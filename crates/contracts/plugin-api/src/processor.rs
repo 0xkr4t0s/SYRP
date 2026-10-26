@@ -267,7 +267,7 @@ impl Prepared {
 }
 
 /// Prepares `processor` for `config` on the message thread; the only way to create a
-/// [`PrepareCtx`]. Framework and host code call it, never `process`.
+/// [`PrepareCtx`]. It is host-side: call it from framework or host code, never from `process`.
 ///
 /// Fails with [`PluginError::PrecisionUnsupported`] if `config` asks for double precision
 /// from a processor without it, or with whatever `prepare` returns.
