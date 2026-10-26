@@ -27,3 +27,10 @@ title = "Invalid maximum block size"
 severity = "error"
 cause = "ProcessConfig::new was given a maximum block size of zero frames."
 fix = "Pass the largest number of frames a process call will receive, as reported by the device or host."
+
+[[error]]
+code = "SYRP-AUDIO-0005"
+title = "Audio buffer too large"
+severity = "error"
+cause = "AudioBuffer::new, set_size or make_copy_of was asked for a shape whose padded size (channels times the 64-byte rounded stride) overflows usize, or whose size in bytes overflows isize."
+fix = "Check the channel and frame counts: they usually come from a device, a host or a file header and may be corrupt. Real buffers are a few channels by at most a few million frames."
