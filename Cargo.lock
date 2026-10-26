@@ -1171,6 +1171,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "syrp-audio-basics"
+version = "0.0.1"
+dependencies = [
+ "proptest",
+ "syrp-audio-api",
+ "syrp-error",
+ "syrp-rt",
+ "syrp-simd",
+]
+
+[[package]]
 name = "syrp-cli"
 version = "0.0.1"
 dependencies = [

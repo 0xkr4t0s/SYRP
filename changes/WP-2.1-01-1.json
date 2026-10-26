@@ -1,0 +1,1 @@
+{"wp": "WP-2.1-01", "kind": "added", "summary": "syrp-audio-basics: crate skeleton (buffer, vector_ops, control, voice modules; bench stubs) and AudioBuffer, an owned 64-byte aligned planar buffer with set_size, make_copy_of and AudioBlock views (increment 1: B1-B2)."}
