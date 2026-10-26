@@ -1361,6 +1361,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "syrp-state"
+version = "0.0.1"
+dependencies = [
+ "slotmap",
+ "syrp-error",
+ "syrp-loop-api",
+ "syrp-var",
+]
+
+[[package]]
 name = "syrp-state-arena-spike"
 version = "0.0.1"
 dependencies = [

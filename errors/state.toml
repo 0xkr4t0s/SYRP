@@ -1,0 +1,36 @@
+# Error catalogue: the state store (syrp-state). Never renumber.
+
+[[error]]
+code = "SYRP-STATE-0001"
+title = "Child already has a parent"
+severity = "error"
+cause = "Store::add_child was given a node that is already a child of some node. A node can have only one parent at a time."
+fix = "Remove the node from its current parent with Store::remove_child first, or add a deep copy of it instead."
+
+[[error]]
+code = "SYRP-STATE-0002"
+title = "Adding the child would create a cycle"
+severity = "error"
+cause = "Store::add_child was asked to add a node under itself or under one of its own descendants."
+fix = "Add the node somewhere outside its own subtree, or add a deep copy of it."
+
+[[error]]
+code = "SYRP-STATE-0003"
+title = "Node belongs to another store"
+severity = "error"
+cause = "A NodeRef created by one Store was passed to a method of a different Store. Nodes cannot move between stores."
+fix = "Use the store the node came from, or copy the subtree into this store."
+
+[[error]]
+code = "SYRP-STATE-0004"
+title = "Node key is dead"
+severity = "error"
+cause = "Store::upgrade was given a NodeKey whose node has been freed: its reference count reached zero. Keys hold no count."
+fix = "Keep a NodeRef for as long as the node must stay alive, and upgrade keys only while it does."
+
+[[error]]
+code = "SYRP-STATE-0005"
+title = "Node is not a child of this parent"
+severity = "error"
+cause = "Store::remove_child was given a node that is not a direct child of the given parent."
+fix = "Look the parent up with Store::parent and remove the child from that node."
