@@ -10,7 +10,7 @@
 //!
 //! ```
 //! use syrp_provenance::{database::Database, report::scan};
-//! let db = Database::from_sources(&["fn main() { let alpha = 1; let beta = 2; }"], 4, 2);
+//! let db = Database::from_sources(&["fn main() { let alpha = 1; let beta = 2; }"], 4, 2, syrp_provenance::scanner::Dialect::Rust);
 //! let report = scan(&db, &[("a.rs".into(), "fn other() {}".into())], 0.5);
 //! assert!(report.passed());
 //! ```

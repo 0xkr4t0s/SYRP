@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only OR BUSL-1.1
 //! Tokenising, normalising and winnowing (B2).
 //!
-//! The tokeniser understands C-family lexical structure (Rust and C++ alike): comments are
+//! The tokeniser understands C-family lexical structure for a [`Dialect`] (Rust or C++), so
+//! a C++ reference corpus and Rust files under test normalise to comparable tokens: comments are
 //! dropped, identifiers and keywords are lowercased, and literals collapse into buckets
 //! (`<str>`, `<chr>`, `<int>`, `<flt>`). Consecutive runs of `k` normalised tokens are hashed
 //! with FNV-1a 64, and winnowing with window `w` keeps the rightmost minimum hash of each
@@ -9,21 +10,53 @@
 //! fingerprint.
 //!
 //! ```
-//! use syrp_provenance::scanner::fingerprints;
-//! let a = fingerprints("let Total = 1 + 2; // hello", 3, 2);
-//! let b = fingerprints("let total = 7 + 9;", 3, 2);
+//! use syrp_provenance::scanner::{Dialect, fingerprints};
+//! let a = fingerprints("let Total = 1 + 2; // hello", 3, 2, Dialect::Rust);
+//! let b = fingerprints("let total = 7 + 9;", 3, 2, Dialect::Rust);
 //! assert_eq!(a.iter().map(|f| f.hash).collect::<Vec<_>>(),
 //!            b.iter().map(|f| f.hash).collect::<Vec<_>>());
 //! ```
 
 /// Identifies the normalisation rules. Fingerprint databases record it; bump it whenever
 /// [`tokenize`] or [`fingerprints`] would produce different hashes for the same input.
-pub const NORMALISER: &str = "syrp-cfamily-v1";
+pub const NORMALISER: &str = "syrp-cfamily-v2";
+
+/// The source language, which decides the few lexical rules that differ.
+///
+/// ```
+/// use syrp_provenance::scanner::Dialect;
+/// assert_eq!(Dialect::for_path("src/lib.rs"), Dialect::Rust);
+/// assert_eq!(Dialect::for_path("juce_core/text/juce_String.cpp"), Dialect::Cpp);
+/// ```
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Dialect {
+    /// Rust: block comments nest.
+    Rust,
+    /// C and C++: block comments end at the first `*/`.
+    Cpp,
+}
+
+impl Dialect {
+    /// [`Dialect::Rust`] for `.rs` files, [`Dialect::Cpp`] for everything else.
+    ///
+    /// ```
+    /// use syrp_provenance::scanner::Dialect;
+    /// assert_eq!(Dialect::for_path("a.h"), Dialect::Cpp);
+    /// ```
+    pub fn for_path(path: &str) -> Self {
+        if path.ends_with(".rs") {
+            Dialect::Rust
+        } else {
+            Dialect::Cpp
+        }
+    }
+}
 
 /// One normalised token and the 1-based line it starts on.
 ///
 /// ```
-/// let t = &syrp_provenance::scanner::tokenize("Foo")[0];
+/// use syrp_provenance::scanner::{Dialect, tokenize};
+/// let t = &tokenize("Foo", Dialect::Rust)[0];
 /// assert_eq!((t.text.as_str(), t.line), ("foo", 1));
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -37,7 +70,8 @@ pub struct Token {
 /// One selected fingerprint.
 ///
 /// ```
-/// let f = &syrp_provenance::scanner::fingerprints("a b c", 3, 1)[0];
+/// use syrp_provenance::scanner::{Dialect, fingerprints};
+/// let f = &fingerprints("a b c", 3, 1, Dialect::Rust)[0];
 /// assert_eq!((f.first_line, f.last_line), (1, 1));
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -63,6 +97,7 @@ fn is_ident_char(c: char) -> bool {
 }
 
 struct Lexer {
+    dialect: Dialect,
     chars: Vec<char>,
     pos: usize,
     line: u32,
@@ -121,7 +156,7 @@ impl Lexer {
         while depth > 0 {
             match (self.bump(), self.peek(0)) {
                 (None, _) => return,
-                (Some('/'), Some('*')) => {
+                (Some('/'), Some('*')) if self.dialect == Dialect::Rust => {
                     self.bump();
                     depth += 1;
                 }
@@ -171,14 +206,15 @@ impl Lexer {
 /// Splits `source` into normalised tokens, dropping whitespace and comments.
 ///
 /// ```
-/// use syrp_provenance::scanner::tokenize;
-/// let texts: Vec<_> = tokenize("Gain = 0.5; /* c */ name(\"x\", 'y', 42)")
+/// use syrp_provenance::scanner::{Dialect, tokenize};
+/// let texts: Vec<_> = tokenize("Gain = 0.5; /* c */ name(\"x\", 'y', 42)", Dialect::Rust)
 ///     .into_iter().map(|t| t.text).collect();
 /// assert_eq!(texts, ["gain", "=", "<flt>", ";", "name", "(", "<str>", ",", "<chr>", ",",
 ///                    "<int>", ")"]);
 /// ```
-pub fn tokenize(source: &str) -> Vec<Token> {
+pub fn tokenize(source: &str, dialect: Dialect) -> Vec<Token> {
     let mut lx = Lexer {
+        dialect,
         chars: source.chars().collect(),
         pos: 0,
         line: 1,
@@ -267,13 +303,13 @@ fn hash_gram(tokens: &[Token]) -> u64 {
 /// least 1). Text with fewer than `k` tokens has no fingerprints.
 ///
 /// ```
-/// use syrp_provenance::scanner::fingerprints;
-/// assert!(fingerprints("too short", 5, 4).is_empty());
-/// assert!(!fingerprints("a b c d e f g h", 5, 4).is_empty());
+/// use syrp_provenance::scanner::{Dialect, fingerprints};
+/// assert!(fingerprints("too short", 5, 4, Dialect::Rust).is_empty());
+/// assert!(!fingerprints("a b c d e f g h", 5, 4, Dialect::Rust).is_empty());
 /// ```
-pub fn fingerprints(source: &str, k: usize, w: usize) -> Vec<Fingerprint> {
+pub fn fingerprints(source: &str, k: usize, w: usize, dialect: Dialect) -> Vec<Fingerprint> {
     let (k, w) = (k.max(1), w.max(1));
-    let tokens = tokenize(source);
+    let tokens = tokenize(source, dialect);
     if tokens.len() < k {
         return Vec::new();
     }

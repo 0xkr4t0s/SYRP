@@ -7,7 +7,7 @@
 //! ```json
 //! {
 //!   "schema": "syrp.cleanroom-fingerprints/v1",
-//!   "normaliser": "syrp-cfamily-v1",
+//!   "normaliser": "syrp-cfamily-v2",
 //!   "k": 12,
 //!   "w": 8,
 //!   "hashes": ["00c0ffee00c0ffee", "..."]
@@ -17,18 +17,21 @@
 //! - `schema` must be exactly [`SCHEMA`].
 //! - `normaliser` must equal [`crate::scanner::NORMALISER`]; the producer must tokenise with
 //!   the same rules (it may link this crate and call [`Database::from_sources`]).
-//! - `k` (tokens per n-gram) and `w` (winnowing window) are positive integers. The scanner
-//!   fingerprints files under test with the database's own `k` and `w`.
+//! - `k` (tokens per n-gram) and `w` (winnowing window) are integers in [`PARAM_RANGE`]. The
+//!   scanner fingerprints files under test with the database's own `k` and `w`.
 //! - `hashes` are the winnowed FNV-1a 64 fingerprint hashes, each as exactly 16 lowercase
-//!   hex digits (strings, so that no JSON reader rounds them). Order and duplicates do not
-//!   matter.
+//!   hex digits (strings, so that no JSON reader rounds them). There must be at least one.
+//!   Order and duplicates do not matter.
+//!
+//! A database that can never match (no hashes, or a `k` larger than any real file) is rejected
+//! rather than loaded, so a broken producer run fails the gate instead of passing everything.
 //!
 //! The database deliberately holds no source text, file names or line numbers, so it carries
 //! no JUCE expression into the clean room.
 //!
 //! ```
 //! use syrp_provenance::database::Database;
-//! let json = r#"{"schema":"syrp.cleanroom-fingerprints/v1","normaliser":"syrp-cfamily-v1",
+//! let json = r#"{"schema":"syrp.cleanroom-fingerprints/v1","normaliser":"syrp-cfamily-v2",
 //!               "k":4,"w":2,"hashes":["0000000000000001"]}"#;
 //! let db = Database::from_json(json).unwrap();
 //! assert!(db.contains(1));
@@ -40,10 +43,13 @@ use std::path::Path;
 use serde::{Deserialize, Serialize};
 
 use crate::Error;
-use crate::scanner::{NORMALISER, fingerprints};
+use crate::scanner::{Dialect, NORMALISER, fingerprints};
 
 /// The `schema` value of a version-1 database.
 pub const SCHEMA: &str = "syrp.cleanroom-fingerprints/v1";
+
+/// The accepted range for `k` and `w`.
+pub const PARAM_RANGE: std::ops::RangeInclusive<usize> = 1..=64;
 
 #[derive(Serialize, Deserialize)]
 struct Wire {
@@ -57,7 +63,7 @@ struct Wire {
 /// A loaded fingerprint database.
 ///
 /// ```
-/// let db = syrp_provenance::database::Database::from_sources(&["a b c d"], 2, 1);
+/// let db = syrp_provenance::database::Database::from_sources(&["a b c d"], 2, 1, syrp_provenance::scanner::Dialect::Rust);
 /// assert_eq!((db.k(), db.w()), (2, 1));
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -68,18 +74,20 @@ pub struct Database {
 }
 
 impl Database {
-    /// Builds a database by fingerprinting `sources` with `k` and `w`. Tests use it with
-    /// synthetic corpora; the quarantined producer job may use it too.
+    /// Builds a database by fingerprinting `sources`, written in `dialect`, with `k` and `w`.
+    /// Tests use it with synthetic corpora; the quarantined producer job uses it with
+    /// [`Dialect::Cpp`].
     ///
     /// ```
-    /// let db = syrp_provenance::database::Database::from_sources(&["x y z"], 3, 1);
+    /// use syrp_provenance::{database::Database, scanner::Dialect};
+    /// let db = Database::from_sources(&["x y z"], 3, 1, Dialect::Rust);
     /// assert_eq!(db.len(), 1);
     /// ```
-    pub fn from_sources(sources: &[&str], k: usize, w: usize) -> Self {
+    pub fn from_sources(sources: &[&str], k: usize, w: usize, dialect: Dialect) -> Self {
         let (k, w) = (k.max(1), w.max(1));
         let hashes = sources
             .iter()
-            .flat_map(|s| fingerprints(s, k, w))
+            .flat_map(|s| fingerprints(s, k, w, dialect))
             .map(|f| f.hash)
             .collect();
         Database { k, w, hashes }
@@ -106,8 +114,19 @@ impl Database {
                 wire.normaliser
             )));
         }
-        if wire.k == 0 || wire.w == 0 {
-            return Err(Error::Database("k and w must be at least 1".into()));
+        if !PARAM_RANGE.contains(&wire.k) || !PARAM_RANGE.contains(&wire.w) {
+            return Err(Error::Database(format!(
+                "k = {} and w = {} must both be in {}..={}",
+                wire.k,
+                wire.w,
+                PARAM_RANGE.start(),
+                PARAM_RANGE.end()
+            )));
+        }
+        if wire.hashes.is_empty() {
+            return Err(Error::Database(
+                "the database has no hashes, so it could never match".into(),
+            ));
         }
         let mut hashes = HashSet::with_capacity(wire.hashes.len());
         for h in &wire.hashes {
@@ -138,7 +157,7 @@ impl Database {
     ///
     /// ```
     /// use syrp_provenance::database::Database;
-    /// let db = Database::from_sources(&["p q r s"], 2, 2);
+    /// let db = Database::from_sources(&["p q r s"], 2, 2, syrp_provenance::scanner::Dialect::Rust);
     /// assert_eq!(Database::from_json(&db.to_json()).unwrap(), db);
     /// ```
     pub fn to_json(&self) -> String {
@@ -157,7 +176,7 @@ impl Database {
     /// Tokens per n-gram.
     ///
     /// ```
-    /// assert_eq!(syrp_provenance::database::Database::from_sources(&[], 7, 3).k(), 7);
+    /// assert_eq!(syrp_provenance::database::Database::from_sources(&[], 7, 3, syrp_provenance::scanner::Dialect::Rust).k(), 7);
     /// ```
     pub fn k(&self) -> usize {
         self.k
@@ -166,7 +185,7 @@ impl Database {
     /// Winnowing window size.
     ///
     /// ```
-    /// assert_eq!(syrp_provenance::database::Database::from_sources(&[], 7, 3).w(), 3);
+    /// assert_eq!(syrp_provenance::database::Database::from_sources(&[], 7, 3, syrp_provenance::scanner::Dialect::Rust).w(), 3);
     /// ```
     pub fn w(&self) -> usize {
         self.w
@@ -175,7 +194,7 @@ impl Database {
     /// Number of distinct hashes.
     ///
     /// ```
-    /// assert!(syrp_provenance::database::Database::from_sources(&[], 7, 3).is_empty());
+    /// assert!(syrp_provenance::database::Database::from_sources(&[], 7, 3, syrp_provenance::scanner::Dialect::Rust).is_empty());
     /// ```
     pub fn len(&self) -> usize {
         self.hashes.len()
@@ -184,7 +203,7 @@ impl Database {
     /// Whether the database holds no hashes.
     ///
     /// ```
-    /// assert!(syrp_provenance::database::Database::from_sources(&[""], 1, 1).is_empty());
+    /// assert!(syrp_provenance::database::Database::from_sources(&[""], 1, 1, syrp_provenance::scanner::Dialect::Rust).is_empty());
     /// ```
     pub fn is_empty(&self) -> bool {
         self.hashes.is_empty()
@@ -193,7 +212,7 @@ impl Database {
     /// Whether `hash` is in the database.
     ///
     /// ```
-    /// assert!(!syrp_provenance::database::Database::from_sources(&[], 1, 1).contains(0));
+    /// assert!(!syrp_provenance::database::Database::from_sources(&[], 1, 1, syrp_provenance::scanner::Dialect::Rust).contains(0));
     /// ```
     pub fn contains(&self, hash: u64) -> bool {
         self.hashes.contains(&hash)

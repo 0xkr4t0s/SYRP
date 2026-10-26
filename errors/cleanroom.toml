@@ -12,7 +12,7 @@ fix = "Do not edit the code to dodge the scanner. The reviewer has the affected 
 code = "SYRP-CR-0002"
 title = "Fingerprint database unreadable or incompatible"
 severity = "error"
-cause = "The database file is missing, is not valid JSON, has the wrong schema, uses another normaliser, has k or w of 0, or holds a hash that is not 16 lowercase hex digits."
+cause = "The database file is missing, is not valid JSON, has the wrong schema, uses another normaliser, has k or w outside 1..=64, has no hashes (so it could never match), or holds a hash that is not 16 lowercase hex digits."
 fix = "Regenerate it with the quarantined job using the same syrp-provenance normaliser. The format is documented in crates/tooling/provenance/src/database.rs."
 
 [[error]]

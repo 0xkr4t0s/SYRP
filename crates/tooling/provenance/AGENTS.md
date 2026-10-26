@@ -41,3 +41,9 @@ system temp directory.
   `errors/cleanroom.toml` in the explain catalogue).
 - The quarantined CI job that builds the database is the PR manager's (B3).
 - AGENTS.md heading checks (mentioned in the crate template) are not implemented here.
+- Identifiers are lowercased but kept (B2 as written), so consistent renaming evades the
+  scanner. Candidate for an identifier-erasing `syrp-cfamily-v3` normaliser.
+- The verdict is a per-file fraction: a long verbatim passage in a large file can stay under the
+  threshold. Candidate: also fail on the longest matched run or the raw `matched` count.
+- `Dialect::Cpp` does not yet understand `R"d(...)d"` raw strings or `1'000` digit separators
+  (they add noise tokens, not missed matches).

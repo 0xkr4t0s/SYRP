@@ -10,7 +10,7 @@
 //! ```json
 //! {
 //!   "schema": "syrp.cleanroom-report/v1",
-//!   "normaliser": "syrp-cfamily-v1", "k": 12, "w": 8, "threshold": 0.3,
+//!   "normaliser": "syrp-cfamily-v2", "k": 12, "w": 8, "threshold": 0.3,
 //!   "verdict": "fail",
 //!   "files": [
 //!     { "path": "crates/x/src/a.rs", "score": 0.5, "matched": 4, "fingerprints": 8,
@@ -24,7 +24,7 @@
 //! ```
 //! use syrp_provenance::{database::Database, report::scan};
 //! let src = "fn mix(a: f32, b: f32) -> f32 { a * 0.5 + b * 0.5 }";
-//! let db = Database::from_sources(&[src], 5, 3);
+//! let db = Database::from_sources(&[src], 5, 3, syrp_provenance::scanner::Dialect::Rust);
 //! let r = scan(&db, &[("copy.rs".into(), src.into())], 0.3);
 //! assert!(!r.passed());
 //! assert_eq!(r.findings()[0].code, "SYRP-CR-0001");
@@ -34,7 +34,7 @@ use serde::Serialize;
 
 use crate::Finding;
 use crate::database::Database;
-use crate::scanner::{NORMALISER, fingerprints};
+use crate::scanner::{Dialect, NORMALISER, fingerprints};
 
 /// The `schema` value of a version-1 report.
 pub const SCHEMA: &str = "syrp.cleanroom-report/v1";
@@ -58,7 +58,7 @@ pub enum Verdict {
 ///
 /// ```
 /// use syrp_provenance::{database::Database, report::{score_file, Verdict}};
-/// let db = Database::from_sources(&[], 3, 2);
+/// let db = Database::from_sources(&[], 3, 2, syrp_provenance::scanner::Dialect::Rust);
 /// let f = score_file(&db, "a.rs", "let x = 1;", 0.1);
 /// assert_eq!((f.score, f.verdict), (0.0, Verdict::Pass));
 /// ```
@@ -82,7 +82,7 @@ pub struct FileReport {
 ///
 /// ```
 /// use syrp_provenance::{database::Database, report::scan};
-/// let r = scan(&Database::from_sources(&[], 3, 2), &[], 0.2);
+/// let r = scan(&Database::from_sources(&[], 3, 2, syrp_provenance::scanner::Dialect::Rust), &[], 0.2);
 /// assert!(r.to_json().contains("syrp.cleanroom-report/v1"));
 /// ```
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -108,7 +108,7 @@ impl Report {
     ///
     /// ```
     /// use syrp_provenance::{database::Database, report::scan};
-    /// assert!(scan(&Database::from_sources(&[], 3, 2), &[], 0.2).passed());
+    /// assert!(scan(&Database::from_sources(&[], 3, 2, syrp_provenance::scanner::Dialect::Rust), &[], 0.2).passed());
     /// ```
     pub fn passed(&self) -> bool {
         self.verdict == Verdict::Pass
@@ -118,7 +118,7 @@ impl Report {
     ///
     /// ```
     /// use syrp_provenance::{database::Database, report::scan};
-    /// assert!(scan(&Database::from_sources(&[], 3, 2), &[], 0.2).findings().is_empty());
+    /// assert!(scan(&Database::from_sources(&[], 3, 2, syrp_provenance::scanner::Dialect::Rust), &[], 0.2).findings().is_empty());
     /// ```
     pub fn findings(&self) -> Vec<Finding> {
         self.files
@@ -141,7 +141,7 @@ impl Report {
     ///
     /// ```
     /// use syrp_provenance::{database::Database, report::scan};
-    /// let json = scan(&Database::from_sources(&[], 3, 2), &[], 0.2).to_json();
+    /// let json = scan(&Database::from_sources(&[], 3, 2, syrp_provenance::scanner::Dialect::Rust), &[], 0.2).to_json();
     /// assert!(json.contains("\"verdict\": \"pass\""));
     /// ```
     pub fn to_json(&self) -> String {
@@ -153,11 +153,11 @@ impl Report {
 ///
 /// ```
 /// use syrp_provenance::{database::Database, report::score_file};
-/// let db = Database::from_sources(&["a b c d e"], 2, 1);
+/// let db = Database::from_sources(&["a b c d e"], 2, 1, syrp_provenance::scanner::Dialect::Rust);
 /// assert_eq!(score_file(&db, "x", "a b c d e", 0.5).score, 1.0);
 /// ```
 pub fn score_file(db: &Database, path: &str, source: &str, threshold: f64) -> FileReport {
-    let fps = fingerprints(source, db.k(), db.w());
+    let fps = fingerprints(source, db.k(), db.w(), Dialect::for_path(path));
     let mut ranges: Vec<[u32; 2]> = Vec::new();
     let mut matched = 0;
     for f in fps.iter().filter(|f| db.contains(f.hash)) {
@@ -195,7 +195,7 @@ pub fn score_file(db: &Database, path: &str, source: &str, threshold: f64) -> Fi
 ///
 /// ```
 /// use syrp_provenance::{database::Database, report::scan};
-/// let db = Database::from_sources(&["q w e r t y"], 3, 2);
+/// let db = Database::from_sources(&["q w e r t y"], 3, 2, syrp_provenance::scanner::Dialect::Rust);
 /// let r = scan(&db, &[("a.rs".into(), "z x c v".into())], 0.25);
 /// assert_eq!(r.files.len(), 1);
 /// ```

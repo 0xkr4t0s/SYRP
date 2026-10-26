@@ -3,7 +3,7 @@
 
 use syrp_provenance::database::{Database, SCHEMA};
 use syrp_provenance::report::{Verdict, scan, score_file};
-use syrp_provenance::scanner::{fingerprints, tokenize};
+use syrp_provenance::scanner::{Dialect, fingerprints, tokenize};
 
 /// A synthetic "reference" corpus written for these tests. It is not derived from any
 /// third-party code.
@@ -33,7 +33,10 @@ impl Counter {
 "#;
 
 fn texts(src: &str) -> Vec<String> {
-    tokenize(src).into_iter().map(|t| t.text).collect()
+    tokenize(src, Dialect::Rust)
+        .into_iter()
+        .map(|t| t.text)
+        .collect()
 }
 
 #[test]
@@ -57,7 +60,7 @@ fn b2_comments_whitespace_lifetimes_and_raw_identifiers() {
         texts("a /* x /* nested */ y */ b // tail\n<'Life> r#Type"),
         ["a", "b", "<", "'life", ">", "type"]
     );
-    let lines: Vec<u32> = tokenize("a\n\n b\n/*\n*/ c")
+    let lines: Vec<u32> = tokenize("a\n\n b\n/*\n*/ c", Dialect::Rust)
         .iter()
         .map(|t| t.line)
         .collect();
@@ -66,11 +69,11 @@ fn b2_comments_whitespace_lifetimes_and_raw_identifiers() {
 
 #[test]
 fn b2_fingerprints_survive_renaming_and_reformatting() {
-    let a: Vec<u64> = fingerprints(REFERENCE, 8, 4)
+    let a: Vec<u64> = fingerprints(REFERENCE, 8, 4, Dialect::Rust)
         .iter()
         .map(|f| f.hash)
         .collect();
-    let b: Vec<u64> = fingerprints(DISGUISED, 8, 4)
+    let b: Vec<u64> = fingerprints(DISGUISED, 8, 4, Dialect::Rust)
         .iter()
         .map(|f| f.hash)
         .collect();
@@ -85,17 +88,23 @@ fn b2_winnowing_guarantees_a_shared_fingerprint_for_long_matches() {
     let shared = "p q r s t u v w";
     let one = format!("alpha beta gamma {shared} delta");
     let two = format!("omega {shared} zeta eta theta iota");
-    let h1: Vec<u64> = fingerprints(&one, k, w).iter().map(|f| f.hash).collect();
-    let h2: Vec<u64> = fingerprints(&two, k, w).iter().map(|f| f.hash).collect();
+    let h1: Vec<u64> = fingerprints(&one, k, w, Dialect::Rust)
+        .iter()
+        .map(|f| f.hash)
+        .collect();
+    let h2: Vec<u64> = fingerprints(&two, k, w, Dialect::Rust)
+        .iter()
+        .map(|f| f.hash)
+        .collect();
     assert!(h1.iter().any(|h| h2.contains(h)));
     // Winnowing keeps fewer fingerprints than there are n-grams.
     let long: String = (0..200).map(|i| format!("t{i} ")).collect();
-    assert!(fingerprints(&long, k, w).len() < 200 - k + 1);
+    assert!(fingerprints(&long, k, w, Dialect::Rust).len() < 200 - k + 1);
 }
 
 #[test]
 fn b2_similarity_score_per_file() {
-    let db = Database::from_sources(&[REFERENCE], 8, 4);
+    let db = Database::from_sources(&[REFERENCE], 8, 4, Dialect::Rust);
     assert_eq!(score_file(&db, "d.rs", DISGUISED, 0.5).score, 1.0);
     assert_eq!(score_file(&db, "u.rs", UNRELATED, 0.5).score, 0.0);
     let half = format!("{REFERENCE}\n{UNRELATED}");
@@ -106,7 +115,7 @@ fn b2_similarity_score_per_file() {
 
 #[test]
 fn b3_database_round_trips_and_holds_hashes_only() {
-    let db = Database::from_sources(&[REFERENCE], 8, 4);
+    let db = Database::from_sources(&[REFERENCE], 8, 4, Dialect::Rust);
     let json = db.to_json();
     assert!(json.contains(SCHEMA));
     assert!(!json.to_lowercase().contains("blend_frames"));
@@ -115,16 +124,38 @@ fn b3_database_round_trips_and_holds_hashes_only() {
 }
 
 #[test]
+fn b2_cpp_block_comments_do_not_nest() {
+    let cpp = "/* Loads every file in dir/* and plays it. */\n\
+               int gain = 1; float mix(float a, float b) { return a * 0.5f + b * 0.5f; }\n";
+    let tokens = tokenize(cpp, Dialect::Cpp);
+    assert_eq!(
+        tokens.first().map(|t| (t.text.as_str(), t.line)),
+        Some(("int", 2))
+    );
+    assert!(tokens.len() > 20, "{} tokens", tokens.len());
+    // Rust block comments do nest, so the same text is one unterminated comment there.
+    assert!(tokenize(cpp, Dialect::Rust).is_empty());
+    let nested = "/* outer /* inner */ still comment */ fn x() {}";
+    assert_eq!(texts(nested)[0], "fn");
+}
+
+#[test]
 fn b3_database_rejects_invalid_or_incompatible_input() {
-    let ok = r#"{"schema":"syrp.cleanroom-fingerprints/v1","normaliser":"syrp-cfamily-v1","k":4,"w":2,"hashes":[]}"#;
+    let ok = r#"{"schema":"syrp.cleanroom-fingerprints/v1","normaliser":"syrp-cfamily-v2","k":4,"w":2,"hashes":["00000000000000aa"]}"#;
     assert!(Database::from_json(ok).is_ok());
     for bad in [
         "not json",
         &ok.replace("/v1", "/v9"),
-        &ok.replace("cfamily-v1", "other"),
+        &ok.replace("cfamily-v2", "other"),
+        &ok.replace("cfamily-v2", "cfamily-v1"),
         &ok.replace("\"k\":4", "\"k\":0"),
-        &ok.replace("[]", "[\"12\"]"),
-        &ok.replace("[]", "[\"ABCDEF0123456789\"]"),
+        // A database that could never match must fail closed, not pass every file.
+        &ok.replace("\"k\":4", "\"k\":1000000"),
+        &ok.replace("\"k\":4", "\"k\":65"),
+        &ok.replace("\"w\":2", "\"w\":65"),
+        &ok.replace("[\"00000000000000aa\"]", "[]"),
+        &ok.replace("00000000000000aa", "12"),
+        &ok.replace("00000000000000aa", "ABCDEF0123456789"),
     ] {
         assert_eq!(
             Database::from_json(bad).unwrap_err().code(),
@@ -136,7 +167,7 @@ fn b3_database_rejects_invalid_or_incompatible_input() {
 
 #[test]
 fn b4_report_json_has_scores_counts_and_verdicts() {
-    let db = Database::from_sources(&[REFERENCE], 8, 4);
+    let db = Database::from_sources(&[REFERENCE], 8, 4, Dialect::Rust);
     let files = vec![
         ("crates/a/src/copy.rs".to_string(), DISGUISED.to_string()),
         ("crates/a/src/own.rs".to_string(), UNRELATED.to_string()),
@@ -164,7 +195,7 @@ fn b4_report_json_has_scores_counts_and_verdicts() {
 
 #[test]
 fn b4_threshold_is_strictly_above() {
-    let db = Database::from_sources(&[REFERENCE], 8, 4);
+    let db = Database::from_sources(&[REFERENCE], 8, 4, Dialect::Rust);
     let files = [("d.rs".to_string(), DISGUISED.to_string())];
     assert!(scan(&db, &files, 1.0).passed());
     assert!(!scan(&db, &files, 0.99).passed());
@@ -221,7 +252,7 @@ fn b5_tests_use_inline_synthetic_corpora_only() {
 #[test]
 fn b4_nan_threshold_fails_closed() {
     // An unrelated file passes at a real threshold but must not pass a NaN one.
-    let db = Database::from_sources(&[REFERENCE], 8, 4);
+    let db = Database::from_sources(&[REFERENCE], 8, 4, Dialect::Rust);
     let files = [("u.c".to_owned(), UNRELATED.to_owned())];
     assert!(scan(&db, &files, 0.5).passed());
     assert!(!scan(&db, &files, f64::NAN).passed());
