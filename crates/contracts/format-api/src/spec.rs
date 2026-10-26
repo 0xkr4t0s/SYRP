@@ -150,7 +150,7 @@ impl AudioSpec {
     }
 }
 
-/// What a format's writer factory is asked to write:
+/// What [`AudioFormat::create_writer`](crate::AudioFormat::create_writer) is asked to write:
 /// the stream, the metadata to embed, and an optional encoder quality index.
 ///
 /// ```

@@ -27,3 +27,10 @@ title = "Render exceeds the limits of a WAV file"
 severity = "error"
 cause = "write_wav was asked to write more than 4 GiB of sample data, more than 65,535 channels, or a sample rate that does not round to 1..=4294967295 Hz."
 fix = "Write a shorter excerpt or fewer channels, and pass the render's real sample rate in Hz."
+
+[[error]]
+code = "SYRP-TESTKIT-0005"
+title = "Compared signals have different shapes"
+severity = "error"
+cause = "compare or assert_close was given an actual and an expected signal with different channel counts or lengths."
+fix = "Compare signals of the same shape: trim the longer one, or check that the processor under test produces the expected channel count and latency."
