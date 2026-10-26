@@ -7,6 +7,8 @@ use syrp_loop_api::MessageThread;
 use syrp_state::{NodeKey, NodeRef, StateError, Store, UndoManager};
 use syrp_var::{Identifier, Var};
 
+use crate::listener::Attached;
+
 thread_local! {
     /// The store that [`ValueTree::new`] creates nodes in: one per thread, so all trees made
     /// on the message thread can be joined together.
@@ -41,30 +43,47 @@ thread_local! {
 ///     assert!(!synth.has_property("cutoff"));
 /// });
 /// ```
+///
+/// Listeners added with [`ValueTree::add_listener`] belong to this wrapper, as in JUCE: a
+/// clone does not carry them, they stop when the wrapper drops, and
+/// [`ValueTree::assign`] moves them to the new node.
 #[doc(alias = "juce::ValueTree")]
-#[derive(Clone, Default, PartialEq, Eq, Hash)]
+#[derive(Default)]
 pub struct ValueTree {
-    node: Option<Node>,
+    pub(crate) node: Option<Node>,
+    pub(crate) listeners: Vec<Attached>,
 }
 
 /// A valid tree's store and node.
 #[derive(Clone)]
-struct Node {
-    store: Rc<Store>,
-    node: NodeRef,
+pub(crate) struct Node {
+    pub(crate) store: Rc<Store>,
+    pub(crate) node: NodeRef,
 }
 
-impl PartialEq for Node {
-    fn eq(&self, other: &Self) -> bool {
-        self.node == other.node
+/// Clones the reference only: listeners stay with the original wrapper (JUCE semantics).
+impl Clone for ValueTree {
+    fn clone(&self) -> Self {
+        let node = self.node.clone();
+        Self {
+            node,
+            listeners: Vec::new(),
+        }
     }
 }
 
-impl Eq for Node {}
+/// Identity: two trees are equal when they refer to the same node (or are both invalid).
+impl PartialEq for ValueTree {
+    fn eq(&self, other: &Self) -> bool {
+        self.node_ref() == other.node_ref()
+    }
+}
 
-impl std::hash::Hash for Node {
+impl Eq for ValueTree {}
+
+impl std::hash::Hash for ValueTree {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.node.hash(state);
+        self.node_ref().hash(state);
     }
 }
 
@@ -127,8 +146,10 @@ impl ValueTree {
 
     pub(crate) fn wrap(store: &Rc<Store>, node: NodeRef) -> Self {
         let store = Rc::clone(store);
+        let node = Some(Node { store, node });
         Self {
-            node: Some(Node { store, node }),
+            node,
+            listeners: Vec::new(),
         }
     }
 

@@ -6,6 +6,8 @@
 //! [`syrp_state::NodeKey`] for moving code off the compat layer. Dependencies run compat to
 //! core only: `syrp-state` never depends on this crate.
 //!
+//! [`Listener`] is JUCE's `ValueTree::Listener`; listeners belong to the wrapper they were added to.
+//!
 //! Method names follow Rust conventions; each carries a `#[doc(alias)]` with its JUCE name
 //! (`getProperty`, `createCopy`, ...), so rustdoc search finds both.
 //!
@@ -19,6 +21,8 @@
 //! });
 //! ```
 
+mod listener;
 mod tree;
 
+pub use listener::Listener;
 pub use tree::{Children, ValueTree};

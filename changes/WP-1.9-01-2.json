@@ -1,0 +1,1 @@
+{"wp": "WP-1.9-01", "kind": "added", "summary": "syrp-compat-state, increment 2: Listener trait (JUCE ValueTree::Listener callbacks) fed from the store's change log, owned by the ValueTree wrapper and moved by assign with redirected; the WP-0.2-15 spike scenarios ported through the compat API."}
