@@ -67,7 +67,8 @@ fn b7_kernels_and_denormal_guard_do_not_allocate() {
     for level in Level::supported() {
         let before = ALLOCS.with(Cell::get);
         {
-            let _guard = DenormalGuard::new();
+            // SAFETY: the kernels below are exact float arithmetic; no result feeds an index.
+            let _guard = unsafe { DenormalGuard::new() };
             kernels::add(level, &mut out, &a);
             kernels::add_into(level, &mut out, &a, &b);
             kernels::mul(level, &mut out, &a);
@@ -82,4 +83,10 @@ fn b7_kernels_and_denormal_guard_do_not_allocate() {
         }
         assert_eq!(ALLOCS.with(Cell::get), before, "{level:?} allocated");
     }
+}
+
+#[test]
+fn b7_denormal_guard_is_rt_safe() {
+    fn needs_rt<T: syrp_rt::RtSafe>() {}
+    needs_rt::<DenormalGuard>();
 }

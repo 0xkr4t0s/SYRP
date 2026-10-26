@@ -24,14 +24,17 @@ None (L0 infrastructure; no ledger rows in WP-0.2-14).
   (no ymm/zmm, `mul_add` as a software `fma` call per lane) even when `Avx512` is selected.
 - Kernels are generic `#[inline(always)]` bodies inside `dispatch!`, exact on every level
   (same bits as the scalar reference for NaN-free input); slices of different lengths panic.
-- `DenormalGuard` restores the exact previous MXCSR/FPCR value; it is `!Send`.
+- `DenormalGuard` restores the exact previous MXCSR/FPCR value; it is `!Send` and `RtSafe`.
+  `DenormalGuard::new` is `unsafe`: Rust assumes the default FP environment, so callers must
+  not let float results reach memory-safety decisions while it is alive. Keep it to one
+  audited call site (the host or processor wrapper). DAZ is set only if `MXCSR_MASK` has it.
 - `Level::Scalar` is the reference path; `SYRP_SIMD=scalar` forces it, read once per process.
 - `AlignedBuf` never reallocates; non-empty buffers start on a 64-byte boundary. Every
   `unsafe` block has a `// SAFETY:` comment.
 
 ## Thread affinity
 Any thread. RT-safe (no allocation, no locks): every `Sample` operation, `dispatch!`, every
-kernel, `DenormalGuard` and `Level::detect` after its first call. Not RT-safe: `AlignedBuf::zeroed`
+kernel, `DenormalGuard` (implements `syrp_rt::RtSafe`) and `Level::detect` after its first call. Not RT-safe: `AlignedBuf::zeroed`
 and dropping an `AlignedBuf` (they allocate and free), the first `Level::detect` call.
 
 ## Stability

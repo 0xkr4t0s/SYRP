@@ -18,7 +18,8 @@ fn denormal_times_one() -> f64 {
 fn b4_guard_flushes_denormals_and_restores_on_drop() {
     assert!(halve_min_positive() > 0.0);
     {
-        let guard = DenormalGuard::new();
+        // SAFETY: the scope only compares float results; none feeds an index or unsafe code.
+        let guard = unsafe { DenormalGuard::new() };
         assert_eq!(
             guard.is_active(),
             cfg!(all(
@@ -29,6 +30,7 @@ fn b4_guard_flushes_denormals_and_restores_on_drop() {
         if guard.is_active() {
             assert_eq!(halve_min_positive(), 0.0);
         }
+        // DAZ is set only when MXCSR_MASK reports it; every CPU this suite runs on does.
         if cfg!(all(target_arch = "x86_64", not(miri))) {
             assert_eq!(denormal_times_one(), 0.0, "DAZ");
         }
@@ -40,9 +42,11 @@ fn b4_guard_flushes_denormals_and_restores_on_drop() {
 #[test]
 fn b4_nested_guards_restore_in_order() {
     {
-        let outer = DenormalGuard::new();
+        // SAFETY: as above; the guards are dropped in reverse order by scoping.
+        let outer = unsafe { DenormalGuard::new() };
         {
-            let _inner = DenormalGuard::default();
+            // SAFETY: as above.
+            let _inner = unsafe { DenormalGuard::new() };
         }
         if outer.is_active() {
             assert_eq!(
