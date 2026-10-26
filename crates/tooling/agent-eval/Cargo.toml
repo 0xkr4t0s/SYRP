@@ -1,0 +1,29 @@
+[package]
+name = "syrp-agent-eval"
+description = "Agent-eval harness: fixed tasks with setup, agent and verifier phases, scored to a JSON report and a success-rate KPI."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "AGPL-3.0-only OR BUSL-1.1"
+repository.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[package.metadata.syrp]
+layer = "L6"
+wp = "WP-0.2-13"
+
+[[bin]]
+name = "syrp-agent-eval"
+path = "src/main.rs"
+
+[dependencies]
+clap.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+syrp-cli = { version = "0.0.1", path = "../cli" }
+syrp-error = { version = "0.0.1", path = "../../foundation/error" }
+toml.workspace = true
+
+[lints]
+workspace = true

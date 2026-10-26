@@ -1,0 +1,15 @@
+id = "explain-code"
+title = "Explain a SYRP error code"
+prompt = """
+`cargo syrp wp check` reported SYRP-WP-0005. Look the code up with the Syrp CLI and write its
+title, exactly and on one line, to answer.txt in the current directory.
+"""
+setup = "rm -f answer.txt"
+verify = """
+want=$(syrp explain SYRP-WP-0005 --json | sed -n 's/^ *"title": "\\(.*\\)",\\{0,1\\}$/\\1/p')
+test -n "$want"
+test "$(cat answer.txt)" = "$want"
+"""
+reference = """
+syrp explain SYRP-WP-0005 --json | sed -n 's/^ *"title": "\\(.*\\)",\\{0,1\\}$/\\1/p' > answer.txt
+"""

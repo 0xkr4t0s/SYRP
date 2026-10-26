@@ -1,0 +1,33 @@
+id = "create-crate"
+title = "Create a crate skeleton that passes cargo syrp check"
+prompt = """
+The current directory is a small Syrp-shaped workspace. Following the Syrp skill recipe
+create-a-crate.md, add a library crate named syrp-hello at crates/demo/hello: layer L6,
+an AGENTS.md with the template headings, and a documented src/lib.rs. It must pass
+`cargo syrp --root . check --lints-only` and build with `cargo build --offline`.
+"""
+setup = """
+mkdir -p crates
+: > ownership.toml
+printf '[workspace]\\nresolver = "3"\\nmembers = ["crates/*/*"]\\n\\n[workspace.package]\\nversion = "0.0.1"\\nedition = "2024"\\n' > Cargo.toml
+"""
+verify = """
+test -f crates/demo/hello/src/lib.rs
+grep -q '^name = "syrp-hello"' crates/demo/hello/Cargo.toml
+for h in Purpose 'Ledger rows' Invariants 'Thread affinity' Stability 'How to test' 'Known gaps'; do
+  grep -q "^## $h" crates/demo/hello/AGENTS.md
+done
+syrp --root . check --lints-only --json > check.json
+grep -q '"crates": 1' check.json
+CARGO_TARGET_DIR=target cargo build --offline --quiet
+"""
+reference = """
+d=crates/demo/hello
+mkdir -p "$d/src"
+printf '[package]\\nname = "syrp-hello"\\nversion.workspace = true\\nedition.workspace = true\\n\\n[package.metadata.syrp]\\nlayer = "L6"\\n' > "$d/Cargo.toml"
+printf '//! Hello.\\n\\n/// Greets.\\npub fn hello() -> u8 {\\n    1\\n}\\n' > "$d/src/lib.rs"
+printf '# syrp-hello\\n' > "$d/AGENTS.md"
+for h in Purpose 'Ledger rows' Invariants 'Thread affinity' Stability 'How to test' 'Known gaps'; do
+  printf '\\n## %s\\nTBD.\\n' "$h" >> "$d/AGENTS.md"
+done
+"""

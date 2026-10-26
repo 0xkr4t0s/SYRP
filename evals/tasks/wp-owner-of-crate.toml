@@ -1,0 +1,16 @@
+id = "wp-owner-of-crate"
+title = "Find which WP owns a crate"
+prompt = """
+Which work package owns the crate at crates/tooling/docgen in the Syrp repository ($SYRP_ROOT)?
+Write only its id (for example WP-0.1-01) to answer.txt in the current directory.
+"""
+setup = "rm -f answer.txt"
+verify = """
+id=$(cat answer.txt)
+printf '%s\\n' "$id" | grep -Eq '^WP-[0-9]+\\.[0-9]+-[0-9]+$'
+syrp --root "$SYRP_ROOT" wp show "$id" --json | grep -q '"crate": "crates/tooling/docgen"'
+"""
+reference = """
+f=$(grep -l '^crate = "crates/tooling/docgen"' "$SYRP_ROOT"/work/packages/*.toml)
+basename "$f" .toml > answer.txt
+"""
