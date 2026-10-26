@@ -255,6 +255,8 @@ fn b5_binary_writes_both_files_and_reports_bad_input() {
     let json: serde_json::Value =
         serde_json::from_str(&std::fs::read_to_string(out.join("progress.json")).unwrap()).unwrap();
     assert_eq!(json["waves"][0]["wps"][2]["open"][0], 9);
+    let html = std::fs::read_to_string(out.join("index.html")).unwrap();
+    assert!(html.starts_with("<!doctype html>") && html.contains("\"commit\":"));
     assert!(out.join("index.html").exists());
 
     std::fs::write(&open, "not json").unwrap();
