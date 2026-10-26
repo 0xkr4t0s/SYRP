@@ -1401,6 +1401,13 @@ dependencies = [
 [[package]]
 name = "syrp-var"
 version = "0.0.1"
+dependencies = [
+ "proptest",
+ "serde",
+ "serde_core",
+ "serde_json",
+ "syrp-error",
+]
 
 [[package]]
 name = "target-tuple"

@@ -5,7 +5,8 @@
 //! `Var`s. The behaviour follows JUCE's public documentation for `Identifier`, `var`,
 //! `NamedValueSet` and `DynamicObject`; where that documentation leaves a case open, the choice
 //! made here is stated below and listed in the crate's `AGENTS.md` for the differential harness.
-//! JSON and serde arrive in a later increment.
+//! [`json`] reads and writes JSON; with the default `serde` feature, `Var` also implements
+//! `serde::Serialize` and `serde::Deserialize` with the same mapping.
 //!
 //! # Sharing
 //! Cloning a [`Var`] is O(1). Strings and binary data are immutable and shared. Arrays have
@@ -33,7 +34,7 @@
 //! neither `Send` nor `Sync`: their heap data is shared through `Rc`, and objects change
 //! through a `RefCell`, like JUCE's `var` and `DynamicObject`, which are not thread-safe, and
 //! like the `!Send` `syrp-state` store that holds them. To move a value to another thread,
-//! serialise it (JSON, or serde, both in later increments of this crate) and rebuild it there.
+//! serialise it ([`json::to_string`] or serde) and rebuild it there.
 //!
 //! ```compile_fail
 //! fn need_send<T: Send>() {}
@@ -90,11 +91,16 @@
 //! Void, undefined, arrays, objects and binary are compared with `==`.
 
 mod convert;
+mod error;
 mod identifier;
+pub mod json;
 mod object;
+mod serde_impl;
 mod share;
 mod var;
 
+pub use error::VarError;
 pub use identifier::Identifier;
 pub use object::{DynamicObject, NamedValueIter, NamedValueSet};
+pub use syrp_error::Diagnostic;
 pub use var::{Var, VarView};
