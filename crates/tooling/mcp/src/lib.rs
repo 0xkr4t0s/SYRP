@@ -110,7 +110,10 @@ impl SyrpServer {
     /// assert_eq!(server.root(), Some(std::path::Path::new("/path/to/syrp")));
     /// ```
     pub fn new(root: Option<PathBuf>) -> Self {
-        #[allow(unused_mut)]
+        #[cfg_attr(
+            not(feature = "internal"),
+            allow(unused_mut, reason = "only mutated when the internal tools are added")
+        )]
         let mut tool_router = Self::public_tools();
         #[cfg(feature = "internal")]
         {
@@ -322,7 +325,13 @@ impl ServerHandler for SyrpServer {
 /// assert_eq!(t[0].uri_template, syrp_mcp::ERRORS_TEMPLATE);
 /// ```
 pub fn resource_templates() -> Vec<ResourceTemplate> {
-    #[allow(unused_mut)]
+    #[cfg_attr(
+        not(feature = "internal"),
+        allow(
+            unused_mut,
+            reason = "only mutated when the internal wp template is added"
+        )
+    )]
     let mut out = vec![
         ResourceTemplate::new(ERRORS_TEMPLATE, "error")
             .with_description(
