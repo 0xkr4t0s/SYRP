@@ -1,0 +1,1 @@
+{"wp": "WP-0.2-01", "kind": "added", "summary": "syrp-loop-api: MessageThread token, MessageLoop trait (post, task_sender, timer, on_vblank, post_and_wait), Task/TaskSender, CallbackGuard (TimerGuard/VBlankGuard), PeerId, Coalescer and the deterministic ManualLoop with a virtual clock; new errors/loop.toml domain (SYRP-LOOP-0001..0003)."}

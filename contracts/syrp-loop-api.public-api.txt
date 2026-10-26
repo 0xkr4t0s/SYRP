@@ -1,0 +1,74 @@
+pub mod syrp_loop_api
+#[non_exhaustive] pub enum syrp_loop_api::LoopError
+pub syrp_loop_api::LoopError::Closed
+pub syrp_loop_api::LoopError::OnMessageThread
+pub syrp_loop_api::LoopError::TaskLimitReached
+impl core::error::Error for syrp_loop_api::LoopError
+impl core::fmt::Display for syrp_loop_api::LoopError
+pub fn syrp_loop_api::LoopError::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl syrp_error::Diagnostic for syrp_loop_api::LoopError
+pub fn syrp_loop_api::LoopError::code(&self) -> syrp_error::ErrorCode
+pub struct syrp_loop_api::CallbackGuard
+impl syrp_loop_api::CallbackGuard
+pub fn syrp_loop_api::CallbackGuard::new(impl core::ops::function::FnOnce() + 'static) -> Self
+impl core::ops::drop::Drop for syrp_loop_api::CallbackGuard
+pub fn syrp_loop_api::CallbackGuard::drop(&mut self)
+pub struct syrp_loop_api::Coalescer
+impl syrp_loop_api::Coalescer
+pub fn syrp_loop_api::Coalescer::cancel(&self)
+pub fn syrp_loop_api::Coalescer::is_pending(&self) -> bool
+pub fn syrp_loop_api::Coalescer::new(syrp_loop_api::TaskSender, impl core::ops::function::FnMut(&syrp_loop_api::MessageThread<'_>) + core::marker::Send + 'static) -> Self
+pub fn syrp_loop_api::Coalescer::trigger(&self)
+impl core::ops::drop::Drop for syrp_loop_api::Coalescer
+pub fn syrp_loop_api::Coalescer::drop(&mut self)
+pub struct syrp_loop_api::ManualLoop
+impl syrp_loop_api::ManualLoop
+pub fn syrp_loop_api::ManualLoop::advance(&self, core::time::Duration) -> usize
+pub fn syrp_loop_api::ManualLoop::new() -> Self
+pub fn syrp_loop_api::ManualLoop::now(&self) -> core::time::Duration
+pub fn syrp_loop_api::ManualLoop::pending_tasks(&self) -> usize
+pub fn syrp_loop_api::ManualLoop::run_until_idle(&self) -> core::result::Result<usize, syrp_loop_api::LoopError>
+pub fn syrp_loop_api::ManualLoop::set_task_limit(&self, usize)
+pub fn syrp_loop_api::ManualLoop::vblank(&self, syrp_loop_api::PeerId) -> usize
+pub fn syrp_loop_api::ManualLoop::with_token<R>(&self, impl core::ops::function::FnOnce(&syrp_loop_api::MessageThread<'_>) -> R) -> R
+impl core::default::Default for syrp_loop_api::ManualLoop
+pub fn syrp_loop_api::ManualLoop::default() -> Self
+impl syrp_loop_api::MessageLoop for syrp_loop_api::ManualLoop
+pub fn syrp_loop_api::ManualLoop::on_vblank(&self, syrp_loop_api::PeerId, syrp_loop_api::VBlankFn) -> syrp_loop_api::VBlankGuard
+pub fn syrp_loop_api::ManualLoop::post(&self, syrp_loop_api::Task)
+pub fn syrp_loop_api::ManualLoop::post_and_wait<R, F>(&self, F) -> core::result::Result<R, syrp_loop_api::LoopError> where Self: core::marker::Sized, F: core::ops::function::FnOnce(&syrp_loop_api::MessageThread<'_>) -> R + core::marker::Send + 'static, R: core::marker::Send + 'static
+pub fn syrp_loop_api::ManualLoop::task_sender(&self) -> syrp_loop_api::TaskSender
+pub fn syrp_loop_api::ManualLoop::timer(&self, core::time::Duration, syrp_loop_api::TimerFn) -> syrp_loop_api::TimerGuard
+pub struct syrp_loop_api::MessageThread<'a>
+impl syrp_loop_api::MessageThread<'_>
+pub unsafe fn syrp_loop_api::MessageThread<'_>::new_unchecked() -> Self
+pub struct syrp_loop_api::PeerId(_)
+impl syrp_loop_api::PeerId
+pub const fn syrp_loop_api::PeerId::from_raw(u64) -> Self
+pub const fn syrp_loop_api::PeerId::to_raw(self) -> u64
+pub struct syrp_loop_api::Task
+impl syrp_loop_api::Task
+pub fn syrp_loop_api::Task::new(impl core::ops::function::FnOnce(&syrp_loop_api::MessageThread<'_>) + core::marker::Send + 'static) -> Self
+pub fn syrp_loop_api::Task::run(self, &syrp_loop_api::MessageThread<'_>)
+pub struct syrp_loop_api::TaskSender
+impl syrp_loop_api::TaskSender
+pub fn syrp_loop_api::TaskSender::is_message_thread(&self) -> bool
+pub fn syrp_loop_api::TaskSender::new(std::thread::id::ThreadId, impl core::ops::function::Fn(syrp_loop_api::Task) + core::marker::Send + core::marker::Sync + 'static) -> Self
+pub fn syrp_loop_api::TaskSender::post(&self, syrp_loop_api::Task)
+pub fn syrp_loop_api::TaskSender::post_and_wait<R, F>(&self, F) -> core::result::Result<R, syrp_loop_api::LoopError> where F: core::ops::function::FnOnce(&syrp_loop_api::MessageThread<'_>) -> R + core::marker::Send + 'static, R: core::marker::Send + 'static
+pub trait syrp_loop_api::MessageLoop
+pub fn syrp_loop_api::MessageLoop::on_vblank(&self, syrp_loop_api::PeerId, syrp_loop_api::VBlankFn) -> syrp_loop_api::VBlankGuard
+pub fn syrp_loop_api::MessageLoop::post(&self, syrp_loop_api::Task)
+pub fn syrp_loop_api::MessageLoop::post_and_wait<R, F>(&self, F) -> core::result::Result<R, syrp_loop_api::LoopError> where Self: core::marker::Sized, F: core::ops::function::FnOnce(&syrp_loop_api::MessageThread<'_>) -> R + core::marker::Send + 'static, R: core::marker::Send + 'static
+pub fn syrp_loop_api::MessageLoop::task_sender(&self) -> syrp_loop_api::TaskSender
+pub fn syrp_loop_api::MessageLoop::timer(&self, core::time::Duration, syrp_loop_api::TimerFn) -> syrp_loop_api::TimerGuard
+impl syrp_loop_api::MessageLoop for syrp_loop_api::ManualLoop
+pub fn syrp_loop_api::ManualLoop::on_vblank(&self, syrp_loop_api::PeerId, syrp_loop_api::VBlankFn) -> syrp_loop_api::VBlankGuard
+pub fn syrp_loop_api::ManualLoop::post(&self, syrp_loop_api::Task)
+pub fn syrp_loop_api::ManualLoop::post_and_wait<R, F>(&self, F) -> core::result::Result<R, syrp_loop_api::LoopError> where Self: core::marker::Sized, F: core::ops::function::FnOnce(&syrp_loop_api::MessageThread<'_>) -> R + core::marker::Send + 'static, R: core::marker::Send + 'static
+pub fn syrp_loop_api::ManualLoop::task_sender(&self) -> syrp_loop_api::TaskSender
+pub fn syrp_loop_api::ManualLoop::timer(&self, core::time::Duration, syrp_loop_api::TimerFn) -> syrp_loop_api::TimerGuard
+pub type syrp_loop_api::TimerFn = alloc::boxed::Box<dyn core::ops::function::FnMut(&syrp_loop_api::MessageThread<'_>)>
+pub type syrp_loop_api::TimerGuard = syrp_loop_api::CallbackGuard
+pub type syrp_loop_api::VBlankFn = alloc::boxed::Box<dyn core::ops::function::FnMut(&syrp_loop_api::MessageThread<'_>, core::time::Duration)>
+pub type syrp_loop_api::VBlankGuard = syrp_loop_api::CallbackGuard

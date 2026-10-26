@@ -1,0 +1,9 @@
+# Error catalogue: real-time primitives (syrp-rt). `cargo syrp explain <code>` renders these.
+# Codes are permanent: never reuse or renumber one.
+
+[[error]]
+code = "SYRP-RT-0001"
+title = "Allocator used inside a no-allocation scope"
+severity = "error"
+cause = "With syrp_rt::GuardedAllocator installed (debug build), code running inside syrp_rt::no_alloc on that thread allocated, reallocated or freed heap memory. Audio-thread code must never touch the allocator; the process aborts so the test fails at the offending call."
+fix = "Run the program under a debugger or read the backtrace to find the call. Preallocate in prepare/construction, send values to the audio thread through syrp_rt::spsc or RtHandoff, and hand values to drop to a DeferredDrop instead of dropping them on the audio thread."

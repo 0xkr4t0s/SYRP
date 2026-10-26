@@ -1,0 +1,1 @@
+{"wp": "WP-0.1-04", "kind": "added", "summary": "syrp-rt: RtHandoff<T> single-slot publisher whose reader swaps in the latest Box<T> without allocating and reclaims the old value through DeferredDrop, with a loom model."}
