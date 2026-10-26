@@ -144,6 +144,10 @@ fn b4_only_byte_stream_types_have_midi1_bytes_and_decoding_never_allocates() {
     assert_eq!(reset.midi1_bytes().unwrap().collect::<Vec<_>>(), [0xFF]);
     let cont = P::sysex7(0, Continue, &[9]).unwrap();
     assert_eq!(cont.midi1_bytes().unwrap().collect::<Vec<_>>(), [9]);
+    // An empty Continue packet adds nothing: no 0xF0, no 0xF7, no data (seed from #49).
+    let (empty, _) = P::read(&[0x3B20_0000, 0]).unwrap();
+    assert_eq!(empty.sysex_status(), Some(Continue));
+    assert_eq!(empty.midi1_bytes().unwrap().len(), 0);
 
     fn rt_safe<T: RtSafe>(_: &T) {}
     let mut dec = BytesToUmp::new(1).unwrap();
@@ -205,7 +209,11 @@ proptest! {
             && let Some(b) = p.midi1_bytes()
         {
             let v: Vec<u8> = b.collect();
-            prop_assert!(!v.is_empty() && v.len() <= 8);
+            prop_assert!(v.len() <= 8);
+            // Only an empty Continue packet may yield nothing.
+            let empty_continue = p.sysex_status() == Some(Continue)
+                && p.sysex_bytes().is_some_and(|d| d.len() == 0);
+            prop_assert_eq!(v.is_empty(), empty_continue);
         }
     }
 }
