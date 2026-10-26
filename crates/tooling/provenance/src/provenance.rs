@@ -211,6 +211,20 @@ fn licence_of(root: &Path, manifest: &Path, pkg: &toml::Value) -> Result<String,
     }
 }
 
+/// Rejects ranges git could read as an option (`--output=...`) or that are empty. Callers also
+/// pass `--end-of-options` before the range, so this is defence in depth.
+fn check_range_arg(range: &str) -> Result<(), Error> {
+    if range.trim().is_empty() {
+        return Err(Error::Git("commit range is empty".into()));
+    }
+    if range.starts_with('-') {
+        return Err(Error::Git(format!(
+            "commit range `{range}` starts with `-`; pass a revision range such as origin/main..HEAD"
+        )));
+    }
+    Ok(())
+}
+
 fn git(root: &Path, args: &[&str]) -> Result<String, Error> {
     let out = Command::new("git")
         .arg("-C")
@@ -235,9 +249,17 @@ fn git(root: &Path, args: &[&str]) -> Result<String, Error> {
 /// assert_eq!(err.unwrap_err().code(), "SYRP-CR-0005");
 /// ```
 pub fn git_commits(root: &Path, range: &str) -> Result<Vec<Commit>, Error> {
+    check_range_arg(range)?;
     let raw = git(
         root,
-        &["log", "--no-merges", "--format=%H%x00%B%x1e", range, "--"],
+        &[
+            "log",
+            "--no-merges",
+            "--format=%H%x00%B%x1e",
+            "--end-of-options",
+            range,
+            "--",
+        ],
     )?;
     Ok(raw
         .split('\x1e')
@@ -258,9 +280,19 @@ pub fn git_commits(root: &Path, range: &str) -> Result<Vec<Commit>, Error> {
 /// assert_eq!(err.unwrap_err().code(), "SYRP-CR-0005");
 /// ```
 pub fn git_added_files(root: &Path, range: &str) -> Result<Vec<String>, Error> {
+    check_range_arg(range)?;
     let raw = git(
         root,
-        &["diff", "--name-only", "--diff-filter=A", "-z", range, "--"],
+        &[
+            "diff",
+            "--name-only",
+            "--no-renames",
+            "--diff-filter=A",
+            "-z",
+            "--end-of-options",
+            range,
+            "--",
+        ],
     )?;
     Ok(raw
         .split('\0')
@@ -278,7 +310,13 @@ pub fn git_added_files(root: &Path, range: &str) -> Result<Vec<String>, Error> {
 /// ```
 pub fn check_range(root: &Path, range: &str) -> Result<ProvenanceReport, Error> {
     let mut report = ProvenanceReport::default();
-    for c in git_commits(root, range)? {
+    let commits = git_commits(root, range)?;
+    if commits.is_empty() {
+        return Err(Error::Git(format!(
+            "commit range `{range}` contains no commits, so nothing was checked"
+        )));
+    }
+    for c in commits {
         report.commits_checked += 1;
         report.findings.extend(check_commit(&c.sha, &c.message));
     }

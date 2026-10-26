@@ -186,6 +186,29 @@ fn b1_bad_range_is_a_git_error() {
 }
 
 #[test]
+fn b1_option_like_and_empty_ranges_are_rejected() {
+    let r = workspace("optrange");
+    let out = r.path().join("injected");
+    for range in [
+        format!("--output={}", out.display()),
+        "-p".to_owned(),
+        String::new(),
+        "  ".to_owned(),
+    ] {
+        let err = check_range(r.path(), &range).unwrap_err();
+        assert_eq!(err.code(), "SYRP-CR-0005", "{range:?}");
+    }
+    assert!(!out.exists(), "git must never see the range as an option");
+}
+
+#[test]
+fn b1_range_with_no_commits_fails() {
+    let r = workspace("emptyrange");
+    let err = check_range(r.path(), "HEAD..HEAD").unwrap_err();
+    assert_eq!(err.code(), "SYRP-CR-0005");
+}
+
+#[test]
 fn b1_every_code_used_is_catalogued() {
     let table: toml::Table = include_str!("../../../../errors/cleanroom.toml")
         .parse()
