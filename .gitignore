@@ -1,0 +1,6 @@
+/target
+/book
+**/*.rs.bk
+.DS_Store
+/.syrp/
+/review.json

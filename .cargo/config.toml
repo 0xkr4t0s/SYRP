@@ -1,0 +1,3 @@
+# Lets agents run `cargo syrp ...` inside this repo without installing the binary.
+[alias]
+syrp = "run --quiet --package syrp-cli --bin cargo-syrp -- syrp"

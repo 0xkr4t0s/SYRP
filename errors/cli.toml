@@ -1,0 +1,122 @@
+# Error catalogue: CLI domain. `cargo syrp explain <code>` renders these entries.
+# Codes are permanent: never reuse or renumber one.
+
+[[error]]
+code = "SYRP-CLI-0001"
+title = "Not inside an Syrp repository"
+severity = "error"
+cause = "No directory at or above the current one holds both ownership.toml and a workspace Cargo.toml."
+fix = "cd into the syrp checkout, or pass --root <path>."
+
+[[error]]
+code = "SYRP-CLI-0002"
+title = "Unknown error code"
+severity = "error"
+cause = "`explain` was given a code that is not in errors/*.toml, or no code at all."
+fix = "Run `cargo syrp explain --list` to see every code."
+
+[[error]]
+code = "SYRP-CLI-0003"
+title = "Input file unreadable or not valid JSON"
+severity = "error"
+cause = "A file passed with --issues, --prs, --pr, --issue or to `review validate` could not be read or parsed."
+fix = "Check the path, and that the file came from the documented `gh ... --json` command."
+
+[[error]]
+code = "SYRP-CLI-0004"
+title = "Git diff failed"
+severity = "error"
+cause = "The ownership check diffs against a base ref (default origin/main) that is not available locally."
+fix = "Run `git fetch origin main`, or pass --base <ref>."
+
+[[error]]
+code = "SYRP-CLI-0005"
+title = "Invalid command line"
+severity = "error"
+cause = "The arguments did not parse."
+fix = "Run `cargo syrp --help` or `cargo syrp <command> --help`."
+
+[[error]]
+code = "SYRP-CLI-0101"
+title = "Tool missing"
+severity = "error"
+cause = "A required program (cargo, rustc, git, rustfmt, clippy) or an optional one (gh, mdbook, cargo-nextest, cargo-deny) is not installed."
+fix = "Install it. `cargo syrp doctor` lists what is missing and what each tool is for."
+
+[[error]]
+code = "SYRP-CLI-0102"
+title = "Toolchain differs from the pinned one"
+severity = "warning"
+cause = "rustc on PATH is not the version in rust-toolchain.toml."
+fix = "Inside the repo rustup switches automatically. Otherwise run `rustup toolchain install` in the repo root."
+
+[[error]]
+code = "SYRP-CLI-0201"
+title = "Formatting differs from rustfmt"
+severity = "error"
+cause = "`cargo fmt --all -- --check` found unformatted code."
+fix = "Run `cargo fmt --all` and commit the result."
+
+[[error]]
+code = "SYRP-CLI-0202"
+title = "Clippy reported warnings"
+severity = "error"
+cause = "`cargo clippy --workspace --all-targets -- -D warnings` failed. Warnings are errors in this repo."
+fix = "Fix each lint. Do not add `#[allow]` without a comment explaining why; reviewers reject unexplained allows."
+
+[[error]]
+code = "SYRP-CLI-0203"
+title = "Layer or sibling violation"
+severity = "error"
+cause = "A crate depends on a crate in a higher layer, or on a sibling in the same group (master plan §5.3). Dev-dependencies are exempt."
+fix = "Depend on the contract (`*-api`) crate instead, or move the shared code down a layer through a change request."
+example = "syrp-rt (L0) may not depend on syrp-audio-api (L1)."
+
+[[error]]
+code = "SYRP-CLI-0204"
+title = "Banned dependency"
+severity = "error"
+cause = "Cargo.lock contains a crate banned for clean-room reasons (for example `aloe-*`, a self-described JUCE translation)."
+fix = "Remove the dependency. Do not read its source. If it came in transitively, file a change request."
+
+[[error]]
+code = "SYRP-CLI-0205"
+title = "Source file too large"
+severity = "error"
+cause = "A .rs file is longer than 1200 lines. Large files are hard for agents and reviewers to hold in context."
+fix = "Split the module into smaller files."
+
+[[error]]
+code = "SYRP-CLI-0206"
+title = "Crate metadata or AGENTS.md missing"
+severity = "error"
+cause = "Every workspace crate needs `[package.metadata.syrp] layer = \"L0\"..\"L7\"` and an AGENTS.md."
+fix = "Add both. The AGENTS.md headings are in docs/agents/crate-agents-template.md."
+
+[[error]]
+code = "SYRP-CLI-0207"
+title = "Review file inside the repository"
+severity = "error"
+cause = "A review.json at the repository root could be mistaken for, or published as, a reviewer's verdict."
+fix = "Delete it. Reviewer agents write their review to a path outside the checkout that the workflow chooses."
+
+[[error]]
+code = "SYRP-CLI-0301"
+title = "Tests failed"
+severity = "error"
+cause = "cargo test reported failures. The diagnostic carries the tail of the output."
+fix = "Fix the failing tests. Never delete or ignore a test to get green."
+
+[[error]]
+code = "SYRP-CLI-0401"
+title = "Could not write documentation output"
+severity = "error"
+cause = "`docs build` failed to read a source or write into the output directory."
+fix = "Check permissions and disk space for the --out directory."
+
+[[error]]
+code = "SYRP-CLI-0402"
+title = "mdBook build failed"
+severity = "error"
+cause = "The human documentation site did not build, usually a broken link in docs/SUMMARY.md or a missing page."
+fix = "Run `mdbook build` locally and fix the reported page."

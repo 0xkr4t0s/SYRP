@@ -1,0 +1,11 @@
+id = "WP-0.2-08"
+title = "syrp-peer-api: window peer, input, IME, clipboard, cursors, displays, dialogs"
+crate = "crates/contracts/peer-api"
+depends_on = ["WP-0.1-05", "WP-0.2-07", "WP-0.2-01"]
+spec = "work/specs/WP-0.2-08.md"
+risk = ["public-api", "contract-change"]
+acceptance = "cargo syrp wp check WP-0.2-08 --json"
+platforms = ["linux", "macos", "windows"]
+role = "implementer"
+status = "planned"
+budget = { agent_hours = 24, max_review_rounds = 3, max_restarts = 2 }

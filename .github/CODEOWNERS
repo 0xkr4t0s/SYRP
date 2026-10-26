@@ -1,0 +1,10 @@
+# Shared files and frozen contracts. Paired with ownership.toml, which the gates enforce.
+/Cargo.toml          @0xkr4t0s
+/rust-toolchain.toml @0xkr4t0s
+/deny.toml           @0xkr4t0s
+/ownership.toml      @0xkr4t0s
+/.github/            @0xkr4t0s
+/agents/             @0xkr4t0s
+/contracts/          @0xkr4t0s
+/LICENSE.md          @0xkr4t0s
+/LICENSES/           @0xkr4t0s

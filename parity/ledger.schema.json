@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Syrp parity ledger",
+  "description": "One row per JUCE public class and per tooling feature (master plan §9.10). Statuses change only from CI evidence.",
+  "type": "object",
+  "required": ["baseline", "rows"],
+  "properties": {
+    "baseline": { "const": "9.0.4" },
+    "rows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "juce", "status"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z_]+/[A-Za-z0-9_:]+$" },
+          "juce": {
+            "type": "object",
+            "required": ["module", "class"],
+            "properties": {
+              "module": { "type": "string" },
+              "class": { "type": "string" },
+              "doc_url": { "type": "string" }
+            }
+          },
+          "syrp": { "type": "array", "items": { "type": "string" }, "description": "Rust paths implementing it." },
+          "status": { "enum": ["todo", "partial", "done", "mapped", "gap", "deviation"] },
+          "owner_wp": { "type": "string" },
+          "reason": { "type": "string", "description": "Required for gap and deviation." },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["scenario", "result", "ci_run"],
+              "properties": {
+                "scenario": { "type": "string" },
+                "result": { "enum": ["pass", "fail"] },
+                "ci_run": { "type": "string" }
+              }
+            }
+          },
+          "features": { "type": "array", "items": { "$ref": "#/properties/rows/items" } }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,12 @@
+name: Work package (spec room)
+description: Propose a new work package. The conductor opens tracking issues itself; use this only for proposals.
+labels: ["wp-proposal"]
+body:
+  - type: textarea
+    id: definition
+    attributes:
+      label: Definition (TOML)
+      description: In the format of work/packages/*.toml (schema work/wp.schema.json).
+      render: toml
+    validations:
+      required: true

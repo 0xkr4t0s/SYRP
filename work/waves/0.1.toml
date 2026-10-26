@@ -1,0 +1,8 @@
+id = "0.1"
+phase = 0
+title = "Bootstrap: foundation crates, tooling and the pipeline itself"
+enabled = true
+packages = [
+  "WP-0.1-01", "WP-0.1-02", "WP-0.1-03", "WP-0.1-04", "WP-0.1-05", "WP-0.1-06",
+  "WP-0.1-07", "WP-0.1-08", "WP-0.1-09", "WP-0.1-10", "WP-0.1-11", "WP-0.1-12",
+]

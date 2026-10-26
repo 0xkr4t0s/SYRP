@@ -1,0 +1,50 @@
+# Error catalogue: pull requests and merge gates (master plan §12.8).
+
+[[error]]
+code = "SYRP-PR-0001"
+title = "PR too large"
+severity = "error"
+cause = "More than 1200 changed lines (Cargo.lock excluded). Large PRs get worse reviews."
+fix = "Split the WP into several PRs; only the last carries `\"final\": true`."
+
+[[error]]
+code = "SYRP-PR-0002"
+title = "CI is red"
+severity = "error"
+cause = "At least one required check failed (gate G1)."
+fix = "Reproduce locally with the same `cargo syrp` command the job ran, fix, and push."
+
+[[error]]
+code = "SYRP-PR-0003"
+title = "Reviewer requested changes"
+severity = "error"
+cause = "The `syrp/review` status is failure (gate G2)."
+fix = "Address every requested change in the review comment; the conductor schedules a revision automatically."
+
+[[error]]
+code = "SYRP-PR-0004"
+title = "Adversarial verifier rejected the PR"
+severity = "error"
+cause = "The PR is high-risk (public API, unsafe, FFI, wrappers, licensing, CI, contracts or new dependencies) and the `syrp/adversarial` status is failure (gate G10)."
+fix = "Address the verifier's findings; its attack tests usually show the failing case."
+
+[[error]]
+code = "SYRP-PR-0005"
+title = "PR front matter missing or invalid"
+severity = "error"
+cause = "The body must contain `<!-- syrp-pr: {json} -->` naming a known WP (or kind change-request), with risk categories only from: public-api, unsafe, ffi, plugin-wrapper, licensing, ci-infra, contract-change, supply-chain, rt-safety."
+fix = "Use the PR template. Example: <!-- syrp-pr: {\"wp\":\"WP-0.1-03\",\"final\":true,\"risk\":[],\"deps_added\":[],\"unsafe_count\":0} -->"
+
+[[error]]
+code = "SYRP-PR-0006"
+title = "Provenance trailers missing"
+severity = "error"
+cause = "Every commit needs `WP: <id>` (or `Change-Request: <n>`) and `Agent-Model: <model>` trailers (master plan §10.5)."
+fix = "Amend or reword the commits on your own branch to add the trailers, then force-push the branch."
+
+[[error]]
+code = "SYRP-PR-0007"
+title = "Review file invalid"
+severity = "error"
+cause = "The reviewer's JSON is malformed, is for a different PR or review kind than the one being published, skips a checklist item, passes an item without evidence, or lists no commands run."
+fix = "Answer every item from `cargo syrp review checklist` with evidence from commands you ran yourself."

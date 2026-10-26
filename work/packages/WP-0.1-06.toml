@@ -1,0 +1,11 @@
+id = "WP-0.1-06"
+title = "Parity ledger: seeded inventory of every JUCE 9.0.4 public class from public docs"
+paths = ["parity/inventory/"]
+depends_on = ["WP-0.1-01"]
+spec = "work/specs/WP-0.1-06.md"
+risk = ["licensing"]
+acceptance = "cargo syrp wp check WP-0.1-06 --json"
+platforms = ["linux", "macos", "windows"]
+role = "spec-room"
+status = "planned"
+budget = { agent_hours = 24, max_review_rounds = 3, max_restarts = 2 }

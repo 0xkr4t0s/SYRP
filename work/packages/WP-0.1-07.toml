@@ -1,0 +1,10 @@
+id = "WP-0.1-07"
+title = "WP spec schema and conductor bootstrap: scheduling, leases, agent spawning"
+depends_on = ["WP-0.1-01"]
+spec = "work/specs/WP-0.1-07.md"
+risk = ["ci-infra"]
+acceptance = "cargo syrp wp check WP-0.1-07 --json"
+platforms = ["linux", "macos", "windows"]
+role = "pr-manager"
+status = "done"
+budget = { agent_hours = 24, max_review_rounds = 3, max_restarts = 2 }

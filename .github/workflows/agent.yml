@@ -1,0 +1,99 @@
+# SHARED FILE (PR manager). One implementer or spec-room agent working on one WP.
+# Dispatched only by conductor.yml.
+name: agent
+
+on:
+  workflow_dispatch:
+    inputs:
+      wp: { description: "Work package id", required: true }
+      issue: { description: "Tracking issue number", required: true }
+      role: { description: "implementer | spec-room | pr-manager", required: true, default: implementer }
+      mode: { description: "implement | revise", required: true, default: implement }
+      pr: { description: "PR number (revise only)", required: false, default: "" }
+
+concurrency:
+  group: agent-${{ inputs.wp }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  run:
+    runs-on: ubuntu-24.04
+    # Below the conductor's 4 h lease TTL, so the finish step always releases the lease first.
+    timeout-minutes: 230
+    env:
+      # Implementers get a token that can push branches and open PRs but cannot set commit
+      # statuses or merge (see docs/agents/pipeline.md, "Before enabling the pipeline").
+      GH_TOKEN: ${{ secrets.SYRP_IMPLEMENTER_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+      MODEL: ${{ vars.SYRP_IMPLEMENTER_MODEL || 'claude-opus-5-5' }}
+      WP: ${{ inputs.wp }}
+      ISSUE: ${{ inputs.issue }}
+      ROLE: ${{ inputs.role }}
+      MODE: ${{ inputs.mode }}
+      PR: ${{ inputs.pr }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.SYRP_IMPLEMENTER_TOKEN }}
+
+      - name: Clean room - block JUCE hosts
+        run: |
+          for h in juce.com www.juce.com docs.juce.com forum.juce.com; do
+            echo "0.0.0.0 $h" | sudo tee -a /etc/hosts >/dev/null
+          done
+
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo build --quiet -p syrp-cli
+
+      - name: Git identity
+        run: |
+          git config user.name "syrp-bot"
+          git config user.email "syrp-bot@users.noreply.github.com"
+
+      - name: Validate inputs
+        run: |
+          [[ "$WP" =~ ^WP-[0-9]+\.[0-9]+-[0-9]{2}$ ]] || { echo "bad wp"; exit 1; }
+          [[ "$ISSUE" =~ ^[0-9]+$ ]] || { echo "bad issue"; exit 1; }
+          [[ "$PR" =~ ^[0-9]*$ ]] || { echo "bad pr"; exit 1; }
+          [[ "$MODE" =~ ^(implement|revise)$ ]] || { echo "bad mode"; exit 1; }
+
+      - name: Render prompt
+        id: prompt
+        run: |
+          role="$ROLE"
+          [ "$role" = "spec-room" ] || role="implementer"
+          {
+            echo 'text<<PROMPT_EOF'
+            agents/render.sh "roles/$role.md" WP="$WP" ISSUE="$ISSUE" MODE="$MODE" PR="$PR" MODEL="$MODEL"
+            echo 'PROMPT_EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.SYRP_IMPLEMENTER_TOKEN }}
+          prompt: ${{ steps.prompt.outputs.text }}
+          claude_args: >-
+            --model ${{ env.MODEL }}
+            --max-turns 300
+            --allowedTools "Bash,Read,Write,Edit,Glob,Grep,TodoWrite"
+
+      - name: Finish - release the lease
+        if: always()
+        run: |
+          wp="$WP"; issue="$ISSUE"
+          open="$(gh pr list --state open --json headRefName \
+            --jq "map(select(.headRefName | startswith(\"wp/$wp\"))) | length")"
+          gh issue view "$issue" --json number,title,state,labels,body > issue.json
+          flag=""; [ "$open" -gt 0 ] && flag="--has-pr"
+          cargo syrp conductor finish --issue issue.json $flag --json > finish.json
+          jq -r '.results[0].body' finish.json > body.md
+          status="$(jq -r '.results[0].status' finish.json)"
+          gh issue edit "$issue" --body-file body.md --add-label "$status"
+          gh issue edit "$issue" --remove-label status:in-progress || true

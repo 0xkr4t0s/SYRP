@@ -1,0 +1,41 @@
+# SHARED FILE: edited only by the PR manager. Implementers file a change request instead.
+[workspace]
+resolver = "3"
+# Globbed so that adding a crate needs no edit here (master plan §12.4).
+members = ["crates/*/*"]
+
+[workspace.package]
+version = "0.0.1"
+edition = "2024"
+rust-version = "1.95"
+license = "AGPL-3.0-only OR BUSL-1.1"
+repository = "https://github.com/0xkr4t0s/SYRP"
+homepage = "https://github.com/0xkr4t0s/SYRP"
+authors = ["The Syrp Authors"]
+# Nothing is published until the release pipeline (master plan §12.10) flips this per crate.
+# Unpublished crates are also what lets cargo-deny skip our own licence (deny.toml [licenses.private]).
+publish = false
+
+[workspace.dependencies]
+# Third-party versions are pinned here so every crate agrees. Add new ones via a change request.
+clap = { version = "4.5", features = ["derive"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.9"
+
+[workspace.lints.rust]
+unsafe_op_in_unsafe_fn = "deny"
+missing_docs = "warn"
+rust_2018_idioms = { level = "warn", priority = -1 }
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+dbg_macro = "deny"
+todo = "warn"
+undocumented_unsafe_blocks = "deny"
+
+[profile.dev]
+debug = 1
+
+[profile.release]
+lto = "thin"

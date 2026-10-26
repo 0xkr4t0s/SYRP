@@ -1,0 +1,17 @@
+[book]
+title = "Syrp"
+description = "A Rust reimplementation of JUCE, built and used agent-first."
+authors = ["The Syrp Authors"]
+language = "en"
+src = "docs"
+
+[build]
+build-dir = "target/site"
+create-missing = false
+
+[output.html]
+git-repository-url = "https://github.com/0xkr4t0s/SYRP"
+edit-url-template = "https://github.com/0xkr4t0s/SYRP/edit/main/{path}"
+
+[output.html.search]
+enable = true

@@ -1,0 +1,33 @@
+name: Change request
+description: Ask the PR manager to change a shared file (workspace Cargo.toml, CI, deny.toml, ownership.toml...).
+title: "[CR] "
+labels: ["change-request"]
+body:
+  - type: input
+    id: wp
+    attributes:
+      label: Requesting work package
+      placeholder: WP-0.1-04
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind
+      options:
+        - add workspace dependency
+        - add CI job or step
+        - change lint or policy
+        - change ownership
+        - other
+    validations:
+      required: true
+  - type: textarea
+    id: payload
+    attributes:
+      label: Payload (JSON)
+      description: Exactly what to change.
+      render: json
+      placeholder: '{"workspace.dependencies": {"rtrb": "0.3"}, "reason": "SPSC queue for syrp-rt (spec B3)"}'
+    validations:
+      required: true

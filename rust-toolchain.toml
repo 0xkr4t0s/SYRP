@@ -1,0 +1,5 @@
+# SHARED FILE. Pinned stable; nightly is used only by CI jobs that need it (Miri, sanitisers, rustdoc JSON).
+[toolchain]
+channel = "1.97.0"
+components = ["rustfmt", "clippy"]
+profile = "minimal"

@@ -1,0 +1,11 @@
+id = "WP-0.1-12"
+title = "Clean-room contamination scanner (quarantined job) and provenance checks"
+crate = "crates/tooling/provenance"
+depends_on = ["WP-0.1-08"]
+spec = "work/specs/WP-0.1-12.md"
+risk = ["licensing", "ci-infra"]
+acceptance = "cargo syrp wp check WP-0.1-12 --json"
+platforms = ["linux", "macos", "windows"]
+role = "implementer"
+status = "planned"
+budget = { agent_hours = 24, max_review_rounds = 3, max_restarts = 2 }

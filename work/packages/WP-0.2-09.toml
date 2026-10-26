@@ -1,0 +1,12 @@
+id = "WP-0.2-09"
+title = "Renderer spike: vello_cpu deterministic mode vs tiny-skia, golden comparator"
+crate = "crates/spikes/render-spike"
+paths = ["docs/design/0003-renderer-spike.md"]
+depends_on = ["WP-0.2-07", "WP-0.1-09"]
+spec = "work/specs/WP-0.2-09.md"
+risk = []
+acceptance = "cargo syrp wp check WP-0.2-09 --json"
+platforms = ["linux", "macos", "windows"]
+role = "implementer"
+status = "planned"
+budget = { agent_hours = 24, max_review_rounds = 3, max_restarts = 2 }

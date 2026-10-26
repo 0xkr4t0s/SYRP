@@ -1,0 +1,195 @@
+# SHARED FILE (PR manager). Independent review of every ready pipeline PR (master plan §12.5).
+# The agent only writes a review file outside the checkout; the publish job validates it
+# against this PR and review kind and sets the status, so an agent never approves directly.
+#
+# Known gap: the review job runs the PR's own code (cargo test) in the same job that writes
+# the review, so a malicious build.rs could still tamper with the review file. The planned fix
+# is a separate no-secrets job that runs PR code and uploads results for the reviewer to read.
+# See docs/agents/pipeline.md.
+name: reviewer
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+concurrency:
+  group: review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  route:
+    if: >-
+      vars.SYRP_PIPELINE_ENABLED == 'true' && !github.event.pull_request.draft &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pull-requests: write
+      statuses: write
+    outputs:
+      wp: ${{ steps.r.outputs.wp }}
+      risks: ${{ steps.r.outputs.risks }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      PR: ${{ github.event.pull_request.number }}
+      SHA: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo build --quiet -p syrp-cli
+      - id: r
+        name: Work out WP and risk categories (from main's gate code, not the PR's)
+        run: |
+          gh pr view "$PR" --json number,body,labels,files,commits,statusCheckRollup,mergeable,isDraft > pr.json
+          cargo syrp pr gates --pr pr.json --json > gates.json || true
+          # Risks come from a closed allowlist in the gate code; WP ids are validated by shape.
+          echo "risks=$(jq -c '.results[0].risks // []' gates.json)" >> "$GITHUB_OUTPUT"
+          wp="$(jq -r '.results[0].gates[] | select(.gate=="front-matter") | .detail' gates.json | sed -n 's/^WP //p')"
+          [[ "$wp" =~ ^WP-[0-9]+\.[0-9]+-[0-9]{2}$ ]] || wp=""
+          echo "wp=$wp" >> "$GITHUB_OUTPUT"
+      - name: Reset review state for the new head
+        run: |
+          gh pr edit "$PR" --remove-label review:approved --remove-label review:changes-requested --remove-label ci-triaged || true
+          for ctx in syrp/review syrp/adversarial; do
+            gh api "repos/$GH_REPO/statuses/$SHA" -f state=pending -f context="$ctx" -f description="queued" >/dev/null
+          done
+
+  review:
+    needs: route
+    strategy:
+      fail-fast: false
+      matrix:
+        kind: [primary, adversarial]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      pull-requests: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      PR: ${{ github.event.pull_request.number }}
+      KIND: ${{ matrix.kind }}
+      WP: ${{ needs.route.outputs.wp }}
+      RISKS: ${{ needs.route.outputs.risks }}
+      ADVERSARIAL_MODEL: ${{ vars.SYRP_ADVERSARIAL_MODEL || 'claude-opus-5-5' }}
+      REVIEWER_MODEL: ${{ vars.SYRP_REVIEWER_MODEL || 'claude-opus-5-5' }}
+    steps:
+      - name: Skip adversarial review when no risk applies
+        id: skip
+        run: |
+          if [ "$KIND" = adversarial ] && [ "$RISKS" = '[]' ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.skip.outputs.skip != 'true'
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      # Prompts are rendered from the base commit, so a PR cannot rewrite its own reviewer's
+      # instructions (agents/roles/*.md, agents/render.sh).
+      - uses: actions/checkout@v4
+        if: steps.skip.outputs.skip != 'true'
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: base
+      - name: Refuse PRs that carry a review file
+        if: steps.skip.outputs.skip != 'true'
+        run: |
+          for f in review.json review-primary.json review-adversarial.json; do
+            if [ -e "$f" ]; then echo "::error::PR must not contain $f"; exit 1; fi
+          done
+      - uses: Swatinem/rust-cache@v2
+        if: steps.skip.outputs.skip != 'true'
+      - name: Render prompt
+        if: steps.skip.outputs.skip != 'true'
+        id: prompt
+        run: |
+          # The review goes outside the checkout, at a path the PR cannot predict.
+          review_path="$RUNNER_TEMP/review-$(openssl rand -hex 16).json"
+          echo "review_path=$review_path" >> "$GITHUB_OUTPUT"
+          if [ "$KIND" = adversarial ]; then role=adversarial; model="$ADVERSARIAL_MODEL"
+          else role=reviewer; model="$REVIEWER_MODEL"; fi
+          echo "model=$model" >> "$GITHUB_OUTPUT"
+          {
+            echo 'text<<PROMPT_EOF'
+            base/agents/render.sh "roles/$role.md" PR="$PR" WP="$WP" KIND="$KIND" MODEL="$model" \
+              RISKS="$RISKS" REVIEW_PATH="$review_path"
+            echo 'PROMPT_EOF'
+          } >> "$GITHUB_OUTPUT"
+      - uses: anthropics/claude-code-action@v1
+        if: steps.skip.outputs.skip != 'true'
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ github.token }}
+          prompt: ${{ steps.prompt.outputs.text }}
+          claude_args: >-
+            --model ${{ steps.prompt.outputs.model }}
+            --max-turns 150
+            --allowedTools "Bash,Read,Write,Glob,Grep"
+      - uses: actions/upload-artifact@v4
+        if: steps.skip.outputs.skip != 'true'
+        with:
+          name: review-${{ matrix.kind }}
+          path: ${{ steps.prompt.outputs.review_path }}
+          if-no-files-found: warn
+
+  publish:
+    needs: [route, review]
+    if: always() && needs.route.result == 'success'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pull-requests: write
+      statuses: write
+    env:
+      # Statuses are set with the bot token so they trigger the PR manager. Implementer
+      # agents never hold this token (they use SYRP_IMPLEMENTER_TOKEN).
+      GH_TOKEN: ${{ secrets.SYRP_BOT_TOKEN || github.token }}
+      GH_REPO: ${{ github.repository }}
+      PR: ${{ github.event.pull_request.number }}
+      SHA: ${{ github.event.pull_request.head.sha }}
+      RISKS: ${{ needs.route.outputs.risks }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo build --quiet -p syrp-cli
+      - uses: actions/download-artifact@v4
+        with:
+          path: reviews
+      - name: Validate and publish
+        run: |
+          set -euo pipefail
+          gh label create review:approved --force --color 0e8a16 >/dev/null
+          gh label create review:changes-requested --force --color d93f0b >/dev/null
+          primary_ok=false
+          for kind in primary adversarial; do
+            ctx="syrp/review"; [ "$kind" = adversarial ] && ctx="syrp/adversarial"
+            if [ "$kind" = adversarial ] && [ "$RISKS" = '[]' ]; then
+              gh api "repos/$GH_REPO/statuses/$SHA" -f state=success -f context="$ctx" -f description="not required" >/dev/null
+              continue
+            fi
+            f="$(find "reviews/review-$kind" -name '*.json' 2>/dev/null | head -n 1)"
+            if [ -z "$f" ] || ! cargo syrp review validate "$f" --pr "$PR" --kind "$kind" --json > out.json; then
+              gh api "repos/$GH_REPO/statuses/$SHA" -f state=error -f context="$ctx" -f description="no valid review produced" >/dev/null
+              continue
+            fi
+            state="$(jq -r '.results[0].state' out.json)"
+            jq -r '.results[0].body' out.json > body.md
+            printf '\n---\n_Generated by [Claude Code](https://claude.ai/code)_\n' >> body.md
+            gh pr comment "$PR" --body-file body.md
+            gh api "repos/$GH_REPO/statuses/$SHA" -f state="$state" -f context="$ctx" -f description="$kind review: $state" >/dev/null
+            if [ "$kind" = primary ] && [ "$state" = success ]; then primary_ok=true; fi
+            if [ "$state" = failure ]; then gh pr edit "$PR" --add-label review:changes-requested; fi
+          done
+          if $primary_ok && ! gh pr view "$PR" --json labels --jq '.labels[].name' | grep -qx review:changes-requested; then
+            gh pr edit "$PR" --add-label review:approved
+          fi

@@ -1,0 +1,16 @@
+name: Golden update
+description: Request a change to golden images or audio (implementers never edit goldens directly).
+labels: ["golden-update"]
+body:
+  - type: input
+    id: wp
+    attributes:
+      label: Work package
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Which goldens and why the new output is correct
+    validations:
+      required: true

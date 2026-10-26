@@ -1,0 +1,11 @@
+id = "WP-0.2-10"
+title = "syrp-mcp v0: MCP server over the syrp-cli library"
+crate = "crates/tooling/mcp"
+depends_on = ["WP-0.1-08"]
+spec = "work/specs/WP-0.2-10.md"
+risk = ["supply-chain"]
+acceptance = "cargo syrp wp check WP-0.2-10 --json"
+platforms = ["linux", "macos", "windows"]
+role = "implementer"
+status = "planned"
+budget = { agent_hours = 24, max_review_rounds = 3, max_restarts = 2 }
