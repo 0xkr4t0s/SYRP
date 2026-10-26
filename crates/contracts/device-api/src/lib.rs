@@ -28,7 +28,9 @@ use syrp_error::{Diagnostic, ErrorCode};
 mod audio;
 pub mod fake;
 
-pub use audio::{AudioCallback, AudioDevice, AudioDeviceSetup, ChannelMask, DeviceRtCtx};
+pub use audio::{
+    AudioCallback, AudioDevice, AudioDeviceSetup, ChannelIter, ChannelMask, DeviceRtCtx,
+};
 
 /// A device or port identifier that is stable across runs and reboots.
 ///

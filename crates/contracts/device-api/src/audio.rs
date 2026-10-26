@@ -8,42 +8,84 @@ use syrp_rt::RtSafe;
 
 use crate::{DeviceError, DeviceInfo};
 
-/// Which of a device's channels (0 to 63) are active, one bit per channel.
+const WORDS: usize = 4;
+
+/// Which of a device's channels (0 to [`MAX_CHANNELS`](Self::MAX_CHANNELS) - 1) are active.
+///
+/// Fixed-size storage keeps it `Copy` and real-time safe.
 /// ```
 /// use syrp_device_api::ChannelMask;
-/// let m = ChannelMask::from_bits(0b101);
-/// assert_eq!((m.count(), m.contains(2), m.contains(1)), (2, true, false));
+/// let m = ChannelMask::default().with(0).with(130);
+/// assert_eq!((m.count(), m.contains(130), m.contains(1)), (2, true, false));
 /// ```
 #[doc(alias = "BigInteger")]
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
-pub struct ChannelMask(u64);
+pub struct ChannelMask {
+    words: [u64; WORDS],
+}
 
 impl ChannelMask {
-    /// The first `n` channels (all 64 when `n >= 64`).
+    /// The widest device a mask can describe, in channels.
     /// ```
-    /// assert_eq!(syrp_device_api::ChannelMask::first(3).bits(), 0b111);
+    /// assert_eq!(syrp_device_api::ChannelMask::MAX_CHANNELS, 256);
+    /// ```
+    pub const MAX_CHANNELS: u32 = 64 * WORDS as u32;
+
+    /// The first `n` channels (all of them when `n >= MAX_CHANNELS`).
+    /// ```
+    /// assert_eq!(syrp_device_api::ChannelMask::first(100).count(), 100);
     /// ```
     #[must_use]
     pub const fn first(n: u32) -> Self {
-        ChannelMask(if n >= 64 { u64::MAX } else { (1 << n) - 1 })
+        let mut words = [0; WORDS];
+        let mut i = 0;
+        while i < WORDS {
+            let lo = 64 * i as u32;
+            words[i] = if n >= lo + 64 {
+                u64::MAX
+            } else if n > lo {
+                (1 << (n - lo)) - 1
+            } else {
+                0
+            };
+            i += 1;
+        }
+        ChannelMask { words }
     }
 
-    /// A mask from raw bits; bit `c` is channel `c`.
+    /// Channels 0 to 63 from `bits` (bit `c` is channel `c`); higher channels are inactive.
     /// ```
-    /// assert_eq!(syrp_device_api::ChannelMask::from_bits(6).count(), 2);
+    /// assert_eq!(syrp_device_api::ChannelMask::from_low_bits(0b110).count(), 2);
     /// ```
     #[must_use]
-    pub const fn from_bits(bits: u64) -> Self {
-        ChannelMask(bits)
+    pub const fn from_low_bits(bits: u64) -> Self {
+        let mut words = [0; WORDS];
+        words[0] = bits;
+        ChannelMask { words }
     }
 
-    /// The raw bits.
+    /// This mask with `channel` active; channels at or past `MAX_CHANNELS` are ignored.
     /// ```
-    /// assert_eq!(syrp_device_api::ChannelMask::default().bits(), 0);
+    /// assert!(syrp_device_api::ChannelMask::default().with(200).contains(200));
     /// ```
     #[must_use]
-    pub const fn bits(self) -> u64 {
-        self.0
+    pub const fn with(mut self, channel: u32) -> Self {
+        if channel < Self::MAX_CHANNELS {
+            self.words[(channel / 64) as usize] |= 1 << (channel % 64);
+        }
+        self
+    }
+
+    /// This mask with `channel` inactive.
+    /// ```
+    /// assert!(!syrp_device_api::ChannelMask::first(2).without(1).contains(1));
+    /// ```
+    #[must_use]
+    pub const fn without(mut self, channel: u32) -> Self {
+        if channel < Self::MAX_CHANNELS {
+            self.words[(channel / 64) as usize] &= !(1 << (channel % 64));
+        }
+        self
     }
 
     /// How many channels are active; this is the channel count of the callback's block.
@@ -52,16 +94,88 @@ impl ChannelMask {
     /// ```
     #[must_use]
     pub const fn count(self) -> u32 {
-        self.0.count_ones()
+        let mut n = 0;
+        let mut i = 0;
+        while i < WORDS {
+            n += self.words[i].count_ones();
+            i += 1;
+        }
+        n
     }
 
     /// Whether channel `channel` is active.
     /// ```
-    /// assert!(!syrp_device_api::ChannelMask::first(2).contains(64));
+    /// assert!(!syrp_device_api::ChannelMask::first(2).contains(256));
     /// ```
     #[must_use]
     pub const fn contains(self, channel: u32) -> bool {
-        channel < 64 && self.0 & (1 << channel) != 0
+        channel < Self::MAX_CHANNELS
+            && self.words[(channel / 64) as usize] & (1 << (channel % 64)) != 0
+    }
+
+    /// The highest active channel plus one (0 when empty): a device needs at least this many.
+    /// ```
+    /// assert_eq!(syrp_device_api::ChannelMask::default().with(70).span(), 71);
+    /// ```
+    #[must_use]
+    pub const fn span(self) -> u32 {
+        let mut i = WORDS;
+        while i > 0 {
+            i -= 1;
+            if self.words[i] != 0 {
+                return 64 * i as u32 + 64 - self.words[i].leading_zeros();
+            }
+        }
+        0
+    }
+
+    /// The active channels in ascending order; block channel `k` is the `k`th of these.
+    /// ```
+    /// let m = syrp_device_api::ChannelMask::from_low_bits(0b101).with(64);
+    /// assert_eq!(m.iter().collect::<Vec<_>>(), [0, 2, 64]);
+    /// ```
+    #[must_use]
+    pub const fn iter(self) -> ChannelIter {
+        ChannelIter {
+            mask: self,
+            next: 0,
+        }
+    }
+}
+
+impl IntoIterator for ChannelMask {
+    type Item = u32;
+    type IntoIter = ChannelIter;
+    fn into_iter(self) -> ChannelIter {
+        self.iter()
+    }
+}
+
+/// Iterates a [`ChannelMask`]'s active channels in ascending order. Allocation-free.
+/// ```
+/// let mut it = syrp_device_api::ChannelMask::first(2).iter();
+/// assert_eq!((it.next(), it.next(), it.next()), (Some(0), Some(1), None));
+/// ```
+#[derive(Debug, Clone, Copy)]
+pub struct ChannelIter {
+    mask: ChannelMask,
+    next: u32,
+}
+
+impl Iterator for ChannelIter {
+    type Item = u32;
+    fn next(&mut self) -> Option<u32> {
+        while self.next < ChannelMask::MAX_CHANNELS {
+            let word = self.mask.words[(self.next / 64) as usize] >> (self.next % 64);
+            if word == 0 {
+                self.next = (self.next / 64 + 1) * 64;
+                continue;
+            }
+            let channel = self.next + word.trailing_zeros();
+            self.next = channel + 1;
+            return Some(channel);
+        }
+        None
     }
 }
 
@@ -86,7 +200,7 @@ impl AudioDeviceSetup {
     /// ```
     #[must_use]
     pub const fn new(sample_rate: f64, buffer_size: u32) -> Self {
-        let none = ChannelMask(0);
+        let none = ChannelMask { words: [0; WORDS] };
         AudioDeviceSetup {
             sample_rate,
             buffer_size,
@@ -211,6 +325,8 @@ impl DeviceRtCtx<'_> {
 
 // SAFETY: plain `Copy` bits with no destructor and no RT-unsafe methods.
 unsafe impl RtSafe for ChannelMask {}
+// SAFETY: a mask and a counter; `next` only reads and shifts integers.
+unsafe impl RtSafe for ChannelIter {}
 // SAFETY: plain `Copy` data with no destructor and no RT-unsafe methods.
 unsafe impl RtSafe for AudioDeviceSetup {}
 // SAFETY: two numbers and a marker; no destructor, every method is a field read.

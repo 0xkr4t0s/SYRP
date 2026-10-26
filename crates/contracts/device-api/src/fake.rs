@@ -13,10 +13,6 @@ use crate::{
     DeviceRtCtx,
 };
 
-fn fits(mask: ChannelMask, count: u32) -> bool {
-    mask.bits().checked_shr(count).unwrap_or(0) == 0
-}
-
 fn lock<T>(m: &Mutex<T>) -> MutexGuard<'_, T> {
     m.lock().unwrap_or_else(PoisonError::into_inner)
 }
@@ -45,8 +41,8 @@ impl FakeAudioSpec {
     pub fn new(name: impl Into<String>, inputs: u32, outputs: u32) -> Self {
         FakeAudioSpec {
             name: name.into(),
-            inputs: inputs.min(64),
-            outputs: outputs.min(64),
+            inputs: inputs.min(ChannelMask::MAX_CHANNELS),
+            outputs: outputs.min(ChannelMask::MAX_CHANNELS),
             rates: vec![44_100.0, 48_000.0, 96_000.0],
             sizes: vec![32, 64, 128, 256, 512],
             latency: (0, 0),
@@ -161,8 +157,8 @@ impl AudioDevice for FakeAudioDevice {
         }
         let ok = self.spec.rates.contains(&setup.sample_rate())
             && self.spec.sizes.contains(&setup.buffer_size())
-            && fits(setup.inputs(), self.spec.inputs)
-            && fits(setup.outputs(), self.spec.outputs);
+            && setup.inputs().span() <= self.spec.inputs
+            && setup.outputs().span() <= self.spec.outputs;
         if !ok {
             return Err(DeviceError::UnsupportedSetup);
         }
@@ -183,14 +179,23 @@ impl AudioDevice for FakeAudioDevice {
     }
 
     fn start(&mut self, mut callback: Box<dyn AudioCallback>) -> Result<(), DeviceError> {
-        let mut st = lock(&self.state);
-        let setup = match (&st, st.setup) {
-            (s, _) if s.gone => return Err(DeviceError::Disconnected),
-            (_, None) => return Err(DeviceError::NotOpen),
-            (s, _) if s.callback.is_some() => return Err(DeviceError::AlreadyRunning),
-            (_, Some(setup)) => setup,
+        let check = |st: &AudioState| match st.setup {
+            _ if st.gone => Err(DeviceError::Disconnected),
+            None => Err(DeviceError::NotOpen),
+            _ if st.callback.is_some() => Err(DeviceError::AlreadyRunning),
+            Some(setup) => Ok(setup),
         };
+        let setup = check(&lock(&self.state))?;
+        // Outside the lock, so the callback may use the driver while it prepares.
         callback.about_to_start(&setup);
+        let mut st = lock(&self.state);
+        let now =
+            check(&st).and_then(|now| (now == setup).then_some(()).ok_or(DeviceError::NotOpen));
+        if let Err(e) = now {
+            drop(st);
+            callback.stopped();
+            return Err(e);
+        }
         st.position = 0;
         st.callback = Some(callback);
         Ok(())

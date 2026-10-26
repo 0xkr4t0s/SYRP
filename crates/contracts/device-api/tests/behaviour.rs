@@ -50,7 +50,7 @@ fn b2_open_accepts_only_supported_rates_sizes_and_channels() {
     let mut dev = FakeAudioDevice::new(FakeAudioSpec::new("Duo", 2, 2));
     assert_eq!(dev.open(&stereo(12_345.0, 64)), Err(Unsupported));
     assert_eq!(dev.open(&stereo(48e3, 63)), Err(Unsupported));
-    let three = AudioDeviceSetup::new(48e3, 64).with_inputs(ChannelMask::from_bits(0b100));
+    let three = AudioDeviceSetup::new(48e3, 64).with_inputs(ChannelMask::default().with(2));
     assert_eq!(dev.open(&three), Err(Unsupported));
     assert_eq!(dev.current_setup(), None);
     dev.open(&stereo(96e3, 128)).unwrap();
@@ -76,6 +76,43 @@ fn b2_start_and_stop_run_the_callback_lifecycle() {
     dev.start(Box::new(probe.clone())).unwrap();
     dev.close();
     assert_eq!((dev.current_setup(), probe.counts()), (None, [2, 0, 2]));
+}
+
+#[test]
+fn b2_devices_wider_than_64_channels_open_and_run() {
+    let mut dev = FakeAudioDevice::new(FakeAudioSpec::new("MADI", 0, 192));
+    let driver = dev.driver();
+    let all = AudioDeviceSetup::new(48e3, 32).with_outputs(ChannelMask::first(192));
+    dev.open(&all).unwrap();
+    let wide = AudioDeviceSetup::new(48e3, 32).with_outputs(ChannelMask::first(193));
+    assert_eq!(
+        FakeAudioDevice::new(FakeAudioSpec::new("M", 0, 192)).open(&wide),
+        Err(Unsupported)
+    );
+    let cb = |_: In<'_>, mut out: Out<'_>, _: &mut DeviceRtCtx<'_>| out.channel_mut(150).fill(1.0);
+    dev.start(Box::new(cb)).unwrap();
+    let mut output = vec![0.0_f32; 192 * 32];
+    driver.run_block(&[], &mut output).unwrap();
+    assert!(output[150 * 32..151 * 32].iter().all(|&s| s == 1.0));
+    assert_eq!(output.iter().filter(|&&s| s != 0.0).count(), 32);
+    let sparse = ChannelMask::default().with(3).with(70).with(255);
+    assert_eq!((sparse.count(), sparse.span()), (3, 256));
+    assert_eq!(sparse.into_iter().collect::<Vec<_>>(), [3, 70, 255]);
+}
+
+#[test]
+fn b2_about_to_start_may_drive_the_device() {
+    let mut dev = FakeAudioDevice::new(FakeAudioSpec::new("P", 0, 2));
+    dev.open(&stereo(48e3, 32)).unwrap();
+    struct Prerun(syrp_device_api::fake::FakeAudioDriver);
+    impl AudioCallback for Prerun {
+        fn about_to_start(&mut self, _: &AudioDeviceSetup) {
+            assert_eq!(self.0.run_block(&[], &mut [0.0; 64]), Err(NotOpen));
+        }
+        fn process(&mut self, _: In<'_>, _: Out<'_>, _: &mut DeviceRtCtx<'_>) {}
+    }
+    dev.start(Box::new(Prerun(dev.driver()))).unwrap();
+    assert!(dev.is_running());
 }
 
 #[test]
@@ -108,7 +145,7 @@ fn b2_a_disconnected_device_fails_every_call() {
 fn b3_callback_gets_masked_blocks_and_positions_without_allocating() {
     let mut dev = FakeAudioDevice::new(FakeAudioSpec::new("IO", 3, 2));
     let driver = dev.driver();
-    let setup = stereo(48e3, 32).with_inputs(ChannelMask::from_bits(0b101));
+    let setup = stereo(48e3, 32).with_inputs(ChannelMask::from_low_bits(0b101));
     dev.open(&setup).unwrap();
     let last_pos = Arc::new(AtomicU64::new(u64::MAX));
     let seen = Arc::clone(&last_pos);
@@ -161,6 +198,7 @@ fn b6_driver_rejects_blocks_of_the_wrong_shape() {
 fn b7_hot_types_are_rt_safe_and_devices_are_send() {
     fn rt<T: RtSafe>() {}
     rt::<ChannelMask>();
+    rt::<syrp_device_api::ChannelIter>();
     rt::<AudioDeviceSetup>();
     rt::<DeviceRtCtx<'static>>();
     fn send<T: Send>() {}
