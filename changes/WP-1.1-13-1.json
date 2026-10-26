@@ -1,0 +1,1 @@
+{"wp": "WP-1.1-13", "kind": "added", "summary": "New syrp-strings crate, increment 1: strict RFC 4648 Base64 (encode, encode_to, decode), a thread-safe StringPool interning text into shared Arc<str>, and TextDiff (Myers diff in char positions); new errors/strings.toml domain."}

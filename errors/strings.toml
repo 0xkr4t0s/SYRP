@@ -1,0 +1,22 @@
+# Error catalogue: string utilities (syrp-strings). Never renumber.
+
+[[error]]
+code = "SYRP-STRINGS-0001"
+title = "Character outside the Base64 alphabet"
+severity = "error"
+cause = "base64::decode met a character that is not A-Z, a-z, 0-9, '+', '/' or a trailing '='. Whitespace, line breaks and the URL-safe characters '-' and '_' are rejected too."
+fix = "Strip whitespace and line breaks before decoding, and convert URL-safe text ('-' to '+', '_' to '/') first. The error's position() is the byte offset of the bad character."
+
+[[error]]
+code = "SYRP-STRINGS-0002"
+title = "Bad Base64 padding or length"
+severity = "error"
+cause = "The Base64 text is not a whole number of 4-character groups, has '=' anywhere but the last one or two places, or its last group has non-zero unused bits (RFC 4648 §3.5, non-canonical encoding)."
+fix = "Pad the text with '=' to a multiple of 4 characters and make sure it was produced by a standard (RFC 4648 §4) encoder."
+
+[[error]]
+code = "SYRP-STRINGS-0003"
+title = "Out of memory for a string operation"
+severity = "error"
+cause = "A buffer sized by the input (for example the decoded bytes of a Base64 string) could not be allocated."
+fix = "Process the input in smaller pieces, or free memory before retrying."
