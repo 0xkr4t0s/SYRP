@@ -235,7 +235,7 @@ impl MidiData for MidiMessage {
 
 /// A borrowed view of one MIDI message's bytes and its sample offset in a block.
 ///
-/// The packed `MidiBuffer` (next increment) yields these without copying. `Copy`, and
+/// [`MidiBuffer`](crate::MidiBuffer) iteration yields these without copying. `Copy`, and
 /// usable on the audio thread ([`RtSafe`]).
 /// ```
 /// use syrp_midi::{MidiData, MidiMessageRef};

@@ -1,0 +1,1 @@
+{"wp": "WP-0.2-03", "kind": "added", "summary": "syrp-midi (increment 2): MidiBuffer, packed as fixed-size event heads plus one byte arena, with stable ordering for equal sample offsets, range iteration over borrowed MidiMessageRef views, and a non-allocating try_add_event that returns SYRP-MIDI-0003 (MidiError::BufferFull) when full."}
