@@ -12,7 +12,7 @@ MIDI 1.0 and MIDI 2.0 (UMP) data types and codecs (JUCE: MidiMessage, MidiBuffer
 - B6. Contract freeze as in WP-0.2-01.
 
 ## Crate setup
-Create `crates/contracts/midi/` with `Cargo.toml` (inherit `version`, `edition`, `rust-version`, `repository`, `authors` from the workspace; `[lints] workspace = true`), `[package.metadata.syrp] layer = "L1"`, an `AGENTS.md` following `docs/agents/crate-agents-template.md`, and `src/lib.rs`. Workspace members are globbed, so no root edit is needed.
+Create `crates/contracts/midi/` with `Cargo.toml` (inherit `version`, `edition`, `rust-version`, `repository`, `authors`, `publish` from the workspace; `[lints] workspace = true`), `[package.metadata.syrp] layer = "L1"`, an `AGENTS.md` following `docs/agents/crate-agents-template.md`, and `src/lib.rs`. Workspace members are globbed, so no root edit is needed.
 Licence: `license = "MIT OR Apache-2.0"`.
 
 ## Rules that apply to every WP

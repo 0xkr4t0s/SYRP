@@ -12,7 +12,7 @@ The message-loop contract every UI and event crate builds on (master plan §5.5)
 - B6. Contract freeze: after review, the public API snapshot is committed by the PR manager to `contracts/syrp-loop-api.public-api.txt`.
 
 ## Crate setup
-Create `crates/contracts/loop-api/` with `Cargo.toml` (inherit `version`, `edition`, `rust-version`, `repository`, `authors` from the workspace; `[lints] workspace = true`), `[package.metadata.syrp] layer = "L1"`, an `AGENTS.md` following `docs/agents/crate-agents-template.md`, and `src/lib.rs`. Workspace members are globbed, so no root edit is needed.
+Create `crates/contracts/loop-api/` with `Cargo.toml` (inherit `version`, `edition`, `rust-version`, `repository`, `authors`, `publish` from the workspace; `[lints] workspace = true`), `[package.metadata.syrp] layer = "L1"`, an `AGENTS.md` following `docs/agents/crate-agents-template.md`, and `src/lib.rs`. Workspace members are globbed, so no root edit is needed.
 Licence: `license = "MIT OR Apache-2.0"`.
 
 ## Rules that apply to every WP

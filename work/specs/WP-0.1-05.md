@@ -14,7 +14,7 @@
 - B8. Property tests (proptest) for algebraic laws: intersection is commutative, union contains both, transform followed by its inverse is identity within 1e-9.
 
 ## Crate setup
-Create `crates/foundation/geom/` with `Cargo.toml` (inherit `version`, `edition`, `rust-version`, `repository`, `authors` from the workspace; `[lints] workspace = true`), `[package.metadata.syrp] layer = "L0"`, an `AGENTS.md` following `docs/agents/crate-agents-template.md`, and `src/lib.rs`. Workspace members are globbed, so no root edit is needed.
+Create `crates/foundation/geom/` with `Cargo.toml` (inherit `version`, `edition`, `rust-version`, `repository`, `authors`, `publish` from the workspace; `[lints] workspace = true`), `[package.metadata.syrp] layer = "L0"`, an `AGENTS.md` following `docs/agents/crate-agents-template.md`, and `src/lib.rs`. Workspace members are globbed, so no root edit is needed.
 Licence: `license = "MIT OR Apache-2.0"`.
 
 ## Rules that apply to every WP

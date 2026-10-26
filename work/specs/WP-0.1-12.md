@@ -11,7 +11,7 @@ Clean-room enforcement (master plan §10.9). Two parts: provenance checks that r
 - B5. Tests use synthetic corpora only.
 
 ## Crate setup
-Create `crates/tooling/provenance/` with `Cargo.toml` (inherit `version`, `edition`, `rust-version`, `repository`, `authors` from the workspace; `[lints] workspace = true`), `[package.metadata.syrp] layer = "L6"`, an `AGENTS.md` following `docs/agents/crate-agents-template.md`, and `src/lib.rs`. Workspace members are globbed, so no root edit is needed.
+Create `crates/tooling/provenance/` with `Cargo.toml` (inherit `version`, `edition`, `rust-version`, `repository`, `authors`, `publish` from the workspace; `[lints] workspace = true`), `[package.metadata.syrp] layer = "L6"`, an `AGENTS.md` following `docs/agents/crate-agents-template.md`, and `src/lib.rs`. Workspace members are globbed, so no root edit is needed.
 Licence: `license = "AGPL-3.0-only OR BUSL-1.1"`.
 
 ## Rules that apply to every WP

@@ -14,6 +14,7 @@
    rust-version.workspace = true
    repository.workspace = true
    authors.workspace = true
+   publish.workspace = true              # unpublished until release
    license = "MIT OR Apache-2.0"        # L0/L1 crates; others use license.workspace = true
 
    [package.metadata.syrp]

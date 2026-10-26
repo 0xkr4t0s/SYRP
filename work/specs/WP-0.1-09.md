@@ -12,7 +12,7 @@ Deterministic offline testing helpers. v0 covers audio; UI driving arrives with 
 - B6. Run every audio test inside `syrp_rt::no_alloc` where the closure is meant to be RT-safe; expose a helper for that.
 
 ## Crate setup
-Create `crates/tooling/testkit/` with `Cargo.toml` (inherit `version`, `edition`, `rust-version`, `repository`, `authors` from the workspace; `[lints] workspace = true`), `[package.metadata.syrp] layer = "L6"`, an `AGENTS.md` following `docs/agents/crate-agents-template.md`, and `src/lib.rs`. Workspace members are globbed, so no root edit is needed.
+Create `crates/tooling/testkit/` with `Cargo.toml` (inherit `version`, `edition`, `rust-version`, `repository`, `authors`, `publish` from the workspace; `[lints] workspace = true`), `[package.metadata.syrp] layer = "L6"`, an `AGENTS.md` following `docs/agents/crate-agents-template.md`, and `src/lib.rs`. Workspace members are globbed, so no root edit is needed.
 Licence: `license = "AGPL-3.0-only OR BUSL-1.1"`.
 
 ## Rules that apply to every WP

@@ -12,6 +12,9 @@ license = "AGPL-3.0-only OR BUSL-1.1"
 repository = "https://github.com/0xkr4t0s/SYRP"
 homepage = "https://github.com/0xkr4t0s/SYRP"
 authors = ["The Syrp Authors"]
+# Nothing is published until the release pipeline (master plan §12.10) flips this per crate.
+# Unpublished crates are also what lets cargo-deny skip our own licence (deny.toml [licenses.private]).
+publish = false
 
 [workspace.dependencies]
 # Third-party versions are pinned here so every crate agrees. Add new ones via a change request.
