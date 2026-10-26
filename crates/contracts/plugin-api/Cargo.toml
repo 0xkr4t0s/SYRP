@@ -14,11 +14,14 @@ layer = "L1"
 wp = "WP-0.2-06"
 
 [dependencies]
+syrp-audio-api = { version = "0.0.1", path = "../audio-api" }
 syrp-error = { version = "0.0.1", path = "../../foundation/error" }
+syrp-midi = { version = "0.0.1", path = "../midi" }
 syrp-rt = { version = "0.0.1", path = "../../foundation/rt" }
 
 [dev-dependencies]
 proptest = { version = "1.5", default-features = false, features = ["std"] }
+trybuild = "1.0.99"
 
 [lints]
 workspace = true

@@ -1,0 +1,31 @@
+error[E0599]: no associated function or constant named `new` found for struct `PrepareCtx<'a>` in the current scope
+  --> tests/ui/process_cannot_prepare.rs:13:31
+   |
+13 |         let _cx = PrepareCtx::new();
+   |                               ^^^ associated function or constant not found in `PrepareCtx<'_>`
+
+error: cannot construct `PrepareCtx<'_>` with struct literal syntax due to private fields
+  --> tests/ui/process_cannot_prepare.rs:14:19
+   |
+14 |         let _cx = PrepareCtx { param_change_capacity: 0 };
+   |                   ^^^^^^^^^^   ------------------------ private field
+   |
+   = note: ...and other private fields `layout` and `_not_send` that were not provided
+
+error[E0599]: no method named `index_of` found for reference `&Params` in the current scope
+  --> tests/ui/process_cannot_prepare.rs:15:24
+   |
+15 |         let _ = params.index_of("gain");
+   |                        ^^^^^^^^ method not found in `&Params`
+
+error[E0599]: no method named `param_index` found for mutable reference `&mut ProcessIo<'_>` in the current scope
+  --> tests/ui/process_cannot_prepare.rs:16:20
+   |
+16 |         let _ = io.param_index("gain");
+   |                    ^^^^^^^^^^^ method not found in `&mut ProcessIo<'_>`
+
+error[E0599]: no method named `param_index` found for mutable reference `&mut RtCtx<'_>` in the current scope
+  --> tests/ui/process_cannot_prepare.rs:17:20
+   |
+17 |         let _ = rt.param_index("gain");
+   |                    ^^^^^^^^^^^ method not found in `&mut RtCtx<'_>`

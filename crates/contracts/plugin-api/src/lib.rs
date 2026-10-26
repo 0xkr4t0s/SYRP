@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 //! The Syrp processor and plugin contract (master plan §5.4 and §5.8, ADR 0003).
 //!
-//! Parameters: a [`ParamSpec`] per parameter, with a [`ParamRange`] that follows JUCE's
-//! documented NormalisableRange semantics, registered in a [`ParamLayout`] that gives each one
-//! a dense [`ParamIndex`]. Runtime values live in one contiguous atomic array, [`Params`].
+//! - [`Processor`]: `prepare` with a [`PrepareCtx`], `process` with [`ProcessIo`], [`Params`]
+//!   and an [`RtCtx`], plus layout negotiation, latency, [`Tail`], bypass and precision.
+//! - Parameters: a [`ParamSpec`] per parameter, with a [`ParamRange`] that follows JUCE's
+//!   documented NormalisableRange semantics, registered in a [`ParamLayout`] that gives each
+//!   one a dense [`ParamIndex`]. Values live in one atomic array, [`Params`]; each block
+//!   carries one sorted [`ParamChanges`] stream and `syrp-midi` MIDI 1.0 and UMP buffers.
 //!
-//! The per-block change stream, the `Processor` trait with its `PrepareCtx` and `RtCtx` tokens,
-//! `ProcessIo` with MIDI and UMP event I/O, the editor contract, `PluginDescriptor` and the
-//! state traits arrive in later increments of WP-0.2-06.
+//! The editor contract, `PluginDescriptor` and the state traits arrive in a later increment.
 //!
 //! ```
 //! use syrp_plugin_api::{ParamLayout, ParamRange, ParamSpec, Params};
@@ -21,12 +22,18 @@ use std::fmt;
 
 use syrp_error::{Diagnostic, ErrorCode};
 
+mod changes;
+mod io;
 mod layout;
 mod param;
+mod processor;
 mod range;
 
+pub use changes::{ParamChange, ParamChanges};
+pub use io::ProcessIo;
 pub use layout::{ParamLayout, Params};
 pub use param::{ParamIndex, ParamSpec, Smoothing};
+pub use processor::{PrepareCtx, Prepared, Processor, RtCtx, Tail, prepare_processor};
 pub use range::ParamRange;
 
 /// Errors from the processor and parameter contract.
@@ -44,6 +51,12 @@ pub enum PluginError {
     InvalidParamSpec,
     /// Memory for audio-path storage could not be reserved (`SYRP-PLUGIN-0003`).
     AllocationFailed,
+    /// A change was pushed to a full [`ParamChanges`] stream (`SYRP-PLUGIN-0004`).
+    ParamChangesFull,
+    /// Double precision was asked of a processor without it (`SYRP-PLUGIN-0005`).
+    PrecisionUnsupported,
+    /// The processor could not prepare for the configuration (`SYRP-PLUGIN-0006`).
+    PrepareFailed,
 }
 
 impl fmt::Display for PluginError {
@@ -52,6 +65,9 @@ impl fmt::Display for PluginError {
             PluginError::DuplicateParamId => "duplicate parameter id",
             PluginError::InvalidParamSpec => "invalid parameter id, range or default",
             PluginError::AllocationFailed => "audio-path allocation failed",
+            PluginError::ParamChangesFull => "parameter change stream is full",
+            PluginError::PrecisionUnsupported => "processor does not support double precision",
+            PluginError::PrepareFailed => "processor could not prepare",
         })
     }
 }
@@ -64,6 +80,9 @@ impl Diagnostic for PluginError {
             PluginError::DuplicateParamId => "SYRP-PLUGIN-0001",
             PluginError::InvalidParamSpec => "SYRP-PLUGIN-0002",
             PluginError::AllocationFailed => "SYRP-PLUGIN-0003",
+            PluginError::ParamChangesFull => "SYRP-PLUGIN-0004",
+            PluginError::PrecisionUnsupported => "SYRP-PLUGIN-0005",
+            PluginError::PrepareFailed => "SYRP-PLUGIN-0006",
         })
     }
 }
