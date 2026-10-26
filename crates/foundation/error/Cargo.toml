@@ -1,0 +1,36 @@
+[package]
+name = "syrp-error"
+description = "The shared Syrp error vocabulary: ErrorCode, the Diagnostic trait, Report and the error catalogue."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT OR Apache-2.0"
+repository.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[package.metadata.syrp]
+layer = "L0"
+wp = "WP-0.1-03"
+
+[package.metadata.docs.rs]
+all-features = true
+
+[features]
+default = []
+# Serialise `Report`, `ErrorCode` and `Severity` to the CLI envelope's diagnostic shape.
+serde = ["dep:serde"]
+# `syrp_error::catalogue`: parse `errors/*.toml` and render the docs pages.
+catalogue = ["dep:toml"]
+
+[dependencies]
+serde = { workspace = true, optional = true }
+toml = { workspace = true, optional = true }
+
+[dev-dependencies]
+serde_json.workspace = true
+# Self dev-dependency: turns on the optional features for tests and doctests only.
+syrp-error = { path = ".", features = ["serde", "catalogue"] }
+
+[lints]
+workspace = true

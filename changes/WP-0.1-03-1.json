@@ -1,0 +1,1 @@
+{"wp": "WP-0.1-03", "kind": "added", "summary": "syrp-error: ErrorCode (const-checked SYRP-<DOMAIN>-<NNNN>), Severity, the Diagnostic trait, the Report builder (serde feature: envelope diagnostic shape) and the catalogue parser and Markdown renderer (catalogue feature); new errors/error.toml domain."}
