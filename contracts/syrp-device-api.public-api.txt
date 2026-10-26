@@ -1,0 +1,200 @@
+pub mod syrp_device_api
+pub mod syrp_device_api::fake
+pub struct syrp_device_api::fake::FakeAudioDevice
+impl syrp_device_api::fake::FakeAudioDevice
+pub fn syrp_device_api::fake::FakeAudioDevice::driver(&self) -> syrp_device_api::fake::FakeAudioDriver
+pub fn syrp_device_api::fake::FakeAudioDevice::new(syrp_device_api::fake::FakeAudioSpec) -> Self
+impl core::ops::drop::Drop for syrp_device_api::fake::FakeAudioDevice
+pub fn syrp_device_api::fake::FakeAudioDevice::drop(&mut self)
+impl syrp_device_api::AudioDevice for syrp_device_api::fake::FakeAudioDevice
+pub fn syrp_device_api::fake::FakeAudioDevice::available_buffer_sizes(&self) -> alloc::vec::Vec<u32>
+pub fn syrp_device_api::fake::FakeAudioDevice::available_sample_rates(&self) -> alloc::vec::Vec<f64>
+pub fn syrp_device_api::fake::FakeAudioDevice::close(&mut self)
+pub fn syrp_device_api::fake::FakeAudioDevice::current_setup(&self) -> core::option::Option<syrp_device_api::AudioDeviceSetup>
+pub fn syrp_device_api::fake::FakeAudioDevice::info(&self) -> &syrp_device_api::DeviceInfo
+pub fn syrp_device_api::fake::FakeAudioDevice::input_channel_names(&self) -> alloc::vec::Vec<alloc::string::String>
+pub fn syrp_device_api::fake::FakeAudioDevice::input_latency(&self) -> u32
+pub fn syrp_device_api::fake::FakeAudioDevice::is_running(&self) -> bool
+pub fn syrp_device_api::fake::FakeAudioDevice::open(&mut self, &syrp_device_api::AudioDeviceSetup) -> core::result::Result<(), syrp_device_api::DeviceError>
+pub fn syrp_device_api::fake::FakeAudioDevice::output_channel_names(&self) -> alloc::vec::Vec<alloc::string::String>
+pub fn syrp_device_api::fake::FakeAudioDevice::output_latency(&self) -> u32
+pub fn syrp_device_api::fake::FakeAudioDevice::start(&mut self, alloc::boxed::Box<dyn syrp_device_api::AudioCallback>) -> core::result::Result<(), syrp_device_api::DeviceError>
+pub fn syrp_device_api::fake::FakeAudioDevice::stop(&mut self) -> core::option::Option<alloc::boxed::Box<dyn syrp_device_api::AudioCallback>>
+pub fn syrp_device_api::fake::FakeAudioDevice::xrun_count(&self) -> core::option::Option<u64>
+pub struct syrp_device_api::fake::FakeAudioDeviceType
+impl syrp_device_api::fake::FakeAudioDeviceType
+pub fn syrp_device_api::fake::FakeAudioDeviceType::add_device(&self, syrp_device_api::fake::FakeAudioSpec)
+pub fn syrp_device_api::fake::FakeAudioDeviceType::create_fake(&self, &syrp_device_api::DeviceId) -> core::result::Result<syrp_device_api::fake::FakeAudioDevice, syrp_device_api::DeviceError>
+pub fn syrp_device_api::fake::FakeAudioDeviceType::new() -> Self
+pub fn syrp_device_api::fake::FakeAudioDeviceType::remove_device(&self, &syrp_device_api::DeviceId) -> bool
+impl syrp_device_api::AudioDeviceType for syrp_device_api::fake::FakeAudioDeviceType
+pub fn syrp_device_api::fake::FakeAudioDeviceType::create(&self, &syrp_device_api::DeviceId) -> core::result::Result<alloc::boxed::Box<dyn syrp_device_api::AudioDevice>, syrp_device_api::DeviceError>
+pub fn syrp_device_api::fake::FakeAudioDeviceType::default_device(&self) -> core::option::Option<syrp_device_api::DeviceId>
+pub fn syrp_device_api::fake::FakeAudioDeviceType::devices(&self) -> alloc::vec::Vec<syrp_device_api::DeviceInfo>
+pub fn syrp_device_api::fake::FakeAudioDeviceType::name(&self) -> &str
+pub fn syrp_device_api::fake::FakeAudioDeviceType::set_change_notifier(&self, core::option::Option<syrp_device_api::DeviceChangeNotifier>)
+pub struct syrp_device_api::fake::FakeAudioDriver
+impl syrp_device_api::fake::FakeAudioDriver
+pub fn syrp_device_api::fake::FakeAudioDriver::add_xrun(&self)
+pub fn syrp_device_api::fake::FakeAudioDriver::disconnect(&self)
+pub fn syrp_device_api::fake::FakeAudioDriver::run_block(&self, &[f32], &mut [f32]) -> core::result::Result<(), syrp_device_api::DeviceError>
+pub struct syrp_device_api::fake::FakeAudioSpec
+impl syrp_device_api::fake::FakeAudioSpec
+pub fn syrp_device_api::fake::FakeAudioSpec::id(&self) -> syrp_device_api::DeviceId
+pub fn syrp_device_api::fake::FakeAudioSpec::new(impl core::convert::Into<alloc::string::String>, u32, u32) -> Self
+pub fn syrp_device_api::fake::FakeAudioSpec::with_latency(self, u32, u32) -> Self
+pub struct syrp_device_api::fake::FakeMidiDeviceType
+impl syrp_device_api::fake::FakeMidiDeviceType
+pub fn syrp_device_api::fake::FakeMidiDeviceType::add_input(&self, &str) -> syrp_device_api::DeviceId
+pub fn syrp_device_api::fake::FakeMidiDeviceType::deliver(&self, &syrp_device_api::DeviceId, &syrp_midi::message::MidiMessage) -> usize
+pub fn syrp_device_api::fake::FakeMidiDeviceType::new(&[&str], &[&str]) -> Self
+pub fn syrp_device_api::fake::FakeMidiDeviceType::remove_port(&self, &syrp_device_api::DeviceId) -> bool
+pub fn syrp_device_api::fake::FakeMidiDeviceType::sent(&self, &syrp_device_api::DeviceId) -> alloc::vec::Vec<syrp_midi::message::MidiMessage>
+impl syrp_device_api::MidiDeviceType for syrp_device_api::fake::FakeMidiDeviceType
+pub fn syrp_device_api::fake::FakeMidiDeviceType::inputs(&self) -> alloc::vec::Vec<syrp_device_api::DeviceInfo>
+pub fn syrp_device_api::fake::FakeMidiDeviceType::name(&self) -> &str
+pub fn syrp_device_api::fake::FakeMidiDeviceType::open_input(&self, &syrp_device_api::DeviceId, alloc::boxed::Box<dyn syrp_device_api::MidiInputCallback>) -> core::result::Result<alloc::boxed::Box<dyn syrp_device_api::MidiInput>, syrp_device_api::DeviceError>
+pub fn syrp_device_api::fake::FakeMidiDeviceType::open_output(&self, &syrp_device_api::DeviceId) -> core::result::Result<alloc::boxed::Box<dyn syrp_device_api::MidiOutput>, syrp_device_api::DeviceError>
+pub fn syrp_device_api::fake::FakeMidiDeviceType::outputs(&self) -> alloc::vec::Vec<syrp_device_api::DeviceInfo>
+pub fn syrp_device_api::fake::FakeMidiDeviceType::set_change_notifier(&self, core::option::Option<syrp_device_api::DeviceChangeNotifier>)
+#[non_exhaustive] pub enum syrp_device_api::DeviceChange
+pub syrp_device_api::DeviceChange::Added(syrp_device_api::DeviceId)
+pub syrp_device_api::DeviceChange::DefaultChanged
+pub syrp_device_api::DeviceChange::Removed(syrp_device_api::DeviceId)
+#[non_exhaustive] pub enum syrp_device_api::DeviceError
+pub syrp_device_api::DeviceError::AlreadyRunning
+pub syrp_device_api::DeviceError::Disconnected
+pub syrp_device_api::DeviceError::NotFound
+pub syrp_device_api::DeviceError::NotOpen
+pub syrp_device_api::DeviceError::UnsupportedSetup
+impl core::error::Error for syrp_device_api::DeviceError
+impl core::fmt::Display for syrp_device_api::DeviceError
+pub fn syrp_device_api::DeviceError::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl syrp_error::Diagnostic for syrp_device_api::DeviceError
+pub fn syrp_device_api::DeviceError::code(&self) -> syrp_error::ErrorCode
+pub struct syrp_device_api::AudioDeviceSetup
+impl syrp_device_api::AudioDeviceSetup
+pub const fn syrp_device_api::AudioDeviceSetup::buffer_size(&self) -> u32
+pub const fn syrp_device_api::AudioDeviceSetup::inputs(&self) -> syrp_device_api::ChannelMask
+pub const fn syrp_device_api::AudioDeviceSetup::new(f64, u32) -> Self
+pub const fn syrp_device_api::AudioDeviceSetup::outputs(&self) -> syrp_device_api::ChannelMask
+pub const fn syrp_device_api::AudioDeviceSetup::sample_rate(&self) -> f64
+pub const fn syrp_device_api::AudioDeviceSetup::with_inputs(self, syrp_device_api::ChannelMask) -> Self
+pub const fn syrp_device_api::AudioDeviceSetup::with_outputs(self, syrp_device_api::ChannelMask) -> Self
+impl syrp_rt::RtSafe for syrp_device_api::AudioDeviceSetup
+pub struct syrp_device_api::ChannelIter
+impl core::iter::traits::iterator::Iterator for syrp_device_api::ChannelIter
+pub type syrp_device_api::ChannelIter::Item = u32
+pub fn syrp_device_api::ChannelIter::next(&mut self) -> core::option::Option<u32>
+impl syrp_rt::RtSafe for syrp_device_api::ChannelIter
+pub struct syrp_device_api::ChannelMask
+impl syrp_device_api::ChannelMask
+pub const syrp_device_api::ChannelMask::MAX_CHANNELS: u32
+pub const fn syrp_device_api::ChannelMask::contains(self, u32) -> bool
+pub const fn syrp_device_api::ChannelMask::count(self) -> u32
+pub const fn syrp_device_api::ChannelMask::first(u32) -> Self
+pub const fn syrp_device_api::ChannelMask::from_low_bits(u64) -> Self
+pub const fn syrp_device_api::ChannelMask::iter(self) -> syrp_device_api::ChannelIter
+pub const fn syrp_device_api::ChannelMask::span(self) -> u32
+pub const fn syrp_device_api::ChannelMask::with(self, u32) -> Self
+pub const fn syrp_device_api::ChannelMask::without(self, u32) -> Self
+impl syrp_rt::RtSafe for syrp_device_api::ChannelMask
+pub struct syrp_device_api::DeviceChangeNotifier
+impl syrp_device_api::DeviceChangeNotifier
+pub fn syrp_device_api::DeviceChangeNotifier::new(syrp_loop_api::TaskSender, impl core::ops::function::Fn(&syrp_loop_api::MessageThread<'_>, &syrp_device_api::DeviceChange) + core::marker::Send + core::marker::Sync + 'static) -> Self
+pub fn syrp_device_api::DeviceChangeNotifier::notify(&self, syrp_device_api::DeviceChange)
+impl core::fmt::Debug for syrp_device_api::DeviceChangeNotifier
+pub fn syrp_device_api::DeviceChangeNotifier::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+pub struct syrp_device_api::DeviceId(_)
+impl syrp_device_api::DeviceId
+pub fn syrp_device_api::DeviceId::as_str(&self) -> &str
+pub fn syrp_device_api::DeviceId::new(impl core::convert::Into<alloc::string::String>) -> Self
+impl core::fmt::Display for syrp_device_api::DeviceId
+pub fn syrp_device_api::DeviceId::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+pub struct syrp_device_api::DeviceInfo
+impl syrp_device_api::DeviceInfo
+pub fn syrp_device_api::DeviceInfo::id(&self) -> &syrp_device_api::DeviceId
+pub fn syrp_device_api::DeviceInfo::name(&self) -> &str
+pub fn syrp_device_api::DeviceInfo::new(syrp_device_api::DeviceId, impl core::convert::Into<alloc::string::String>) -> Self
+pub struct syrp_device_api::DeviceRtCtx<'a>
+impl syrp_device_api::DeviceRtCtx<'_>
+pub const fn syrp_device_api::DeviceRtCtx<'_>::new(u64, f64) -> Self
+pub const fn syrp_device_api::DeviceRtCtx<'_>::sample_position(&self) -> u64
+pub const fn syrp_device_api::DeviceRtCtx<'_>::sample_rate(&self) -> f64
+impl syrp_rt::RtSafe for syrp_device_api::DeviceRtCtx<'_>
+pub trait syrp_device_api::AudioCallback: core::marker::Send + 'static
+pub fn syrp_device_api::AudioCallback::about_to_start(&mut self, &syrp_device_api::AudioDeviceSetup)
+pub fn syrp_device_api::AudioCallback::process(&mut self, syrp_audio_api::block::AudioBlock<'_, f32>, syrp_audio_api::block::AudioBlockMut<'_, f32>, &mut syrp_device_api::DeviceRtCtx<'_>)
+pub fn syrp_device_api::AudioCallback::stopped(&mut self)
+impl<F> syrp_device_api::AudioCallback for F where F: core::ops::function::FnMut(syrp_audio_api::block::AudioBlock<'_, f32>, syrp_audio_api::block::AudioBlockMut<'_, f32>, &mut syrp_device_api::DeviceRtCtx<'_>) + core::marker::Send + 'static
+pub fn F::about_to_start(&mut self, &syrp_device_api::AudioDeviceSetup)
+pub fn F::process(&mut self, syrp_audio_api::block::AudioBlock<'_, f32>, syrp_audio_api::block::AudioBlockMut<'_, f32>, &mut syrp_device_api::DeviceRtCtx<'_>)
+pub fn F::stopped(&mut self)
+pub trait syrp_device_api::AudioDevice: core::marker::Send
+pub fn syrp_device_api::AudioDevice::available_buffer_sizes(&self) -> alloc::vec::Vec<u32>
+pub fn syrp_device_api::AudioDevice::available_sample_rates(&self) -> alloc::vec::Vec<f64>
+pub fn syrp_device_api::AudioDevice::close(&mut self)
+pub fn syrp_device_api::AudioDevice::current_setup(&self) -> core::option::Option<syrp_device_api::AudioDeviceSetup>
+pub fn syrp_device_api::AudioDevice::info(&self) -> &syrp_device_api::DeviceInfo
+pub fn syrp_device_api::AudioDevice::input_channel_names(&self) -> alloc::vec::Vec<alloc::string::String>
+pub fn syrp_device_api::AudioDevice::input_latency(&self) -> u32
+pub fn syrp_device_api::AudioDevice::is_running(&self) -> bool
+pub fn syrp_device_api::AudioDevice::open(&mut self, &syrp_device_api::AudioDeviceSetup) -> core::result::Result<(), syrp_device_api::DeviceError>
+pub fn syrp_device_api::AudioDevice::output_channel_names(&self) -> alloc::vec::Vec<alloc::string::String>
+pub fn syrp_device_api::AudioDevice::output_latency(&self) -> u32
+pub fn syrp_device_api::AudioDevice::start(&mut self, alloc::boxed::Box<dyn syrp_device_api::AudioCallback>) -> core::result::Result<(), syrp_device_api::DeviceError>
+pub fn syrp_device_api::AudioDevice::stop(&mut self) -> core::option::Option<alloc::boxed::Box<dyn syrp_device_api::AudioCallback>>
+pub fn syrp_device_api::AudioDevice::xrun_count(&self) -> core::option::Option<u64>
+impl syrp_device_api::AudioDevice for syrp_device_api::fake::FakeAudioDevice
+pub fn syrp_device_api::fake::FakeAudioDevice::available_buffer_sizes(&self) -> alloc::vec::Vec<u32>
+pub fn syrp_device_api::fake::FakeAudioDevice::available_sample_rates(&self) -> alloc::vec::Vec<f64>
+pub fn syrp_device_api::fake::FakeAudioDevice::close(&mut self)
+pub fn syrp_device_api::fake::FakeAudioDevice::current_setup(&self) -> core::option::Option<syrp_device_api::AudioDeviceSetup>
+pub fn syrp_device_api::fake::FakeAudioDevice::info(&self) -> &syrp_device_api::DeviceInfo
+pub fn syrp_device_api::fake::FakeAudioDevice::input_channel_names(&self) -> alloc::vec::Vec<alloc::string::String>
+pub fn syrp_device_api::fake::FakeAudioDevice::input_latency(&self) -> u32
+pub fn syrp_device_api::fake::FakeAudioDevice::is_running(&self) -> bool
+pub fn syrp_device_api::fake::FakeAudioDevice::open(&mut self, &syrp_device_api::AudioDeviceSetup) -> core::result::Result<(), syrp_device_api::DeviceError>
+pub fn syrp_device_api::fake::FakeAudioDevice::output_channel_names(&self) -> alloc::vec::Vec<alloc::string::String>
+pub fn syrp_device_api::fake::FakeAudioDevice::output_latency(&self) -> u32
+pub fn syrp_device_api::fake::FakeAudioDevice::start(&mut self, alloc::boxed::Box<dyn syrp_device_api::AudioCallback>) -> core::result::Result<(), syrp_device_api::DeviceError>
+pub fn syrp_device_api::fake::FakeAudioDevice::stop(&mut self) -> core::option::Option<alloc::boxed::Box<dyn syrp_device_api::AudioCallback>>
+pub fn syrp_device_api::fake::FakeAudioDevice::xrun_count(&self) -> core::option::Option<u64>
+pub trait syrp_device_api::AudioDeviceType
+pub fn syrp_device_api::AudioDeviceType::create(&self, &syrp_device_api::DeviceId) -> core::result::Result<alloc::boxed::Box<dyn syrp_device_api::AudioDevice>, syrp_device_api::DeviceError>
+pub fn syrp_device_api::AudioDeviceType::default_device(&self) -> core::option::Option<syrp_device_api::DeviceId>
+pub fn syrp_device_api::AudioDeviceType::devices(&self) -> alloc::vec::Vec<syrp_device_api::DeviceInfo>
+pub fn syrp_device_api::AudioDeviceType::name(&self) -> &str
+pub fn syrp_device_api::AudioDeviceType::set_change_notifier(&self, core::option::Option<syrp_device_api::DeviceChangeNotifier>)
+impl syrp_device_api::AudioDeviceType for syrp_device_api::fake::FakeAudioDeviceType
+pub fn syrp_device_api::fake::FakeAudioDeviceType::create(&self, &syrp_device_api::DeviceId) -> core::result::Result<alloc::boxed::Box<dyn syrp_device_api::AudioDevice>, syrp_device_api::DeviceError>
+pub fn syrp_device_api::fake::FakeAudioDeviceType::default_device(&self) -> core::option::Option<syrp_device_api::DeviceId>
+pub fn syrp_device_api::fake::FakeAudioDeviceType::devices(&self) -> alloc::vec::Vec<syrp_device_api::DeviceInfo>
+pub fn syrp_device_api::fake::FakeAudioDeviceType::name(&self) -> &str
+pub fn syrp_device_api::fake::FakeAudioDeviceType::set_change_notifier(&self, core::option::Option<syrp_device_api::DeviceChangeNotifier>)
+pub trait syrp_device_api::MidiDeviceType
+pub fn syrp_device_api::MidiDeviceType::inputs(&self) -> alloc::vec::Vec<syrp_device_api::DeviceInfo>
+pub fn syrp_device_api::MidiDeviceType::name(&self) -> &str
+pub fn syrp_device_api::MidiDeviceType::open_input(&self, &syrp_device_api::DeviceId, alloc::boxed::Box<dyn syrp_device_api::MidiInputCallback>) -> core::result::Result<alloc::boxed::Box<dyn syrp_device_api::MidiInput>, syrp_device_api::DeviceError>
+pub fn syrp_device_api::MidiDeviceType::open_output(&self, &syrp_device_api::DeviceId) -> core::result::Result<alloc::boxed::Box<dyn syrp_device_api::MidiOutput>, syrp_device_api::DeviceError>
+pub fn syrp_device_api::MidiDeviceType::outputs(&self) -> alloc::vec::Vec<syrp_device_api::DeviceInfo>
+pub fn syrp_device_api::MidiDeviceType::set_change_notifier(&self, core::option::Option<syrp_device_api::DeviceChangeNotifier>)
+impl syrp_device_api::MidiDeviceType for syrp_device_api::fake::FakeMidiDeviceType
+pub fn syrp_device_api::fake::FakeMidiDeviceType::inputs(&self) -> alloc::vec::Vec<syrp_device_api::DeviceInfo>
+pub fn syrp_device_api::fake::FakeMidiDeviceType::name(&self) -> &str
+pub fn syrp_device_api::fake::FakeMidiDeviceType::open_input(&self, &syrp_device_api::DeviceId, alloc::boxed::Box<dyn syrp_device_api::MidiInputCallback>) -> core::result::Result<alloc::boxed::Box<dyn syrp_device_api::MidiInput>, syrp_device_api::DeviceError>
+pub fn syrp_device_api::fake::FakeMidiDeviceType::open_output(&self, &syrp_device_api::DeviceId) -> core::result::Result<alloc::boxed::Box<dyn syrp_device_api::MidiOutput>, syrp_device_api::DeviceError>
+pub fn syrp_device_api::fake::FakeMidiDeviceType::outputs(&self) -> alloc::vec::Vec<syrp_device_api::DeviceInfo>
+pub fn syrp_device_api::fake::FakeMidiDeviceType::set_change_notifier(&self, core::option::Option<syrp_device_api::DeviceChangeNotifier>)
+pub trait syrp_device_api::MidiInput: core::marker::Send
+pub fn syrp_device_api::MidiInput::info(&self) -> &syrp_device_api::DeviceInfo
+pub fn syrp_device_api::MidiInput::start(&mut self) -> core::result::Result<(), syrp_device_api::DeviceError>
+pub fn syrp_device_api::MidiInput::stop(&mut self)
+pub trait syrp_device_api::MidiInputCallback: core::marker::Send + 'static
+pub fn syrp_device_api::MidiInputCallback::message(&mut self, &syrp_midi::message::MidiMessage)
+impl<F: core::ops::function::FnMut(&syrp_midi::message::MidiMessage) + core::marker::Send + 'static> syrp_device_api::MidiInputCallback for F
+pub fn F::message(&mut self, &syrp_midi::message::MidiMessage)
+pub trait syrp_device_api::MidiOutput: core::marker::Send
+pub fn syrp_device_api::MidiOutput::info(&self) -> &syrp_device_api::DeviceInfo
+pub fn syrp_device_api::MidiOutput::send(&mut self, &syrp_midi::message::MidiMessage) -> core::result::Result<(), syrp_device_api::DeviceError>
+pub type syrp_device_api::DeviceChangeFn = (dyn core::ops::function::Fn(&syrp_loop_api::MessageThread<'_>, &syrp_device_api::DeviceChange) + core::marker::Send + core::marker::Sync)
