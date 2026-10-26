@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only OR BUSL-1.1
 //! The Syrp system layer (master plan §5.2, L2 Core): wall-clock and calendar time, durations
-//! the high-resolution monotonic counters, UUIDs and system facts.
+//! the high-resolution monotonic counters, UUIDs, system facts and logging.
 //!
 //! - [`RelativeTime`]: a signed duration in seconds, with a readable description.
 //! - [`Time`]: milliseconds since the Unix epoch, calendar fields in UTC or local time
@@ -9,7 +9,9 @@
 //!   [`Time::high_resolution_ticks`] and [`Time::high_resolution_ticks_per_second`] are
 //!   RT-safe (lock-free, allocation-free, non-blocking).
 //! - [`Uuid`]: random version 4 UUIDs, parsing and formatting.
-//! - [`SystemStats`]: CPU count and features, memory and page size, environment variables.
+//! - [`SystemStats`]: OS, CPU, memory, user and machine facts, environment variables and
+//!   backtraces.
+//! - [`Logger`], [`set_current_logger`], [`write_to_log`] and [`WriterLogger`].
 //!
 //! Errors are [`SysError`], with codes `SYRP-SYS-*` in `errors/sys.toml`.
 //!
@@ -23,15 +25,18 @@
 
 mod error;
 mod format;
+mod logger;
 mod os;
+mod os_info;
 mod relative;
 mod stats;
 mod time;
 mod uuid;
 
 pub use error::SysError;
+pub use logger::{Logger, WriterLogger, set_current_logger, write_to_log};
 pub use relative::RelativeTime;
-pub use stats::{CpuFeature, SystemStats};
+pub use stats::{CpuFeature, OperatingSystemType, OsVersion, SystemStats};
 pub use syrp_error::Diagnostic;
 pub use time::{DateTime, Time};
 pub use uuid::Uuid;

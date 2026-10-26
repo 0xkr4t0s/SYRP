@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only OR BUSL-1.1
-//! Behaviour tests for syrp-sys (WP-1.1-12): B1-B4, part of B5 and the B7 error codes.
+//! Behaviour tests for syrp-sys (WP-1.1-12): B1-B5 and the B7 error codes (B6 is in logger.rs).
 
 use std::collections::HashSet;
 use syrp_rt::{GuardedAllocator, no_alloc};
-use syrp_sys::{CpuFeature, Diagnostic, RelativeTime, SysError, SystemStats, Time, Uuid};
+use syrp_sys::{
+    CpuFeature, Diagnostic, OperatingSystemType, RelativeTime, SysError, SystemStats, Time, Uuid,
+};
 
 #[global_allocator]
 static ALLOC: GuardedAllocator = GuardedAllocator;
@@ -389,5 +391,78 @@ fn b5_environment_variable_or_default() {
     assert_eq!(
         SystemStats::environment_variable("SYRP_TEST_UNSET_42", "dflt"),
         "dflt"
+    );
+}
+
+#[test]
+fn b5_operating_system_type_and_name() {
+    let os = SystemStats::operating_system_type();
+    let name = SystemStats::operating_system_name();
+    let family = match os {
+        OperatingSystemType::Linux(_) => "Linux",
+        OperatingSystemType::MacOs(_) => "macOS",
+        OperatingSystemType::Windows(_) => "Windows",
+        _ => "Other",
+    };
+    assert!(name.starts_with(family), "{name}");
+    assert_eq!(family == "Linux", cfg!(target_os = "linux"));
+    assert_eq!(family == "macOS", cfg!(target_os = "macos"));
+    assert_eq!(family == "Windows", cfg!(windows));
+    if cfg!(any(target_os = "linux", target_os = "macos", windows)) {
+        let v = os.version().expect("a version on a supported OS");
+        assert!(v.major() >= 2, "{v}");
+        assert_eq!(name, format!("{family} {v}"));
+    }
+    if cfg!(windows) {
+        assert!(os.version().unwrap().major() >= 10);
+    }
+}
+
+#[test]
+fn b5_cpu_description_is_consistent() {
+    // Not compared with num_cpus: available_parallelism can be lower under CPU quotas.
+    let physical = SystemStats::num_physical_cpus();
+    assert!((1..=4096).contains(&physical), "{physical}");
+    if cfg!(target_arch = "x86_64") {
+        let vendor = SystemStats::cpu_vendor().expect("cpuid vendor on x86-64");
+        assert_eq!(vendor.len(), 12, "{vendor}");
+    }
+    for text in [SystemStats::cpu_vendor(), SystemStats::cpu_model()]
+        .into_iter()
+        .flatten()
+    {
+        assert!(
+            !text.is_empty() && text.trim() == text && !text.contains('\0'),
+            "{text:?}"
+        );
+    }
+    if let Some(mhz) = SystemStats::cpu_speed_mhz() {
+        assert!((100..20_000).contains(&mhz), "{mhz}");
+    }
+}
+
+#[test]
+fn b5_user_and_machine_names() {
+    let login = SystemStats::user_login_name();
+    let full = SystemStats::full_user_name();
+    let host = SystemStats::computer_name();
+    for text in [&login, &full, &host] {
+        assert!(!text.contains('\0') && text.trim() == text, "{text:?}");
+    }
+    if cfg!(any(target_os = "linux", target_os = "macos", windows)) {
+        assert!(!host.is_empty());
+    }
+    if !login.is_empty() {
+        assert!(!full.is_empty());
+    }
+}
+
+#[test]
+fn b5_stack_backtrace_names_this_test() {
+    let trace = SystemStats::stack_backtrace();
+    assert!(trace.lines().count() > 1, "{trace}");
+    assert!(
+        trace.contains("b5_stack_backtrace_names_this_test"),
+        "{trace}"
     );
 }
