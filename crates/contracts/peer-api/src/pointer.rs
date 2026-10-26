@@ -2,6 +2,8 @@
 //! Pointer (mouse, touch, pen) and wheel event payloads. Positions are logical units
 //! relative to the peer's top-left.
 
+use std::time::Duration;
+
 use keyboard_types::Modifiers;
 use syrp_geom::Point;
 
@@ -94,6 +96,17 @@ impl PointerButtons {
         PointerButtons(self.0 | button.bit())
     }
 
+    /// This set minus `button` (for building the held set after an `Up`).
+    /// ```
+    /// use syrp_peer_api::{PointerButton as B, PointerButtons};
+    /// let held = PointerButtons::NONE.with(B::Primary).with(B::Secondary);
+    /// assert_eq!(held.without(B::Primary), PointerButtons::NONE.with(B::Secondary));
+    /// ```
+    #[must_use]
+    pub fn without(self, button: PointerButton) -> Self {
+        PointerButtons(self.0 & !button.bit())
+    }
+
     /// Whether `button` is held.
     /// ```
     /// use syrp_peer_api::{PointerButton as B, PointerButtons};
@@ -163,6 +176,8 @@ fn clamp(v: f32, lo: f32, hi: f32) -> f32 {
 
 /// A mouse, touch or pen event. Pressure and tilt are `None` when the device does not
 /// report them (a mouse); a platform that reports them sets them with the `with_` builders.
+/// The optional [`time`](Self::time) is when the platform saw the input; when it is `None`,
+/// the GUI layer stamps the event on receipt (for double-click and velocity logic).
 /// ```
 /// use syrp_geom::Point;
 /// use syrp_peer_api::{PointerButton, PointerEvent, PointerKind, PointerPhase, PointerSource};
@@ -184,6 +199,7 @@ pub struct PointerEvent {
     modifiers: Modifiers,
     pressure: Option<f32>,
     tilt: Option<(f32, f32)>,
+    time: Option<Duration>,
 }
 
 impl PointerEvent {
@@ -204,6 +220,7 @@ impl PointerEvent {
             modifiers: Modifiers::empty(),
             pressure: None,
             tilt: None,
+            time: None,
         }
     }
 
@@ -352,6 +369,29 @@ impl PointerEvent {
     pub fn tilt(&self) -> Option<(f32, f32)> {
         self.tilt
     }
+
+    /// Sets when the platform saw the input, on the same monotonic clock and epoch as the
+    /// message loop's timers and VBlank times.
+    /// ```
+    /// # use syrp_geom::Point; use syrp_peer_api::{PointerEvent, PointerPhase as P, PointerSource};
+    /// let ev = PointerEvent::new(P::Move, PointerSource::MOUSE, Point::new(0.0, 0.0));
+    /// assert_eq!(ev.with_time(std::time::Duration::from_millis(5)).time().unwrap().as_millis(), 5);
+    /// ```
+    #[must_use]
+    pub fn with_time(mut self, time: Duration) -> Self {
+        self.time = Some(time);
+        self
+    }
+
+    /// When the platform saw the input, if it said; `None` means "stamp on receipt".
+    /// ```
+    /// # use syrp_geom::Point; use syrp_peer_api::{PointerEvent, PointerPhase as P, PointerSource};
+    /// let ev = PointerEvent::new(P::Move, PointerSource::MOUSE, Point::new(0.0, 0.0));
+    /// assert_eq!(ev.time(), None);
+    /// ```
+    pub fn time(&self) -> Option<Duration> {
+        self.time
+    }
 }
 
 /// What a wheel delta counts.
@@ -383,6 +423,7 @@ pub struct WheelEvent {
     unit: WheelUnit,
     modifiers: Modifiers,
     inertial: bool,
+    time: Option<Duration>,
 }
 
 impl WheelEvent {
@@ -398,6 +439,7 @@ impl WheelEvent {
             unit,
             modifiers: Modifiers::empty(),
             inertial: false,
+            time: None,
         }
     }
 
@@ -467,5 +509,28 @@ impl WheelEvent {
     /// ```
     pub fn is_inertial(&self) -> bool {
         self.inertial
+    }
+
+    /// Sets when the platform saw the input, on the same monotonic clock and epoch as the
+    /// message loop's timers and VBlank times.
+    /// ```
+    /// # use syrp_geom::Point; use syrp_peer_api::{WheelEvent, WheelUnit};
+    /// let ev = WheelEvent::new(Point::new(0.0, 0.0), 0.0, 1.0, WheelUnit::Lines);
+    /// assert_eq!(ev.with_time(std::time::Duration::from_millis(5)).time().unwrap().as_millis(), 5);
+    /// ```
+    #[must_use]
+    pub fn with_time(mut self, time: Duration) -> Self {
+        self.time = Some(time);
+        self
+    }
+
+    /// When the platform saw the input, if it said; `None` means "stamp on receipt".
+    /// ```
+    /// # use syrp_geom::Point; use syrp_peer_api::{WheelEvent, WheelUnit};
+    /// let ev = WheelEvent::new(Point::new(0.0, 0.0), 0.0, 1.0, WheelUnit::Lines);
+    /// assert_eq!(ev.time(), None);
+    /// ```
+    pub fn time(&self) -> Option<Duration> {
+        self.time
     }
 }

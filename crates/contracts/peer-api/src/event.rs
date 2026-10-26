@@ -5,6 +5,7 @@
 
 use std::ops::Range;
 
+use accesskit::ActionRequest;
 use keyboard_types::KeyboardEvent;
 use syrp_geom::{Point, Rect};
 use syrp_loop_api::MessageThread;
@@ -51,6 +52,13 @@ pub enum Event {
     StateChanged(WindowState),
     /// The platform discarded this area's pixels; it must be repainted.
     Expose(Rect<f64>),
+    /// Assistive technology started watching the peer: send a full tree with
+    /// [`Peer::update_accessibility`](crate::Peer::update_accessibility).
+    AccessibilityActivated,
+    /// Assistive technology stopped watching the peer; updates may stop.
+    AccessibilityDeactivated,
+    /// Assistive technology asked for an action (focus, click, set value, ...) on a node.
+    AccessibilityAction(ActionRequest),
     /// The user asked to close the window (close button, Alt+F4, ...). Nothing closes by itself.
     CloseRequested,
 }

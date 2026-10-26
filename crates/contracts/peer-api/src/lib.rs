@@ -10,6 +10,10 @@
 //! - Each peer delivers [`Event`]s (pointer with pressure, tilt and source ids, wheel,
 //!   magnify, keyboard, focus, IME, drag-and-drop of files and text, window changes) to the
 //!   [`EventSink`] it was created with.
+//! - The [`Desktop`] also owns the clipboard (text), the [`Display`] list (bounds, work
+//!   areas, scale) and asynchronous native [`FileDialog`]s and [`AlertDialog`]s.
+//! - Peers take [`accesskit`] tree updates and report assistive-technology activation and
+//!   action requests as events.
 //! - [`headless`] is a platform-free implementation for tests.
 //!
 //! Units: bounds and positions are `f64` logical units, y down; a top-level peer's bounds are
@@ -28,6 +32,8 @@
 //! });
 //! ```
 
+mod dialog;
+mod display;
 mod drag;
 mod event;
 pub mod headless;
@@ -40,7 +46,10 @@ use syrp_geom::Rect;
 use syrp_gfx_api::{RenderError, RenderTarget};
 use syrp_loop_api::MessageThread;
 
+pub use accesskit::{self, ActionRequest, TreeUpdate};
 pub use cursor_icon::{self, CursorIcon};
+pub use dialog::{AlertDialog, AlertDone, AlertKind, FileDialog, FileDialogDone, FileDialogKind};
+pub use display::Display;
 pub use drag::{DragData, DragEvent, DragPhase};
 pub use event::{Event, EventSink, ImeEvent};
 pub use keyboard_types::{self, KeyboardEvent, Modifiers};
@@ -250,6 +259,76 @@ pub trait Desktop: HasDisplayHandle {
         options: PeerOptions,
         events: EventSink,
     ) -> Result<Box<dyn Peer>, PeerError>;
+
+    /// The clipboard's text, or `None` if it holds no text.
+    ///
+    /// # Errors
+    /// [`PeerError::Backend`] if the clipboard cannot be read (another app holds it).
+    /// ```
+    /// fn f(d: &mut dyn syrp_peer_api::Desktop, mt: &syrp_loop_api::MessageThread<'_>) { let _ = d.clipboard_text(mt); }
+    /// ```
+    #[doc(alias = "SystemClipboard::getTextFromClipboard")]
+    fn clipboard_text(&mut self, mt: &MessageThread<'_>) -> Result<Option<String>, PeerError>;
+
+    /// Replaces the clipboard's contents with `text`.
+    ///
+    /// # Errors
+    /// [`PeerError::Backend`] if the clipboard cannot be written.
+    /// ```
+    /// fn f(d: &mut dyn syrp_peer_api::Desktop, mt: &syrp_loop_api::MessageThread<'_>) { let _ = d.set_clipboard_text(mt, "C4"); }
+    /// ```
+    #[doc(alias = "SystemClipboard::copyTextToClipboard")]
+    fn set_clipboard_text(&mut self, mt: &MessageThread<'_>, text: &str) -> Result<(), PeerError>;
+
+    /// The connected displays, primary first; never empty. Ask again after a peer reports
+    /// [`Event::ScaleChanged`], since displays may have been added, removed or rescaled.
+    /// ```
+    /// fn f(d: &dyn syrp_peer_api::Desktop) -> f64 { d.displays()[0].scale() }
+    /// ```
+    #[doc(alias = "Displays")]
+    fn displays(&self) -> Vec<Display>;
+
+    /// Shows a native file dialog, modal to `parent` if given. `done` runs exactly once,
+    /// later, on the message thread (never inside this call), with the chosen paths, or
+    /// none if the user cancelled. On `Err`, `done` is dropped without running.
+    ///
+    /// # Errors
+    /// [`PeerError::Unsupported`] if the platform has no file dialogs.
+    /// ```
+    /// use syrp_peer_api::{FileDialog, FileDialogKind};
+    /// fn f(d: &mut dyn syrp_peer_api::Desktop, mt: &syrp_loop_api::MessageThread<'_>) {
+    ///     let _ = d.show_file_dialog(mt, None, FileDialog::new(FileDialogKind::Open), Box::new(|_mt, paths| println!("{paths:?}")));
+    /// }
+    /// ```
+    #[doc(alias = "FileChooser::launchAsync")]
+    fn show_file_dialog(
+        &mut self,
+        mt: &MessageThread<'_>,
+        parent: Option<PeerId>,
+        dialog: FileDialog,
+        done: FileDialogDone,
+    ) -> Result<(), PeerError>;
+
+    /// Shows a native alert box, modal to `parent` if given. `done` runs exactly once, later,
+    /// on the message thread, with the pressed button's index or `None` if dismissed. On
+    /// `Err`, `done` is dropped without running.
+    ///
+    /// # Errors
+    /// [`PeerError::Unsupported`] if the platform has no alert boxes.
+    /// ```
+    /// use syrp_peer_api::{AlertDialog, AlertKind};
+    /// fn f(d: &mut dyn syrp_peer_api::Desktop, mt: &syrp_loop_api::MessageThread<'_>) {
+    ///     let _ = d.show_alert(mt, None, AlertDialog::new(AlertKind::Info, "Hi", "Hello"), Box::new(|_mt, _button| {}));
+    /// }
+    /// ```
+    #[doc(alias = "NativeMessageBox::showAsync")]
+    fn show_alert(
+        &mut self,
+        mt: &MessageThread<'_>,
+        parent: Option<PeerId>,
+        alert: AlertDialog,
+        done: AlertDone,
+    ) -> Result<(), PeerError>;
 }
 
 /// One native window (JUCE's ComponentPeer). Setters take the [`MessageThread`] token.
@@ -375,6 +454,14 @@ pub trait Peer: HasWindowHandle {
     /// ```
     #[doc(alias = "isInterestedInFileDrag")]
     fn accept_drop(&mut self, mt: &MessageThread<'_>, accept: bool);
+    /// Hands the peer's platform accessibility adapter an [`accesskit`] tree update. Send a
+    /// full tree (with `tree` set) in answer to [`Event::AccessibilityActivated`], then
+    /// incremental updates; before activation, updates may be dropped.
+    /// ```
+    /// fn f(p: &mut dyn syrp_peer_api::Peer, mt: &syrp_loop_api::MessageThread<'_>, u: syrp_peer_api::TreeUpdate) { p.update_accessibility(mt, u); }
+    /// ```
+    #[doc(alias = "AccessibilityHandler")]
+    fn update_accessibility(&mut self, mt: &MessageThread<'_>, update: TreeUpdate);
 
     /// A surface [`RenderTarget`] (no CPU buffer) matching the peer's size and scale factor:
     /// each side is the logical size times the scale, rounded up as `RenderTarget::from_logical`.
