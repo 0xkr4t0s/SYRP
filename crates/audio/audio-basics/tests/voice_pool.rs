@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only OR BUSL-1.1
-//! Tests for work/specs/WP-2.1-05.md, increments 1–3 (B1–B6).
+//! Tests for work/specs/WP-2.1-05.md (B1–B7; B8 is `benches/voice_pool.rs`).
 
+use proptest::prelude::*;
 use syrp_audio_basics::AudioBuffer;
 use syrp_audio_basics::voice::{
     MAX_FRAMES, MAX_VOICES, NoteStart, Voice, VoiceEvent, VoiceEventKind, VoiceHandle, VoicePool,
@@ -435,7 +436,7 @@ fn kind(offset: u32, kind: VoiceEventKind) -> VoiceEvent {
     VoiceEvent::new(offset, kind)
 }
 
-fn notes<S: VoiceSample>(p: &Pool<S>) -> Vec<Option<(u8, u8)>> {
+fn notes<S: VoiceSample>(p: &Pool<S>) -> Trace {
     (0..p.voices())
         .map(|i| p.note(p.handle(i).unwrap()))
         .collect()
@@ -653,4 +654,101 @@ fn b6_silent_packs_sleep_and_finished_lanes_free() {
         "the idle pack is skipped"
     );
     assert!(out.channel(0).iter().all(|&x| x == 0.0));
+}
+
+/// One block of a random event stream: up to six events, sorted by offset, in 64 frames.
+fn block() -> impl Strategy<Value = Vec<VoiceEvent>> {
+    let event = (0_u32..64, 0_u8..12, 1_u8..=2, 60_u8..68, 0.1_f32..1.0).prop_map(
+        |(at, k, channel, note, velocity)| {
+            let down = velocity > 0.5;
+            kind(
+                at,
+                match k {
+                    0..=5 => VoiceEventKind::NoteOn {
+                        channel,
+                        note,
+                        velocity,
+                    },
+                    6..=8 => VoiceEventKind::NoteOff {
+                        channel,
+                        note,
+                        velocity,
+                    },
+                    9 => VoiceEventKind::Sustain { channel, down },
+                    10 => VoiceEventKind::Sostenuto { channel, down },
+                    _ => VoiceEventKind::AllNotesOff {
+                        channel: down.then_some(channel),
+                    },
+                },
+            )
+        },
+    );
+    prop::collection::vec(event, 0..6).prop_map(|mut b| {
+        b.sort_by_key(VoiceEvent::offset);
+        b
+    })
+}
+
+/// The `(channel, note)` of every voice, by voice index.
+type Trace = Vec<Option<(u8, u8)>>;
+
+/// Renders `blocks` (64 frames each) and returns the output and the lane trace per block.
+fn play<S: VoiceSample>(voices: usize, blocks: &[Vec<VoiceEvent>]) -> (Vec<f32>, Vec<Trace>) {
+    let mut p = pool::<S>(voices, 64, 1);
+    let (mut out, mut trace) = (Vec::new(), Vec::new());
+    for b in blocks {
+        out.extend_from_slice(run(&mut p, 1, 64, 0.0, b).channel(0));
+        trace.push(notes(&p));
+    }
+    (out, trace)
+}
+
+/// `f32-arith` (4 ulp, or 1e-7 near zero) scaled to the summed magnitude: each of `voices`
+/// voices is within ±1, and a pack sums its lanes before adding them to the output.
+fn close(got: &[f32], want: &[f32], voices: usize) -> bool {
+    let tol = 1e-7_f32.max(4.0 * f32::EPSILON * voices as f32);
+    got.len() == want.len() && got.iter().zip(want).all(|(g, w)| (g - w).abs() <= tol)
+}
+
+proptest! {
+    #[test]
+    fn b7_scalar_and_pack_pools_agree(blocks in prop::collection::vec(block(), 1..12)) {
+        let (scalar, trace) = play::<f32>(16, &blocks);
+        for (out, t) in [play::<F32x4>(16, &blocks), play::<F32x8>(16, &blocks)] {
+            prop_assert!(close(&out, &scalar, 16));
+            prop_assert_eq!(&t, &trace);
+        }
+        let (odd, _) = play::<F32x8>(10, &blocks);
+        prop_assert!(close(&odd, &play::<f32>(10, &blocks).0, 10));
+    }
+
+    #[test]
+    fn b7_no_note_is_lost_or_doubled(blocks in prop::collection::vec(block(), 1..12)) {
+        let mut p = pool::<f32>(5, 64, 1);
+        let mut note_ons = 0;
+        for b in &blocks {
+            note_ons += b.iter().filter(|e| matches!(e.kind(), VoiceEventKind::NoteOn { .. })).count();
+            run(&mut p, 1, 64, 0.0, b);
+            let sounding: Vec<_> = (0..5)
+                .filter(|&v| log(&mut p, v).last().is_some_and(|l| l.starts_with("start")))
+                .collect();
+            let held: Vec<_> = sounding.iter().map(|&v| p.note(VoiceHandle::new(v, 0))).collect();
+            let mut unique = held.clone();
+            unique.sort_unstable();
+            unique.dedup();
+            prop_assert_eq!(unique.len(), held.len(), "a note is held twice: {:?}", held);
+        }
+        step(&mut p, &[kind(0, VoiceEventKind::AllNotesOff { channel: None })]);
+        step(&mut p, &[]);
+        prop_assert_eq!(p.active_voices(), 0);
+        let mut starts = 0;
+        for v in 0..5 {
+            let calls = &log(&mut p, v)[1..];
+            starts += calls.iter().filter(|l| l.starts_with("start")).count();
+            // Every start is ended by at least one stop before the next start or the end.
+            let ended = calls.windows(2).all(|w| !(w[0].starts_with("start") && w[1].starts_with("start")));
+            prop_assert!(ended && calls.last().is_none_or(|l| l.starts_with("stop")), "{:?}", calls);
+        }
+        prop_assert_eq!(starts, note_ons, "every note-on starts a voice");
+    }
 }

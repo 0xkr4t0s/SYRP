@@ -33,6 +33,11 @@
 //!   tail-off regardless of the pedals; `AllSoundOff` stops every lane without tail-off and
 //!   frees it at once.
 //!
+//! # Cost
+//! `benches/voice_pool.rs` (Callgrind, spec B8) renders 16 sounding saw voices for 512 stereo
+//! frames: 16 `f32` packs took 507,277 instructions and 2 `F32x8` packs 174,409, a ratio of
+//! 0.34 (x86-64, baseline codegen, no `dispatch!`). The bench fails above 0.5.
+//!
 //! # Real-time safety
 //! [`VoicePool::new`] and [`VoicePool::prepare`] allocate; call them off the audio thread.
 //! [`VoicePool::render`] and the accessors never allocate, lock or do I/O.
