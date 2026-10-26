@@ -1,0 +1,1 @@
+{"wp": "WP-2.1-01", "kind": "added", "summary": "syrp-audio-basics: ADR 0003 D7 layout proptest, the Callgrind bench for buffer operations and vector_ops pack paths, RtSafe for AudioBuffer, and faster whole-pack loads and stores in vector_ops (increment 3, final)."}

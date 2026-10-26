@@ -16,7 +16,8 @@ pub trait Sealed: Copy {
     fn to_f64(self) -> f64;
     /// Rounds to nearest when narrowing.
     fn from_f64(value: f64) -> Self;
-    /// Loads up to `LANES` elements, filling the missing lanes with `fill`.
+    /// Loads up to `PACK_LANES` elements, filling the missing lanes with `fill`. A whole pack
+    /// takes a fixed-length path so it compiles to one vector load.
     fn load(src: &[Self], fill: Self) -> Self::Pack;
     /// Stores the first `dst.len()` (at most `LANES`) lanes.
     fn store(pack: Self::Pack, dst: &mut [Self]);
@@ -37,12 +38,19 @@ impl Sealed for f32 {
     }
     #[inline(always)]
     fn load(src: &[f32], fill: f32) -> F32x8 {
+        if let Ok(&lanes) = <&[f32; 8]>::try_from(src) {
+            return F32x8::from_array(lanes);
+        }
         let mut lanes = [fill; 8];
         lanes[..src.len()].copy_from_slice(src);
         F32x8::from_array(lanes)
     }
     #[inline(always)]
     fn store(pack: F32x8, dst: &mut [f32]) {
+        if let Ok(lanes) = <&mut [f32; 8]>::try_from(&mut *dst) {
+            *lanes = pack.to_array();
+            return;
+        }
         let n = dst.len();
         dst.copy_from_slice(&pack.to_array()[..n]);
     }
@@ -66,12 +74,19 @@ impl Sealed for f64 {
     }
     #[inline(always)]
     fn load(src: &[f64], fill: f64) -> F64x4 {
+        if let Ok(&lanes) = <&[f64; 4]>::try_from(src) {
+            return F64x4::from_array(lanes);
+        }
         let mut lanes = [fill; 4];
         lanes[..src.len()].copy_from_slice(src);
         F64x4::from_array(lanes)
     }
     #[inline(always)]
     fn store(pack: F64x4, dst: &mut [f64]) {
+        if let Ok(lanes) = <&mut [f64; 4]>::try_from(&mut *dst) {
+            *lanes = pack.to_array();
+            return;
+        }
         let n = dst.len();
         dst.copy_from_slice(&pack.to_array()[..n]);
     }

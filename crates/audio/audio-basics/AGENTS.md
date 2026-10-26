@@ -34,11 +34,18 @@ juce_audio_basics/AudioBuffer, juce_audio_basics/FloatVectorOperations (WP-2.1-0
   packs (`F32x8`, `F64x4`) with `#[inline(always)]` from the `dispatch!` body down.
 - Cleared flag (B3): set by `new`/`clear`, reset by any mutable access. Kernels see `frames`.
 
+## Parity notes
+- Deliberate divergence: gain ramps (`apply_gain_ramp`, `add_from_with_ramp`,
+  `copy_from_with_ramp`) are half-open. Sample `i` of `n` gets `start + (end - start) * i / n`,
+  so `end` falls on the first sample of the next block and consecutive blocks join without a
+  repeated or skipped step. JUCE's `applyGainRamp` docs describe reaching `endGain` on the last
+  sample; the gains differ by at most `(end - start) / n` per sample. A ledger note is pending.
+
 ## Thread affinity
 Any thread. RT-safe: `channels`, `frames`, `channel`, `channel_mut`, `as_block`,
 `as_block_mut`, B3/B4 operations and `vector_ops` (after one `Level::detect()`), and
 `set_size`/`make_copy_of` with `avoid_reallocating` when the new shape
-fits. Not RT-safe: `new`, `clone`, dropping a buffer, and resizes that reallocate.
+fits. `AudioBuffer` implements `syrp_rt::RtSafe` for those methods. Not RT-safe: `new`, `clone`, dropping a buffer, and resizes that reallocate.
 
 ## Stability
 experimental
@@ -48,11 +55,11 @@ experimental
 cargo syrp test --crate syrp-audio-basics
 PROPTEST_CASES=5000 cargo test -p syrp-audio-basics --test buffer
 cargo syrp wp check WP-2.1-01
+cargo bench -p syrp-audio-basics --bench buffer   # Callgrind counts (needs valgrind)
 ```
+The bench fails if a `vector_ops` pack case at `Avx2` costs more than 70% of `Sse2`.
 Tests install `syrp_rt::GuardedAllocator` so `no_alloc` proves allocation-free paths.
 
 ## Known gaps
-WP-2.1-01 is delivered in increments. Landed: B1-B5. Still to come: B6 (layout proptest
-over set_size/write/clear sequences, `benches/buffer.rs` Callgrind bench, `RtSafe`).
 `add_from`/`copy_from` cannot take a channel of the same buffer (borrow rules).
 `AlignedBuf::zeroed` aborts on allocation failure (no fallible allocation in `syrp-simd` yet).

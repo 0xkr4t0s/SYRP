@@ -30,18 +30,26 @@ use syrp_simd::{F32x8, Level, Sample, dispatch, kernels};
 use crate::BufferSample;
 
 /// `dst[i] = f(dst[i], src[k][i]...)` pack by pack. The last pack is partial: its missing
-/// lanes are loaded as zero and never stored.
+/// lanes are loaded as zero and never stored. Whole packs are counted up front so their
+/// loads and stores have a constant length and compile to plain vector moves.
 #[inline(always)]
 fn each<E: BufferSample, const K: usize>(
     dst: &mut [E],
     src: [&[E]; K],
     f: impl Fn(E::Pack, [E::Pack; K]) -> E::Pack,
 ) {
-    let n = E::PACK_LANES;
-    for (i, d) in dst.chunks_mut(n).enumerate() {
-        let r = i * n..i * n + d.len();
+    let (n, len) = (E::PACK_LANES, dst.len());
+    let src = src.map(|s| &s[..len]);
+    let step = |d: &mut [E], r: core::ops::Range<usize>| {
         let s = src.map(|s| E::load(&s[r.clone()], E::zero()));
         E::store(f(E::load(d, E::zero()), s), d);
+    };
+    for c in 0..len / n {
+        step(&mut dst[c * n..c * n + n], c * n..c * n + n);
+    }
+    let tail = len / n * n..len;
+    if !tail.is_empty() {
+        step(&mut dst[tail.clone()], tail);
     }
 }
 
@@ -67,9 +75,11 @@ fn fold<E: BufferSample>(
 ) -> Option<E> {
     let &first = src.first()?;
     let mut acc = E::Pack::splat(first);
-    for c in src.chunks(E::PACK_LANES) {
+    let mut chunks = src.chunks_exact(E::PACK_LANES);
+    for c in &mut chunks {
         acc = f(acc, E::load(c, first));
     }
+    acc = f(acc, E::load(chunks.remainder(), first));
     Some(E::reduce(acc, g))
 }
 
