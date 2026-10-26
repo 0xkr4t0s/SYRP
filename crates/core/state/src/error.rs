@@ -24,6 +24,8 @@ pub enum StateErrorKind {
     DeadKey,
     /// `SYRP-STATE-0005`: `remove_child` was given a node that is not a child of the parent.
     NotAChild,
+    /// `SYRP-STATE-0006`: `move_child` was given a source index past the last child.
+    IndexOutOfRange,
 }
 
 impl StateErrorKind {
@@ -41,6 +43,7 @@ impl StateErrorKind {
             Self::ForeignNode => "SYRP-STATE-0003",
             Self::DeadKey => "SYRP-STATE-0004",
             Self::NotAChild => "SYRP-STATE-0005",
+            Self::IndexOutOfRange => "SYRP-STATE-0006",
         })
     }
 
@@ -51,6 +54,7 @@ impl StateErrorKind {
             Self::ForeignNode => "the node belongs to another store",
             Self::DeadKey => "the node key refers to a freed node",
             Self::NotAChild => "the node is not a child of this parent",
+            Self::IndexOutOfRange => "the child index is out of range",
         }
     }
 }

@@ -11,15 +11,15 @@
 //! the [`MessageThread`](syrp_loop_api::MessageThread) token. Misuse returns a coded
 //! [`StateError`] and leaves the store unchanged.
 //!
-//! ## Reference counts
-//! A node's count is the number of its live handles plus one for its parent link. At zero the
-//! slot is freed, and each child loses its parent link and that link's count, which may free
-//! it in turn. So a detached subtree lives while something holds it and is reclaimed after. A
-//! parent freed while one of its children is still held leaves that child parentless; this is
-//! a Syrp choice, not yet checked against JUCE.
+//! ## Reference counts and the change log
+//! A node's count is its live handles and subscriptions, one for its parent link and one per
+//! undelivered [`LogRecord`] naming it. At zero the slot is freed, and each child loses its
+//! parent link and that count. A detached subtree lives while held and is reclaimed after. A
+//! parent freed while a child is held leaves the child parentless (a Syrp choice).
 //!
-//! This is increment 1 of WP-1.2-03 (spec B1 to B3, minus the B1 operations listed in the
-//! crate's `AGENTS.md`). The change log, listeners, deep copies and equivalence come later.
+//! Every mutation appends [`Change`] records, then delivers them to [`Subscription`] listeners
+//! once its borrow is released. [`LogCursor`]s read the log; see [`Store::subscribe`] for the
+//! delivery rules. Not yet here: deep copies, equivalence and benchmarks.
 //!
 //! ```
 //! use syrp_state::Store;
@@ -42,11 +42,15 @@
 //! needs_send(syrp_state::Store::new());
 //! ```
 
+mod delivery;
 mod error;
+mod log;
 mod node;
 mod store;
 
+pub use delivery::Subscription;
 pub use error::{StateError, StateErrorKind};
+pub use log::{Change, LogCursor, LogRecord};
 pub use node::{NodeKey, NodeRef, Properties};
 pub use store::Store;
 pub use syrp_error::Diagnostic;

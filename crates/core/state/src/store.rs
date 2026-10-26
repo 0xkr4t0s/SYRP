@@ -4,11 +4,15 @@ use std::cell::RefCell;
 use std::fmt;
 use std::rc::Rc;
 
-use slotmap::SlotMap;
+use std::collections::VecDeque;
+
+use slotmap::{DefaultKey, SecondaryMap, SlotMap};
 use syrp_loop_api::MessageThread;
 use syrp_var::{Identifier, Var};
 
+use crate::delivery::{Listener, Subscription};
 use crate::error::{StateError, StateErrorKind};
+use crate::log::{Change, LogCursor, LogRecord};
 use crate::node::{NodeKey, NodeRef, Properties};
 
 /// One arena slot.
@@ -16,9 +20,9 @@ pub(crate) struct Node {
     node_type: Identifier,
     /// Sorted by identifier, no duplicates.
     pub(crate) props: Vec<(Identifier, Var)>,
-    children: Vec<NodeKey>,
-    parent: Option<NodeKey>,
-    /// Handles + parent link (+ subscriptions and pending records, in later increments).
+    pub(crate) children: Vec<NodeKey>,
+    pub(crate) parent: Option<NodeKey>,
+    /// Handles + subscriptions + parent link + undelivered records naming the node.
     refs: u32,
 }
 
@@ -28,6 +32,19 @@ pub(crate) struct Inner {
     nodes: SlotMap<NodeKey, Node>,
     /// Scratch stack for freeing subtrees, kept to reuse its allocation.
     free_stack: Vec<NodeKey>,
+    /// Retained records, oldest first, with consecutive sequence numbers.
+    pub(crate) log: VecDeque<LogRecord>,
+    /// Sequence number of the next record appended.
+    pub(crate) next_seq: u64,
+    /// Sequence number of the first record not yet delivered.
+    pub(crate) delivered: u64,
+    /// Whether a delivery loop is running.
+    pub(crate) delivering: bool,
+    /// Each registered cursor's next sequence number.
+    pub(crate) cursors: SlotMap<DefaultKey, u64>,
+    /// Listeners per node, in registration order, with their ids.
+    pub(crate) listeners: SecondaryMap<NodeKey, Vec<(u64, Listener)>>,
+    pub(crate) next_listener: u64,
 }
 
 impl Inner {
@@ -36,7 +53,7 @@ impl Inner {
         &self.nodes[key]
     }
 
-    fn node_mut(&mut self, key: NodeKey) -> &mut Node {
+    pub(crate) fn node_mut(&mut self, key: NodeKey) -> &mut Node {
         &mut self.nodes[key]
     }
 
@@ -72,7 +89,7 @@ impl Inner {
     }
 
     /// Whether `maybe` is `of` or one of its ancestors.
-    fn is_self_or_ancestor(&self, maybe: NodeKey, of: NodeKey) -> bool {
+    pub(crate) fn is_self_or_ancestor(&self, maybe: NodeKey, of: NodeKey) -> bool {
         let mut cur = Some(of);
         while let Some(k) = cur {
             if k == maybe {
@@ -83,7 +100,21 @@ impl Inner {
         false
     }
 
-    fn find_prop(&self, key: NodeKey, id: Identifier) -> Result<usize, usize> {
+    /// Removes `parent`'s child at `index`, logs the removal (the records pin the child) and
+    /// then drops the parent link's count.
+    fn detach(&mut self, parent: NodeKey, index: usize) {
+        let child = self.node_mut(parent).children.remove(index);
+        self.node_mut(child).parent = None;
+        self.push(Change::ChildRemoved {
+            parent,
+            child,
+            index,
+        });
+        self.push(Change::ParentChanged { node: child });
+        self.release(child);
+    }
+
+    pub(crate) fn find_prop(&self, key: NodeKey, id: Identifier) -> Result<usize, usize> {
         self.node(key).props.binary_search_by_key(&id, |(k, _)| *k)
     }
 }
@@ -326,7 +357,7 @@ impl Store {
     #[doc(alias = "setProperty")]
     pub fn set_property(
         &self,
-        _mt: &MessageThread<'_>,
+        mt: &MessageThread<'_>,
         node: &NodeRef,
         id: Identifier,
         value: impl Into<Var>,
@@ -336,6 +367,7 @@ impl Store {
         let mut inner = self.inner.borrow_mut();
         let at = inner.find_prop(key, id);
         let props = &mut inner.node_mut(key).props;
+        let new = value.clone();
         let old = match at {
             Ok(i) if props[i].1.eq_same_type(&value) => return Ok(()),
             Ok(i) => Some(std::mem::replace(&mut props[i].1, value)),
@@ -344,8 +376,14 @@ impl Store {
                 None
             }
         };
+        inner.push(Change::PropertyChanged {
+            node: key,
+            id,
+            old,
+            new,
+        });
         drop(inner);
-        drop(old);
+        self.flush(mt);
         Ok(())
     }
 
@@ -362,7 +400,7 @@ impl Store {
     #[doc(alias = "removeProperty")]
     pub fn remove_property(
         &self,
-        _mt: &MessageThread<'_>,
+        mt: &MessageThread<'_>,
         node: &NodeRef,
         id: Identifier,
     ) -> Result<Option<Var>, StateError> {
@@ -371,7 +409,15 @@ impl Store {
         let Ok(at) = inner.find_prop(key, id) else {
             return Ok(None);
         };
-        Ok(Some(inner.node_mut(key).props.remove(at).1))
+        let old = inner.node_mut(key).props.remove(at).1;
+        inner.push(Change::PropertyRemoved {
+            node: key,
+            id,
+            old: old.clone(),
+        });
+        drop(inner);
+        self.flush(mt);
+        Ok(Some(old))
     }
 
     /// The node's parent, or `None` for a root or detached node.
@@ -453,7 +499,7 @@ impl Store {
     #[doc(alias = "appendChild")]
     pub fn add_child(
         &self,
-        _mt: &MessageThread<'_>,
+        mt: &MessageThread<'_>,
         parent: &NodeRef,
         child: &NodeRef,
         index: Option<usize>,
@@ -472,6 +518,14 @@ impl Store {
         children.insert(at, c);
         inner.node_mut(c).parent = Some(p);
         inner.retain(c); // the parent link
+        inner.push(Change::ChildAdded {
+            parent: p,
+            child: c,
+            index: at,
+        });
+        inner.push(Change::ParentChanged { node: c });
+        drop(inner);
+        self.flush(mt);
         Ok(())
     }
 
@@ -490,20 +544,273 @@ impl Store {
     #[doc(alias = "removeChild")]
     pub fn remove_child(
         &self,
-        _mt: &MessageThread<'_>,
+        mt: &MessageThread<'_>,
         parent: &NodeRef,
         child: &NodeRef,
     ) -> Result<(), StateError> {
         let p = self.own(parent)?;
         let c = self.own(child)?;
         let mut inner = self.inner.borrow_mut();
-        let children = &mut inner.node_mut(p).children;
-        let Some(at) = children.iter().position(|k| *k == c) else {
+        let Some(at) = inner.node(p).children.iter().position(|k| *k == c) else {
             return Err(StateError::new(StateErrorKind::NotAChild));
         };
-        children.remove(at);
-        inner.node_mut(c).parent = None;
-        inner.release(c); // `child` is a handle, so this never frees it
+        inner.detach(p, at);
+        drop(inner);
+        self.flush(mt);
         Ok(())
+    }
+
+    pub(crate) fn rc(&self) -> &Rc<RefCell<Inner>> {
+        &self.inner
+    }
+
+    /// Registers a [`LogCursor`] that reads every record appended from now on.
+    ///
+    /// ```
+    /// # use syrp_var::{Identifier, Var}; syrp_loop_api::ManualLoop::new().with_token(|mt| { let store = syrp_state::Store::new();
+    /// let mut cursor = store.cursor();
+    /// let node = store.create(mt, Identifier::new("A"));
+    /// store.set_property(mt, &node, Identifier::new("x"), 1).unwrap();
+    /// assert!(cursor.next().is_some() && cursor.next().is_none());
+    /// # });
+    /// ```
+    pub fn cursor(&self) -> LogCursor {
+        let mut inner = self.inner.borrow_mut();
+        let at = inner.next_seq;
+        LogCursor::new(&self.inner, inner.cursors.insert(at))
+    }
+
+    /// Number of records the log currently retains (undelivered, or unread by a cursor).
+    ///
+    /// ```
+    /// assert_eq!(syrp_state::Store::new().log_len(), 0);
+    /// ```
+    #[must_use]
+    pub fn log_len(&self) -> usize {
+        self.inner.borrow().log.len()
+    }
+
+    /// Registers `listener` for changes to `node` and its descendants, and to `node`'s own
+    /// parent. It is called with the store, the token and the change, after the mutation that
+    /// made it, and may mutate the store itself; those mutations are delivered after the current
+    /// change's remaining listeners. The returned [`Subscription`] counts toward the node.
+    ///
+    /// Order (not yet checked against JUCE): the node's listeners in registration order, then
+    /// each ancestor's, upwards. A listener added during a delivery hears the next change; one
+    /// removed during a delivery is not called again.
+    ///
+    /// ```
+    /// # use syrp_var::{Identifier, Var}; syrp_loop_api::ManualLoop::new().with_token(|mt| { let store = syrp_state::Store::new();
+    /// let (p, c) = (store.create(mt, Identifier::new("P")), store.create(mt, Identifier::new("C")));
+    /// store.add_child(mt, &p, &c, None).unwrap();
+    /// let seen = std::rc::Rc::new(std::cell::Cell::new(None));
+    /// let s = seen.clone();
+    /// let _sub = store.subscribe(mt, &p, move |_, _, ch| s.set(Some(ch.node()))).unwrap();
+    /// store.set_property(mt, &c, Identifier::new("x"), 1).unwrap();
+    /// assert_eq!(seen.get(), Some(c.key())); // heard on the ancestor
+    /// # });
+    /// ```
+    #[doc(alias = "addListener")]
+    pub fn subscribe(
+        &self,
+        _mt: &MessageThread<'_>,
+        node: &NodeRef,
+        listener: impl FnMut(&Store, &MessageThread<'_>, &Change) + 'static,
+    ) -> Result<Subscription, StateError> {
+        let key = self.own(node)?;
+        let mut inner = self.inner.borrow_mut();
+        let id = inner.next_listener;
+        inner.next_listener += 1;
+        let listener: Listener = Rc::new(RefCell::new(listener));
+        let list = inner.listeners.entry(key).expect("live node");
+        list.or_default().push((id, listener));
+        inner.retain(key);
+        Ok(Subscription::new(&self.inner, key, id))
+    }
+
+    /// Removes every property of the node, logging one `PropertyRemoved` per property.
+    ///
+    /// ```
+    /// # use syrp_var::{Identifier, Var}; syrp_loop_api::ManualLoop::new().with_token(|mt| { let store = syrp_state::Store::new();
+    /// let node = store.create(mt, Identifier::new("A"));
+    /// store.set_property(mt, &node, Identifier::new("x"), 1).unwrap();
+    /// store.remove_all_properties(mt, &node).unwrap();
+    /// assert_eq!(store.num_properties(&node).unwrap(), 0);
+    /// # });
+    /// ```
+    #[doc(alias = "removeAllProperties")]
+    pub fn remove_all_properties(
+        &self,
+        mt: &MessageThread<'_>,
+        node: &NodeRef,
+    ) -> Result<(), StateError> {
+        let key = self.own(node)?;
+        let mut inner = self.inner.borrow_mut();
+        for (id, old) in std::mem::take(&mut inner.node_mut(key).props) {
+            inner.push(Change::PropertyRemoved { node: key, id, old });
+        }
+        drop(inner);
+        self.flush(mt);
+        Ok(())
+    }
+
+    /// Removes every child, last first. Children nothing else counts are freed once delivered.
+    ///
+    /// ```
+    /// # use syrp_var::{Identifier, Var}; syrp_loop_api::ManualLoop::new().with_token(|mt| { let store = syrp_state::Store::new();
+    /// let p = store.create(mt, Identifier::new("P"));
+    /// store.add_child(mt, &p, &store.create(mt, Identifier::new("C")), None).unwrap();
+    /// store.remove_all_children(mt, &p).unwrap();
+    /// assert_eq!(store.live_nodes(), 1);
+    /// # });
+    /// ```
+    #[doc(alias = "removeAllChildren")]
+    pub fn remove_all_children(
+        &self,
+        mt: &MessageThread<'_>,
+        node: &NodeRef,
+    ) -> Result<(), StateError> {
+        let key = self.own(node)?;
+        let mut inner = self.inner.borrow_mut();
+        for index in (0..inner.node(key).children.len()).rev() {
+            inner.detach(key, index);
+        }
+        drop(inner);
+        self.flush(mt);
+        Ok(())
+    }
+
+    /// Moves the child at `from` to index `to`; a `to` past the end moves it to the end.
+    ///
+    /// Fails with [`StateErrorKind::IndexOutOfRange`] if `from` is not a child index.
+    ///
+    /// ```
+    /// # use syrp_var::{Identifier, Var}; syrp_loop_api::ManualLoop::new().with_token(|mt| { let store = syrp_state::Store::new();
+    /// let p = store.create(mt, Identifier::new("P"));
+    /// let a = store.create(mt, Identifier::new("A"));
+    /// store.add_child(mt, &p, &a, None).unwrap();
+    /// store.add_child(mt, &p, &store.create(mt, Identifier::new("B")), None).unwrap();
+    /// store.move_child(mt, &p, 0, 9).unwrap();
+    /// assert_eq!(store.index_of(&p, &a).unwrap(), Some(1));
+    /// # });
+    /// ```
+    #[doc(alias = "moveChild")]
+    pub fn move_child(
+        &self,
+        mt: &MessageThread<'_>,
+        parent: &NodeRef,
+        from: usize,
+        to: usize,
+    ) -> Result<(), StateError> {
+        let key = self.own(parent)?;
+        let mut inner = self.inner.borrow_mut();
+        let children = &mut inner.node_mut(key).children;
+        if from >= children.len() {
+            return Err(StateError::new(StateErrorKind::IndexOutOfRange));
+        }
+        let to = to.min(children.len() - 1);
+        if from == to {
+            return Ok(());
+        }
+        let moved = children.remove(from);
+        children.insert(to, moved);
+        inner.push(Change::ChildMoved {
+            parent: key,
+            from,
+            to,
+        });
+        drop(inner);
+        self.flush(mt);
+        Ok(())
+    }
+
+    /// The first child whose type is `node_type`.
+    ///
+    /// ```
+    /// # use syrp_var::{Identifier, Var}; syrp_loop_api::ManualLoop::new().with_token(|mt| { let store = syrp_state::Store::new();
+    /// let (p, c) = (store.create(mt, Identifier::new("P")), store.create(mt, Identifier::new("C")));
+    /// store.add_child(mt, &p, &c, None).unwrap();
+    /// assert_eq!(store.child_with_type(&p, Identifier::new("C")).unwrap(), Some(c.clone()));
+    /// # });
+    /// ```
+    #[doc(alias = "getChildWithName")]
+    pub fn child_with_type(
+        &self,
+        node: &NodeRef,
+        node_type: Identifier,
+    ) -> Result<Option<NodeRef>, StateError> {
+        self.link(node, |i, k| {
+            let children = &i.node(k).children;
+            children
+                .iter()
+                .copied()
+                .find(|c| i.node(*c).node_type == node_type)
+        })
+    }
+
+    /// The first child whose property `id` equals `value` (by `Var`'s `==`).
+    ///
+    /// ```
+    /// # use syrp_var::{Identifier, Var}; syrp_loop_api::ManualLoop::new().with_token(|mt| { let store = syrp_state::Store::new();
+    /// let (p, c) = (store.create(mt, Identifier::new("P")), store.create(mt, Identifier::new("C")));
+    /// store.add_child(mt, &p, &c, None).unwrap();
+    /// store.set_property(mt, &c, Identifier::new("id"), 7).unwrap();
+    /// let found = store.child_with_property(&p, Identifier::new("id"), &Var::from(7)).unwrap();
+    /// assert_eq!(found, Some(c.clone()));
+    /// # });
+    /// ```
+    #[doc(alias = "getChildWithProperty")]
+    pub fn child_with_property(
+        &self,
+        node: &NodeRef,
+        id: Identifier,
+        value: &Var,
+    ) -> Result<Option<NodeRef>, StateError> {
+        self.link(node, |i, k| {
+            let children = &i.node(k).children;
+            let has = |c: NodeKey| {
+                i.find_prop(c, id)
+                    .is_ok_and(|at| i.node(c).props[at].1 == *value)
+            };
+            children.iter().copied().find(|c| has(*c))
+        })
+    }
+
+    /// The topmost ancestor of the node, or the node itself if it has no parent.
+    ///
+    /// ```
+    /// # use syrp_var::{Identifier, Var}; syrp_loop_api::ManualLoop::new().with_token(|mt| { let store = syrp_state::Store::new();
+    /// let (p, c) = (store.create(mt, Identifier::new("P")), store.create(mt, Identifier::new("C")));
+    /// store.add_child(mt, &p, &c, None).unwrap();
+    /// assert_eq!(store.root(&c).unwrap(), p);
+    /// # });
+    /// ```
+    #[doc(alias = "getRoot")]
+    pub fn root(&self, node: &NodeRef) -> Result<NodeRef, StateError> {
+        let found = self.link(node, |i, mut k| {
+            while let Some(p) = i.node(k).parent {
+                k = p;
+            }
+            Some(k)
+        })?;
+        Ok(found.expect("the walk always ends on a node"))
+    }
+
+    /// Whether `ancestor` is a parent of `node` at any depth. A node is not its own ancestor.
+    ///
+    /// ```
+    /// # use syrp_var::{Identifier, Var}; syrp_loop_api::ManualLoop::new().with_token(|mt| { let store = syrp_state::Store::new();
+    /// let (p, c) = (store.create(mt, Identifier::new("P")), store.create(mt, Identifier::new("C")));
+    /// store.add_child(mt, &p, &c, None).unwrap();
+    /// assert!(store.is_ancestor_of(&p, &c).unwrap() && !store.is_ancestor_of(&c, &c).unwrap());
+    /// # });
+    /// ```
+    #[doc(alias = "isAChildOf")]
+    pub fn is_ancestor_of(&self, ancestor: &NodeRef, node: &NodeRef) -> Result<bool, StateError> {
+        let a = self.own(ancestor)?;
+        self.read(node, |i, k| {
+            let parent = i.node(k).parent;
+            parent.is_some_and(|p| i.is_self_or_ancestor(a, p))
+        })
     }
 }
