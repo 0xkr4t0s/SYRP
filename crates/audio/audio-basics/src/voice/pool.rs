@@ -128,18 +128,20 @@ const FREE_LANE: Lane = Lane {
     note: 0,
 };
 
-/// The pitch wheel, controllers and sustain pedal of one MIDI channel.
+/// The pitch wheel, controllers and pedals of one MIDI channel.
 #[derive(Debug, Clone, Copy)]
 struct ChannelState {
     pitch_wheel: u16,
     controllers: [u8; 128],
     sustain: bool,
+    sostenuto: bool,
 }
 
 const CHANNEL_RESET: ChannelState = ChannelState {
     pitch_wheel: PITCH_WHEEL_CENTRE,
     controllers: [0; 128],
     sustain: false,
+    sostenuto: false,
 };
 
 /// Polyphonic voices stored as lane packs of `S` (ADR 0003 D5); JUCE's `Synthesiser` role.
@@ -394,7 +396,8 @@ impl<S: VoiceSample, V: Voice<S>> VoicePool<S, V> {
         let frames = out.frames();
         let (mut pos, mut next) = (0, 0);
         while pos < frames {
-            let horizon = pos.saturating_add(self.min_subdivision);
+            // Clamped so an event at or past the block end is never pulled into the block.
+            let horizon = pos.saturating_add(self.min_subdivision).min(frames);
             while let Some(e) = events.get(next).filter(|e| (e.offset() as usize) < horizon) {
                 self.apply(e.kind());
                 next += 1;
@@ -510,6 +513,13 @@ impl<S: VoiceSample, V: Voice<S>> VoicePool<S, V> {
                 }
             }
             VoiceEventKind::Sostenuto { channel, down } if valid(channel) => {
+                // Only a change of pedal state acts. A continuous pedal sends many "down"
+                // values; re-pressing must neither capture keys pressed since the first press
+                // nor drop the notes that press captured.
+                let pedal = &mut self.channels[usize::from(channel - 1)].sostenuto;
+                if core::mem::replace(pedal, down) == down {
+                    return;
+                }
                 let on = |l: &Lane| l.state == LaneState::Held && l.channel == channel;
                 if down {
                     self.for_lanes(on, |_, _, row| row.sostenuto = row.key_down);

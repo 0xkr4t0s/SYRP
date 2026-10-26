@@ -287,6 +287,14 @@ fn b3_short_splits_merge_forward() {
     p.set_minimum_subdivision(32);
     let out = run(&mut p, 1, 64, 0.0, &[VoiceEvent::note_on(40, 1, 60, 1.0)]);
     assert!(out.channel(0)[39] == 0.0 && out.channel(0)[40] != 0.0);
+    let mut p = pool::<f32>(4, 256, 1);
+    p.set_minimum_subdivision(128);
+    let out = run(&mut p, 1, 64, 0.0, &[VoiceEvent::note_on(64, 1, 60, 1.0)]);
+    assert!(
+        out.channel(0).iter().all(|&x| x == 0.0),
+        "the block end is never crossed"
+    );
+    assert_eq!(p.active_voices(), 1, "the event is applied after the block");
 }
 
 #[test]
@@ -542,4 +550,13 @@ fn b4_sostenuto_holds_only_keys_down_when_pressed() {
     step(&mut p, &[sus(false)]);
     step(&mut p, &[]);
     assert_eq!(p.active_voices(), 0);
+    // A repeated "down" neither captures later keys nor drops what the first press holds.
+    step(&mut p, &[VoiceEvent::note_on(0, 1, 60, 1.0), sos(true)]);
+    step(&mut p, &[VoiceEvent::note_on(0, 1, 62, 1.0), sos(true)]);
+    step(
+        &mut p,
+        &[60, 62].map(|n| VoiceEvent::note_off(0, 1, n, 0.0)),
+    );
+    step(&mut p, &[]);
+    assert_eq!(notes(&p)[..2], [Some((1, 60)), None]);
 }

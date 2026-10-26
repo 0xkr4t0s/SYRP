@@ -14,16 +14,20 @@
 //!
 //! - A note-on takes the lowest free lane, lowest pack first. A note-on for a channel and note
 //!   already held first stops that lane with tail-off; if no other lane is free the note
-//!   starts in that same lane. Otherwise, with every lane busy, the note is dropped (stealing,
-//!   spec B5, follows in the next increment).
+//!   starts in that same lane. With every lane busy otherwise, the note is dropped
+//!   (stealing, spec B5, follows in the next increment).
 //! - A note-off stops, with tail-off, every lane holding its channel and note, unless the
 //!   channel's sustain pedal is down (the lane is stopped when the pedal lifts) or the lane is
 //!   held by sostenuto. Sostenuto holds only the notes whose keys were down when it was
 //!   pressed, and releases them when it lifts unless sustain still holds them.
 //! - A lane is free again once its voice reports it inactive after a render, and a pack with
-//!   no active lane is not rendered. `AllNotesOff` stops held lanes with tail-off regardless
-//!   of the pedals; `AllSoundOff` stops every lane without tail-off and frees it at once
-//!   (Syrp's rules).
+//!   no active lane is not rendered.
+//! - Syrp's own rules: only held lanes are retriggered (a lane already releasing the same note
+//!   keeps its tail and the new note takes another lane); a repeated sostenuto "down", as a
+//!   continuous pedal sends, changes nothing; events at or past the block end are applied
+//!   after it, whatever the minimum subdivision; `AllNotesOff` stops held lanes with
+//!   tail-off regardless of the pedals; `AllSoundOff` stops every lane without tail-off and
+//!   frees it at once.
 //!
 //! # Real-time safety
 //! [`VoicePool::new`] and [`VoicePool::prepare`] allocate; call them off the audio thread.
