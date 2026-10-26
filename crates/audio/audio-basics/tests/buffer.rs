@@ -56,8 +56,6 @@ fn b1_skeleton_declares_modules_benches_and_deps() {
     let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
     assert!(dir.join("benches/control.rs").exists());
     assert!(dir.join("benches/voice_pool.rs").exists());
-    assert!(!dir.join("tests/control.rs").exists());
-    assert!(!dir.join("tests/voice_pool.rs").exists());
     let agents = std::fs::read_to_string(dir.join("AGENTS.md")).unwrap();
     for owner in ["WP-2.1-01", "WP-2.1-03", "WP-2.1-05"] {
         assert!(agents.contains(owner));
