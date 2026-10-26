@@ -1,0 +1,164 @@
+{
+  "id": "state/value_tree/listener/child_changes_reach_tree_and_ancestors",
+  "title": "Child added, removed and reordered are heard on the parent and its ancestors; parentChanged only on the moved child",
+  "juce_tag": "9.0.4",
+  "tolerance": "exact",
+  "wp": "WP-1.9-01",
+  "ledger_rows": [
+    "juce_data_structures/ValueTree"
+  ],
+  "docs": [
+    {
+      "page": "ValueTree::Listener",
+      "member": "valueTreeChildAdded / valueTreeChildRemoved",
+      "says": "Called for child list changes of the listened tree and of any of its descendants."
+    },
+    {
+      "page": "ValueTree::Listener",
+      "member": "valueTreeChildOrderChanged",
+      "says": "Called when the children of the listened tree, or of a descendant, are reordered."
+    },
+    {
+      "page": "ValueTree::Listener",
+      "member": "valueTreeParentChanged",
+      "says": "Called when the listened tree itself gains or loses a parent; it is not sent for descendants."
+    }
+  ],
+  "setup": [
+    {
+      "op": "create",
+      "tree": "root",
+      "type": "Root"
+    },
+    {
+      "op": "create",
+      "tree": "mid",
+      "type": "Mid"
+    },
+    {
+      "op": "create",
+      "tree": "leaf",
+      "type": "Leaf"
+    },
+    {
+      "op": "add_child",
+      "parent": "root",
+      "child": "mid",
+      "index": -1
+    },
+    {
+      "op": "create",
+      "tree": "other",
+      "type": "Other"
+    },
+    {
+      "op": "add_listener",
+      "tree": "root",
+      "listener": "onRoot"
+    },
+    {
+      "op": "add_listener",
+      "tree": "mid",
+      "listener": "onMid"
+    },
+    {
+      "op": "add_listener",
+      "tree": "leaf",
+      "listener": "onLeaf"
+    }
+  ],
+  "steps": [
+    {
+      "op": "add_child",
+      "parent": "mid",
+      "child": "leaf",
+      "index": -1
+    },
+    {
+      "op": "add_child",
+      "parent": "mid",
+      "child": "other",
+      "index": -1
+    },
+    {
+      "op": "move_child",
+      "parent": "mid",
+      "from_index": 0,
+      "to_index": 1
+    },
+    {
+      "op": "remove_child",
+      "parent": "mid",
+      "child": "leaf"
+    }
+  ],
+  "expect": {
+    "compare": "multiset",
+    "calls": [
+      {
+        "listener": "onMid",
+        "callback": "valueTreeChildAdded",
+        "parent": "mid",
+        "child": "leaf"
+      },
+      {
+        "listener": "onRoot",
+        "callback": "valueTreeChildAdded",
+        "parent": "mid",
+        "child": "leaf"
+      },
+      {
+        "listener": "onLeaf",
+        "callback": "valueTreeParentChanged",
+        "tree": "leaf"
+      },
+      {
+        "listener": "onMid",
+        "callback": "valueTreeChildAdded",
+        "parent": "mid",
+        "child": "other"
+      },
+      {
+        "listener": "onRoot",
+        "callback": "valueTreeChildAdded",
+        "parent": "mid",
+        "child": "other"
+      },
+      {
+        "listener": "onMid",
+        "callback": "valueTreeChildOrderChanged",
+        "parent": "mid",
+        "old_index": 0,
+        "new_index": 1
+      },
+      {
+        "listener": "onRoot",
+        "callback": "valueTreeChildOrderChanged",
+        "parent": "mid",
+        "old_index": 0,
+        "new_index": 1
+      },
+      {
+        "listener": "onMid",
+        "callback": "valueTreeChildRemoved",
+        "parent": "mid",
+        "child": "leaf",
+        "index": 1
+      },
+      {
+        "listener": "onRoot",
+        "callback": "valueTreeChildRemoved",
+        "parent": "mid",
+        "child": "leaf",
+        "index": 1
+      },
+      {
+        "listener": "onLeaf",
+        "callback": "valueTreeParentChanged",
+        "tree": "leaf"
+      }
+    ]
+  },
+  "record_order": true,
+  "notes": "The documentation does not say in which order listeners are called, so the expected calls are compared as a set (a multiset where a call repeats). record_order asks the harness to record JUCE's actual sequence for the open ordering questions in docs/design/0005-state-arena-spike.md. Open question 5 (parent's childAdded before or after the child's parentChanged) is observed here."
+}

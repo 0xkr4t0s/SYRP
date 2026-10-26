@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "parity/scenarios/state/value_tree/listener/scenario.schema.json",
+  "title": "ValueTree listener scenario",
+  "description": "A language-neutral, observation-only scenario: build trees with setup ops, run steps, and compare the listener callbacks observed during steps (not during setup) with expect.calls. Trees and listeners are named by the scenario; a call names trees by those names. A tree, parent or child name in a call identifies the shared data that object referred to when the callback ran, so names that referred to the same data at that moment compare equal. Values are JSON numbers, strings or booleans, read as the matching var type (integers as int).",
+  "type": "object",
+  "required": [
+    "id",
+    "title",
+    "juce_tag",
+    "tolerance",
+    "ledger_rows",
+    "docs",
+    "setup",
+    "steps",
+    "expect",
+    "record_order"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "juce_tag": {
+      "const": "9.0.4"
+    },
+    "tolerance": {
+      "const": "exact"
+    },
+    "wp": {
+      "type": "string"
+    },
+    "ledger_rows": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "docs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "page",
+          "member",
+          "says"
+        ]
+      }
+    },
+    "setup": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/op"
+      }
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/op"
+      }
+    },
+    "expect": {
+      "type": "object",
+      "required": [
+        "compare",
+        "calls"
+      ],
+      "properties": {
+        "compare": {
+          "enum": [
+            "sequence",
+            "set",
+            "multiset"
+          ],
+          "description": "sequence: exact order; set/multiset: order ignored (multiset counts repeats). Use set or multiset wherever the documentation does not decide the order."
+        },
+        "calls": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/call"
+          }
+        }
+      }
+    },
+    "record_order": {
+      "type": "boolean",
+      "description": "Record the reference implementation's actual call sequence as an observation, without asserting it."
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "$defs": {
+    "op": {
+      "type": "object",
+      "required": [
+        "op"
+      ],
+      "properties": {
+        "op": {
+          "enum": [
+            "create",
+            "copy",
+            "destroy",
+            "assign",
+            "set_property",
+            "remove_property",
+            "add_child",
+            "remove_child",
+            "move_child",
+            "add_listener"
+          ],
+          "description": "create{tree,type}; copy{tree,source}: a new object referring to source's data; destroy{tree}: destroy that object; assign{tree,source}: tree = source; set_property{tree,name,value}; remove_property{tree,name}; add_child{parent,child,index} (-1 appends); remove_child{parent,child}; move_child{parent,from_index,to_index}; add_listener{tree,listener,on_property_changed?}: a recording listener, optionally running ops when it hears a named property change."
+        }
+      }
+    },
+    "call": {
+      "type": "object",
+      "required": [
+        "listener",
+        "callback"
+      ],
+      "properties": {
+        "callback": {
+          "enum": [
+            "valueTreePropertyChanged",
+            "valueTreeChildAdded",
+            "valueTreeChildRemoved",
+            "valueTreeChildOrderChanged",
+            "valueTreeParentChanged",
+            "valueTreeRedirected"
+          ]
+        }
+      }
+    }
+  }
+}

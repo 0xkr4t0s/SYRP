@@ -1,0 +1,70 @@
+{
+  "id": "state/value_tree/listener/listener_belongs_to_wrapper_object",
+  "title": "A listener belongs to the ValueTree object it was added to: a copy does not carry it, changes through a copy are heard, and destroying the object silences it",
+  "juce_tag": "9.0.4",
+  "tolerance": "exact",
+  "wp": "WP-1.9-01",
+  "ledger_rows": [
+    "juce_data_structures/ValueTree"
+  ],
+  "docs": [
+    {
+      "page": "ValueTree",
+      "member": "class description",
+      "says": "Copying a ValueTree makes another reference to the same shared data."
+    },
+    {
+      "page": "ValueTree",
+      "member": "addListener",
+      "says": "A listener is attached to the particular ValueTree object it was added to, not to the shared data; when that object is destroyed its listeners go with it, even if other references to the data remain."
+    }
+  ],
+  "setup": [
+    {
+      "op": "create",
+      "tree": "w",
+      "type": "A"
+    },
+    {
+      "op": "copy",
+      "tree": "c",
+      "source": "w"
+    },
+    {
+      "op": "add_listener",
+      "tree": "w",
+      "listener": "onW"
+    }
+  ],
+  "steps": [
+    {
+      "op": "set_property",
+      "tree": "c",
+      "name": "x",
+      "value": 1
+    },
+    {
+      "op": "destroy",
+      "tree": "w"
+    },
+    {
+      "op": "set_property",
+      "tree": "c",
+      "name": "x",
+      "value": 2
+    }
+  ],
+  "expect": {
+    "compare": "sequence",
+    "calls": [
+      {
+        "listener": "onW",
+        "callback": "valueTreePropertyChanged",
+        "tree": "c",
+        "property": "x"
+      }
+    ]
+  },
+  "record_order": false,
+  "notes": "Only one listener and one expected call, so the sequence is decided by the documentation."
+}
