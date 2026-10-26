@@ -1,0 +1,1 @@
+{"wp": "WP-2.1-05", "kind": "added", "summary": "syrp-audio-basics: VoicePool note stealing (oldest released, then oldest inner held, then oldest held; set_note_stealing) and sleep tests (increment 3: B5-B6)."}

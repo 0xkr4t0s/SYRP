@@ -14,14 +14,18 @@
 //!
 //! - A note-on takes the lowest free lane, lowest pack first. A note-on for a channel and note
 //!   already held first stops that lane with tail-off; if no other lane is free the note
-//!   starts in that same lane. With every lane busy otherwise, the note is dropped
-//!   (stealing, spec B5, follows in the next increment).
+//!   starts in that same lane.
+//! - With every lane busy and stealing enabled (the default), the pool steals the oldest
+//!   released lane, else the oldest held lane that is neither the lowest nor the highest held
+//!   note when more than two are held, else the oldest held lane ("oldest" is start order).
+//!   The stolen lane is stopped without tail-off before the new note starts. With stealing
+//!   off the new note is dropped.
 //! - A note-off stops, with tail-off, every lane holding its channel and note, unless the
 //!   channel's sustain pedal is down (the lane is stopped when the pedal lifts) or the lane is
 //!   held by sostenuto. Sostenuto holds only the notes whose keys were down when it was
 //!   pressed, and releases them when it lifts unless sustain still holds them.
 //! - A lane is free again once its voice reports it inactive after a render, and a pack with
-//!   no active lane is not rendered.
+//!   no active lane is not rendered (sleep, ADR 0003 D5).
 //! - Syrp's own rules: only held lanes are retriggered (a lane already releasing the same note
 //!   keeps its tail and the new note takes another lane); a repeated sostenuto "down", as a
 //!   continuous pedal sends, changes nothing; events at or past the block end are applied

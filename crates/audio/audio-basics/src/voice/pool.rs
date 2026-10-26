@@ -118,6 +118,8 @@ struct Lane {
     sostenuto: bool,
     channel: u8,
     note: u8,
+    /// Start order, from the pool's clock: larger is newer.
+    age: u64,
 }
 
 const FREE_LANE: Lane = Lane {
@@ -126,6 +128,7 @@ const FREE_LANE: Lane = Lane {
     sostenuto: false,
     channel: 0,
     note: 0,
+    age: 0,
 };
 
 /// The pitch wheel, controllers and pedals of one MIDI channel.
@@ -170,6 +173,8 @@ pub struct VoicePool<S: VoiceSample, V: Voice<S>> {
     out_channels: usize,
     channels: [ChannelState; 16],
     min_subdivision: usize,
+    stealing: bool,
+    clock: u64,
     _sample: PhantomData<fn() -> S>,
 }
 
@@ -224,6 +229,8 @@ impl<S: VoiceSample, V: Voice<S>> VoicePool<S, V> {
             out_channels: 0,
             channels: [CHANNEL_RESET; 16],
             min_subdivision: 1,
+            stealing: true,
+            clock: 0,
             _sample: PhantomData,
         })
     }
@@ -278,6 +285,34 @@ impl<S: VoiceSample, V: Voice<S>> VoicePool<S, V> {
     #[doc(alias = "setMinimumRenderingSubdivisionSize")]
     pub fn set_minimum_subdivision(&mut self, frames: usize) {
         self.min_subdivision = frames.max(1);
+    }
+
+    /// Whether a note-on with every lane busy steals a lane (the default) or is dropped.
+    ///
+    /// ```
+    /// # use syrp_audio_basics::voice::{NoteStart, Voice, VoicePool};
+    /// # struct V; impl Voice<f32> for V { fn prepare(&mut self, _: f64, _: usize, _: usize) {} fn start(&mut self, _: usize, _: &NoteStart<'_>) {} fn stop(&mut self, _: usize, _: f32, _: bool) {} fn render(&mut self, _: &mut [&mut [f32]], _: usize) {} fn active(&self) -> bool { false } }
+    /// let mut pool = VoicePool::<f32, _>::new(4, |_| V)?;
+    /// pool.set_note_stealing(false);
+    /// assert!(!pool.note_stealing());
+    /// # Ok::<(), syrp_audio_basics::voice::VoicePoolError>(())
+    /// ```
+    #[doc(alias = "setNoteStealingEnabled")]
+    pub fn set_note_stealing(&mut self, enabled: bool) {
+        self.stealing = enabled;
+    }
+
+    /// Whether note stealing is enabled.
+    ///
+    /// ```
+    /// # use syrp_audio_basics::voice::{NoteStart, Voice, VoicePool};
+    /// # struct V; impl Voice<f32> for V { fn prepare(&mut self, _: f64, _: usize, _: usize) {} fn start(&mut self, _: usize, _: &NoteStart<'_>) {} fn stop(&mut self, _: usize, _: f32, _: bool) {} fn render(&mut self, _: &mut [&mut [f32]], _: usize) {} fn active(&self) -> bool { false } }
+    /// assert!(VoicePool::<f32, _>::new(4, |_| V)?.note_stealing());
+    /// # Ok::<(), syrp_audio_basics::voice::VoicePoolError>(())
+    /// ```
+    #[doc(alias = "isNoteStealingEnabled")]
+    pub fn note_stealing(&self) -> bool {
+        self.stealing
     }
 
     /// The number of voices the pool was built with.
@@ -564,9 +599,28 @@ impl<S: VoiceSample, V: Voice<S>> VoicePool<S, V> {
         }
     }
 
-    /// Starts a note (spec B4): a lane already holding the same channel and note is stopped
-    /// with tail-off, then the note takes the lowest free lane, else that same lane, else it is
-    /// dropped.
+    /// The lane to steal (spec B5): the oldest released lane, else the oldest held lane that
+    /// is neither the lowest nor the highest held note when more than two are held, else the
+    /// oldest held lane.
+    fn victim(&self) -> Option<usize> {
+        let lanes = &self.lanes[..self.voices];
+        let oldest = |pred: &dyn Fn(&Lane) -> bool| {
+            (0..lanes.len())
+                .filter(|&i| pred(&lanes[i]))
+                .min_by_key(|&i| lanes[i].age)
+        };
+        let held = |l: &Lane| l.state == LaneState::Held;
+        let notes = lanes.iter().filter(|l| held(l)).map(|l| l.note);
+        let (low, high, count) = (notes.clone().min(), notes.clone().max(), notes.count());
+        let inner = |l: &Lane| held(l) && Some(l.note) != low && Some(l.note) != high;
+        oldest(&|l| l.state == LaneState::Released)
+            .or_else(|| if count > 2 { oldest(&inner) } else { None })
+            .or_else(|| oldest(&held))
+    }
+
+    /// Starts a note (spec B4–B5): a lane already holding the same channel and note is stopped
+    /// with tail-off, then the note takes the lowest free lane, else that same lane, else a
+    /// stolen lane (stopped without tail-off first), else it is dropped.
     fn note_on(&mut self, channel: u8, note: u8, velocity: f32) {
         let mut retriggered = None;
         for i in 0..self.voices {
@@ -580,19 +634,26 @@ impl<S: VoiceSample, V: Voice<S>> VoicePool<S, V> {
         let free = self.lanes[..self.voices]
             .iter()
             .position(|l| l.state == LaneState::Free);
-        let Some(i) = free.or(retriggered) else {
+        let stolen = || if self.stealing { self.victim() } else { None };
+        let Some(i) = free.or(retriggered).or_else(stolen) else {
             return;
         };
+        let (pack, lane) = (i / S::LANES, i % S::LANES);
+        if free.is_none() && retriggered != Some(i) {
+            self.packs[pack].stop(lane, 0.0, false);
+        }
         let state = &self.channels[usize::from(channel - 1)];
         let start = NoteStart::new(channel, note, velocity)
             .with_channel_state(state.pitch_wheel, &state.controllers);
-        self.packs[i / S::LANES].start(i % S::LANES, &start);
+        self.packs[pack].start(lane, &start);
+        self.clock += 1;
         self.lanes[i] = Lane {
             state: LaneState::Held,
             key_down: true,
             sostenuto: false,
             channel,
             note,
+            age: self.clock,
         };
     }
 }
