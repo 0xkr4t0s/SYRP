@@ -92,6 +92,13 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
+      # Prompts are rendered from the base commit, so a PR cannot rewrite its own reviewer's
+      # instructions (agents/roles/*.md, agents/render.sh).
+      - uses: actions/checkout@v4
+        if: steps.skip.outputs.skip != 'true'
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: base
       - name: Refuse PRs that carry a review file
         if: steps.skip.outputs.skip != 'true'
         run: |
@@ -112,7 +119,7 @@ jobs:
           echo "model=$model" >> "$GITHUB_OUTPUT"
           {
             echo 'text<<PROMPT_EOF'
-            agents/render.sh "roles/$role.md" PR="$PR" WP="$WP" KIND="$KIND" MODEL="$model" \
+            base/agents/render.sh "roles/$role.md" PR="$PR" WP="$WP" KIND="$KIND" MODEL="$model" \
               RISKS="$RISKS" REVIEW_PATH="$review_path"
             echo 'PROMPT_EOF'
           } >> "$GITHUB_OUTPUT"
