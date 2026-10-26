@@ -2,12 +2,15 @@
 //!
 //! Reads rustdoc JSON (via [`rustdoc_types`]) and turns it into `api-index.json`, a flat list
 //! of every public item with its path, kind, signature, first doc paragraph, `doc(alias)`
-//! values (JUCE names) and source location. Offline search and per-crate `llms-<crate>.txt`
-//! slices over the index arrive in the next increment.
+//! values (JUCE names) and source location. The index can be searched offline ([`search`])
+//! or cut into per-crate `llms-<crate>.txt` slices sized to a token budget
+//! ([`write_crate_slice`]).
 
 mod error;
 mod extract;
 mod render;
+mod search;
+mod slice;
 mod toolchain;
 
 use std::path::{Path, PathBuf};
@@ -17,8 +20,10 @@ use serde::{Deserialize, Serialize};
 
 pub use error::DocError;
 pub use extract::index_crate;
+pub use search::{SearchHit, search};
+pub use slice::write_crate_slice;
 pub use syrp_error::{Diagnostic, ErrorCode};
-pub use toolchain::{NightlyToolchain, detect_nightly};
+pub use toolchain::{NightlyToolchain, detect_nightly, generate_rustdoc_json};
 
 /// The `schema` tag written into every `api-index.json`.
 const API_INDEX_SCHEMA_ID: &str = "syrp.api-index/v1";

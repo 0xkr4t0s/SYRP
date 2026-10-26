@@ -1,0 +1,1 @@
+{"wp": "WP-0.1-10", "kind": "added", "summary": "syrp-docgen (increment 2): offline API search ranked by name, alias and doc text; per-crate llms-<crate>.txt slices within a token budget; generate_rustdoc_json runs the nightly rustdoc JSON build."}

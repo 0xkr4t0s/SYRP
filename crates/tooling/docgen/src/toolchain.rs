@@ -1,5 +1,7 @@
-//! Nightly detection (B3): rustdoc JSON needs `-Z unstable-options --output-format json`.
+//! Nightly detection (B3) and rustdoc JSON generation, which needs
+//! `-Z unstable-options --output-format json`.
 
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use crate::DocError;
@@ -19,8 +21,10 @@ pub struct NightlyToolchain {
 
 /// Checks that rustup toolchain `toolchain` exists and its rustdoc is a nightly.
 ///
-/// Returns [`DocError::NightlyMissing`] (SYRP-DOC-0001) when rustup is absent, the toolchain is
-/// not installed, or its rustdoc is not a nightly build (it would reject the unstable flags).
+/// Returns [`DocError::NightlyMissing`] (SYRP-DOC-0001) when the name is empty, starts with `-`
+/// or contains whitespace (so it can never be read as a rustup or cargo option), rustup is
+/// absent, the toolchain is not installed, or its rustdoc is not a nightly build (it would
+/// reject the unstable flags).
 ///
 /// ```
 /// use syrp_docgen::Diagnostic;
@@ -33,6 +37,12 @@ pub fn detect_nightly(toolchain: &str) -> Result<NightlyToolchain, DocError> {
         toolchain: name.clone(),
         detail,
     };
+    if toolchain.is_empty() || toolchain.starts_with('-') || toolchain.contains(char::is_whitespace)
+    {
+        return Err(missing(format!(
+            "`{toolchain}` is not a toolchain name (empty, leading `-` or whitespace)"
+        )));
+    }
     let mut cmd = Command::new("rustup");
     cmd.args(["run", toolchain, "rustdoc", "--version"])
         .env_remove("RUSTUP_TOOLCHAIN");
@@ -49,4 +59,44 @@ pub fn detect_nightly(toolchain: &str) -> Result<NightlyToolchain, DocError> {
         return Err(missing(format!("`{version}` is not a nightly")));
     }
     Ok(NightlyToolchain { name, version })
+}
+
+/// Runs `cargo +<nightly> rustdoc -p <package> --lib -- -Z unstable-options --output-format json`
+/// in `workspace` with `--target-dir target_dir`, and returns the path of the JSON it wrote.
+///
+/// Fails with SYRP-DOC-0003 (with the end of rustdoc's stderr) if cargo or rustdoc fails.
+///
+/// ```no_run
+/// let nightly = syrp_docgen::detect_nightly("nightly").unwrap();
+/// let target = std::path::Path::new("target/docgen");
+/// let json = syrp_docgen::generate_rustdoc_json(&nightly, ".".as_ref(), "syrp-docgen", target);
+/// assert!(json.unwrap().ends_with("doc/syrp_docgen.json"));
+/// ```
+pub fn generate_rustdoc_json(
+    nightly: &NightlyToolchain,
+    workspace: &Path,
+    package: &str,
+    target_dir: &Path,
+) -> Result<PathBuf, DocError> {
+    let json = target_dir.join(format!("doc/{}.json", package.replace('-', "_")));
+    let fail = |detail: String| DocError::Read {
+        path: json.clone(),
+        detail,
+    };
+    let mut cmd = Command::new("cargo");
+    cmd.arg(format!("+{}", nightly.name))
+        .args(["rustdoc", "--quiet", "--lib", "-p", package]);
+    cmd.arg("--target-dir")
+        .arg(target_dir)
+        .current_dir(workspace);
+    cmd.args(["--", "-Z", "unstable-options", "--output-format", "json"]);
+    let out = cmd.env_remove("RUSTUP_TOOLCHAIN").output();
+    let out = out.map_err(|e| fail(format!("cannot run cargo: {e}")))?;
+    if !out.status.success() {
+        let stderr = String::from_utf8_lossy(&out.stderr);
+        let lines: Vec<&str> = stderr.lines().collect();
+        let tail = lines[lines.len().saturating_sub(5)..].join("\n");
+        return Err(fail(format!("cargo rustdoc failed: {tail}")));
+    }
+    Ok(json)
 }
