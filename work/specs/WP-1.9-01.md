@@ -3,7 +3,7 @@
 ## Purpose
 The optional compatibility front-end from ADR 0003 D1 and master plan §5.9: ported code keeps JUCE's ValueTree idioms while the data lives in `syrp-state`. It owns no storage.
 
-**Status: parked.** Blocked until the `syrp-state` WP exists and merges. That WP is written by the spec room from the WP-0.2-15 spike result; this WP's `depends_on` gains it then, and wave 1.9 is enabled.
+**Status: parked.** Blocked until WP-1.2-03 (the `syrp-state` store, written from the WP-0.2-15 spike result) and WP-1.2-04 (`UndoManager`, which JUCE's `ValueTree` methods take) merge. The spec room enables wave 1.9 for this package then. `ValueTree` owns its subscriptions so that listeners die with the wrapper and follow it on assignment (`valueTreeRedirected`), as `docs/design/0005-state-arena-spike.md` recommends.
 
 ## Behaviour
 - B1. `ValueTree` is a handle (store plus node key). Clone is shallow, `deep_clone()` is explicit, equality is identity, `is_equivalent_to` compares content. Detached subtrees live while referenced (the store's reference counts).

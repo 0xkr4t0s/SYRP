@@ -3,6 +3,15 @@
 version = 4
 
 [[package]]
+name = "accesskit"
+version = "0.25.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4e883d1d28c5fd5568c79ed2d2bd48d9f2fd3945c8974ed0f53690ceddb051be"
+dependencies = [
+ "uuid",
+]
+
+[[package]]
 name = "aho-corasick"
 version = "1.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -932,6 +941,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "syrp-agent-eval"
+version = "0.0.1"
+dependencies = [
+ "clap",
+ "serde",
+ "serde_json",
+ "syrp-cli",
+ "syrp-error",
+ "toml",
+]
+
+[[package]]
 name = "syrp-audio-api"
 version = "0.0.1"
 dependencies = [
@@ -947,6 +968,15 @@ dependencies = [
  "serde",
  "serde_json",
  "toml",
+]
+
+[[package]]
+name = "syrp-device-api"
+version = "0.0.1"
+dependencies = [
+ "syrp-audio-api",
+ "syrp-error",
+ "syrp-rt",
 ]
 
 [[package]]
@@ -1029,6 +1059,7 @@ dependencies = [
 name = "syrp-peer-api"
 version = "0.0.1"
 dependencies = [
+ "accesskit",
  "cursor-icon",
  "keyboard-types",
  "raw-window-handle",
@@ -1045,6 +1076,17 @@ dependencies = [
  "proptest",
  "syrp-error",
  "syrp-rt",
+]
+
+[[package]]
+name = "syrp-progress"
+version = "0.0.1"
+dependencies = [
+ "clap",
+ "serde",
+ "serde_json",
+ "syrp-error",
+ "toml",
 ]
 
 [[package]]

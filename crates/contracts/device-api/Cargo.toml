@@ -1,0 +1,22 @@
+[package]
+name = "syrp-device-api"
+description = "The Syrp device backend contract: audio and MIDI device-type, device and port traits, device-change notifications and in-memory fakes."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT OR Apache-2.0"
+repository.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[package.metadata.syrp]
+layer = "L1"
+wp = "WP-0.2-05"
+
+[dependencies]
+syrp-audio-api = { version = "0.0.1", path = "../audio-api" }
+syrp-error = { version = "0.0.1", path = "../../foundation/error" }
+syrp-rt = { version = "0.0.1", path = "../../foundation/rt" }
+
+[lints]
+workspace = true

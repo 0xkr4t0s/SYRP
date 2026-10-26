@@ -1,0 +1,8 @@
+id = "1.2"
+phase = 1
+title = "Events and state: the syrp-state store and UndoManager"
+# Numbers follow the master plan's Wave 1.2 list (§7.2). Value and CachedValue (item 5) are
+# compat types under ADR 0003 and live in WP-1.9-01. Persistence, PropertiesFile and the
+# synchroniser (items 6-8) need syrp-io and syrp-events and get WPs after those.
+enabled = true
+packages = ["WP-1.2-03", "WP-1.2-04"]
