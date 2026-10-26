@@ -1,0 +1,37 @@
+# Error catalogue: the catalogue itself (syrp-error, `syrp_error::catalogue::parse`).
+# Codes are permanent: never reuse or renumber one.
+
+[[error]]
+code = "SYRP-ERROR-0001"
+title = "Catalogue file is not a list of [[error]] tables"
+severity = "error"
+cause = "An errors/*.toml file is not valid TOML, or its top level holds something other than the `error` array of tables."
+fix = "Keep only [[error]] tables in the file. Copy the layout of errors/cli.toml."
+
+[[error]]
+code = "SYRP-ERROR-0002"
+title = "Catalogue entry has a missing, mistyped or unknown key"
+severity = "error"
+cause = "An [[error]] entry lacks one of code, title, severity, cause or fix, gives one of them a non-string value, or has a key the format does not define."
+fix = "Give every entry the five string keys, plus `example` if wanted. Check unknown keys for typos."
+
+[[error]]
+code = "SYRP-ERROR-0003"
+title = "Malformed error code"
+severity = "error"
+cause = "A code is not SYRP-<DOMAIN>-<NNNN>: the domain must be ASCII capitals and the number exactly four digits."
+fix = "Rename the code, for example SYRP-RT-0001. In Rust, build codes with `const C: ErrorCode = ErrorCode::new(...)` so the shape is checked at compile time."
+
+[[error]]
+code = "SYRP-ERROR-0004"
+title = "Unknown severity"
+severity = "error"
+cause = "A catalogue entry's severity is not `error`, `warning` or `info` (lowercase)."
+fix = "Use one of the three values."
+
+[[error]]
+code = "SYRP-ERROR-0005"
+title = "Duplicate error code"
+severity = "error"
+cause = "The same code appears twice in one catalogue file."
+fix = "Codes are permanent. Give the newer entry the next unused number in its domain."

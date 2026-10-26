@@ -248,6 +248,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "syrp-error"
+version = "0.0.1"
+dependencies = [
+ "serde",
+ "serde_json",
+ "syrp-error",
+ "toml",
+]
+
+[[package]]
 name = "toml"
 version = "0.9.12+spec-1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
