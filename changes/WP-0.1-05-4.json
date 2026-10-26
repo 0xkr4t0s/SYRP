@@ -1,0 +1,1 @@
+{"wp": "WP-0.1-05", "kind": "added", "summary": "syrp-geom: Justification flags and RectanglePlacement (fit, fill, only-reduce, only-increase, do-not-resize, edge alignment) with apply_to and transform_to_fit."}

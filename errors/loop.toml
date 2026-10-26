@@ -1,0 +1,22 @@
+# Error catalogue: the message loop (syrp-loop-api and its implementations). Never renumber.
+
+[[error]]
+code = "SYRP-LOOP-0001"
+title = "post_and_wait called on the message thread"
+severity = "error"
+cause = "post_and_wait blocks until the message thread has run the task. Called on the message thread itself it would wait for itself forever, so it fails instead."
+fix = "On the message thread, call the code directly (you already hold a MessageThread token) or use post() to run it later."
+
+[[error]]
+code = "SYRP-LOOP-0002"
+title = "ManualLoop task limit reached"
+severity = "error"
+cause = "run_until_idle ran as many tasks as its limit allows and the queue was still not empty. Usually a task re-posts itself, or two tasks post each other, forever."
+fix = "Find the task that keeps posting work. If the work is legitimately long, raise the limit with ManualLoop::set_task_limit. The remaining tasks stay queued."
+
+[[error]]
+code = "SYRP-LOOP-0003"
+title = "Message loop closed before the task ran"
+severity = "error"
+cause = "post_and_wait posted a task, but the loop was dropped (or the task panicked) before it produced a result."
+fix = "Keep the loop alive and running while other threads wait on it, and check the task for panics."
