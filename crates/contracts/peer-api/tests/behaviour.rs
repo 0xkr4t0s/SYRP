@@ -7,13 +7,15 @@ use std::rc::Rc;
 use syrp_error::Diagnostic;
 use syrp_geom::{Point, Rect};
 use syrp_loop_api::{ManualLoop, MessageThread};
+use syrp_peer_api::accesskit::{Action, Node, NodeId, Role, TreeId, TreeInfo};
 use syrp_peer_api::headless::{HeadlessDesktop, Request};
 use syrp_peer_api::keyboard_types::{Code, Key, KeyState, Location, NamedKey};
 use syrp_peer_api::raw_window_handle::{HandleError, RawWindowHandle, WebWindowHandle};
 use syrp_peer_api::{
-    CursorIcon, Desktop, DragData, DragEvent, DragPhase, Event, EventSink, HasDisplayHandle,
-    ImeEvent, KeyboardEvent, Modifiers, Peer, PeerError, PeerOptions, PointerButton, PointerEvent,
-    PointerKind, PointerPhase, PointerSource, WheelEvent, WheelUnit, WindowState,
+    ActionRequest, AlertDialog, AlertKind, CursorIcon, Desktop, Display, DragData, DragEvent,
+    DragPhase, Event, EventSink, FileDialog, FileDialogKind, HasDisplayHandle, ImeEvent,
+    KeyboardEvent, Modifiers, Peer, PeerError, PeerOptions, PointerButton, PointerEvent,
+    PointerKind, PointerPhase, PointerSource, TreeUpdate, WheelEvent, WheelUnit, WindowState,
 };
 
 type Log = Rc<RefCell<Vec<Event>>>;
@@ -364,6 +366,136 @@ fn b1_headless_has_no_native_window_or_display_handle() {
 }
 
 #[test]
+fn b4_clipboard_round_trips_text() {
+    let mut d = HeadlessDesktop::new(1.0);
+    ManualLoop::new().with_token(|mt| {
+        assert_eq!(d.clipboard_text(mt), Ok(None));
+        d.set_clipboard_text(mt, "C4 E4 G4").unwrap();
+        assert_eq!(d.clipboard_text(mt), Ok(Some("C4 E4 G4".into())));
+        assert_eq!(
+            d.take_requests(),
+            [Request::SetClipboard("C4 E4 G4".into())]
+        );
+    });
+}
+
+#[test]
+fn b4_displays_report_work_areas_and_scale_primary_first() {
+    let d = HeadlessDesktop::new(1.5);
+    let only = d.displays();
+    assert_eq!(only.len(), 1);
+    assert!(only[0].is_primary() && only[0].scale() == 1.5);
+    assert!(only[0].work_area().height() < only[0].bounds().height());
+    let main = Rect::new(0.0, 0.0, 1440.0, 900.0);
+    let side = Rect::new(1440.0, 0.0, 1920.0, 1080.0);
+    d.set_displays(vec![
+        Display::new(main, Rect::new(0.0, 25.0, 1440.0, 875.0), 2.0).with_primary(true),
+        Display::new(side, side, 0.0),
+    ]);
+    let both = d.displays();
+    assert_eq!(
+        (both[0].scale(), both[1].scale(), both[1].bounds()),
+        (2.0, 1.0, side)
+    );
+    d.set_displays(vec![]);
+    assert_eq!(d.displays().len(), 2, "an empty list is ignored");
+}
+
+#[test]
+fn b4_dialogs_complete_later_exactly_once_in_order() {
+    let mut d = HeadlessDesktop::new(1.0);
+    ManualLoop::new().with_token(|mt| {
+        let (p, _) = open(&mut d, mt, PeerOptions::top_level(Rect::default()));
+        let got: Rc<RefCell<Vec<String>>> = Rc::default();
+        let g = Rc::clone(&got);
+        let open_dlg = FileDialog::new(FileDialogKind::Open).with_filter("Audio", ["wav"]);
+        d.show_file_dialog(
+            mt,
+            Some(p.id()),
+            open_dlg.clone(),
+            Box::new(move |_, paths| {
+                g.borrow_mut().push(format!("open {paths:?}"));
+            }),
+        )
+        .unwrap();
+        let g = Rc::clone(&got);
+        d.show_file_dialog(
+            mt,
+            None,
+            FileDialog::new(FileDialogKind::Save),
+            Box::new(move |_, paths| {
+                g.borrow_mut().push(format!("save {}", paths.len()));
+            }),
+        )
+        .unwrap();
+        let g = Rc::clone(&got);
+        let alert = AlertDialog::new(AlertKind::Question, "Quit?", "Unsaved changes")
+            .with_buttons(["Save", "Discard"]);
+        d.show_alert(
+            mt,
+            Some(p.id()),
+            alert.clone(),
+            Box::new(move |_, b| {
+                g.borrow_mut().push(format!("alert {b:?}"));
+            }),
+        )
+        .unwrap();
+        assert!(
+            got.borrow().is_empty(),
+            "callbacks never run inside the request"
+        );
+        assert!(d.answer_alert(mt, Some(1)));
+        assert!(d.answer_file_dialog(mt, vec!["/a.wav".into()]));
+        assert!(d.answer_file_dialog(mt, vec![]));
+        assert!(!d.answer_file_dialog(mt, vec![]) && !d.answer_alert(mt, None));
+        assert_eq!(
+            *got.borrow(),
+            ["alert Some(1)", "open [\"/a.wav\"]", "save 0"]
+        );
+        let reqs = d.take_requests();
+        assert_eq!(reqs[1], Request::FileDialog(Some(p.id()), open_dlg));
+        assert_eq!(reqs[3], Request::Alert(Some(p.id()), alert));
+    });
+}
+
+#[test]
+fn b5_peers_take_accesskit_updates_and_report_actions() {
+    let mut d = HeadlessDesktop::new(1.0);
+    ManualLoop::new().with_token(|mt| {
+        let (mut p, log) = open(&mut d, mt, PeerOptions::top_level(Rect::default()));
+        let root = NodeId(1);
+        let update = TreeUpdate {
+            nodes: vec![(root, Node::new(Role::Window))],
+            tree: Some(TreeInfo::new(root)),
+            tree_id: TreeId::ROOT,
+            focus: root,
+        };
+        assert!(d.inject(mt, p.id(), &Event::AccessibilityActivated));
+        p.update_accessibility(mt, update.clone());
+        let click = ActionRequest {
+            action: Action::Click,
+            target_tree: TreeId::ROOT,
+            target_node: root,
+            data: None,
+        };
+        assert!(d.inject(mt, p.id(), &Event::AccessibilityAction(click.clone())));
+        assert!(d.inject(mt, p.id(), &Event::AccessibilityDeactivated));
+        assert_eq!(
+            d.requests().last(),
+            Some(&Request::UpdateAccessibility(p.id(), update))
+        );
+        assert_eq!(
+            *log.borrow(),
+            [
+                Event::AccessibilityActivated,
+                Event::AccessibilityAction(click),
+                Event::AccessibilityDeactivated
+            ]
+        );
+    });
+}
+
+#[test]
 fn b7_contract_types_have_no_public_fields() {
     let src = [
         include_str!("../src/lib.rs"),
@@ -371,6 +503,8 @@ fn b7_contract_types_have_no_public_fields() {
         include_str!("../src/headless.rs"),
         include_str!("../src/pointer.rs"),
         include_str!("../src/drag.rs"),
+        include_str!("../src/dialog.rs"),
+        include_str!("../src/display.rs"),
     ];
     let mut in_struct = false;
     for line in src.iter().flat_map(|s| s.lines()) {

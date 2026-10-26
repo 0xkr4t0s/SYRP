@@ -9,12 +9,17 @@ embedded in a host `RawWindowHandle`; the desktop lends a `DisplayHandle`), `Pee
 visibility, `WindowState`, title, scale factor, `render_target`, repaint, focus, IME caret,
 `CursorIcon`, drop acceptance; lends a `WindowHandle`), `Event` (pointer, wheel, magnify,
 `keyboard-types` keys, focus, `ImeEvent`, `DragEvent`, window changes) delivered to an
-`EventSink`, `PeerError` (`errors/peer.toml`) and the `headless` desktop for tests. No
-platform code lives here.
+`EventSink`, `PeerError` (`errors/peer.toml`) and the `headless` desktop for tests. The
+desktop also owns clipboard text, `Display`s (bounds, work area, scale) and async
+`FileDialog`/`AlertDialog` requests (JUCE's SystemClipboard, Displays, FileChooser,
+NativeMessageBox); peers take `accesskit` `TreeUpdate`s and report activation and
+`ActionRequest`s as events. No platform code lives here.
 
 ## Ledger rows
 juce_gui_basics/ComponentPeer, juce_gui_basics/Desktop, juce_gui_basics/MouseInputSource,
-juce_gui_basics/TextInputTarget (event side; shared with `syrp-ui`)
+juce_gui_basics/TextInputTarget (event side; shared with `syrp-ui`),
+juce_gui_basics/MouseCursor, juce_gui_basics/SystemClipboard, juce_gui_basics/Displays,
+juce_gui_basics/FileChooser (native dialog), juce_gui_basics/NativeMessageBox
 
 ## Invariants
 - Contract types have no public fields (ADR 0003 D3); the `b7_` test scans the sources.
@@ -34,6 +39,12 @@ juce_gui_basics/TextInputTarget (event side; shared with `syrp-ui`)
   the device does not report it. `PointerSource` ids stay fixed from `Down` to `Up`.
 - Drags: each starts unaccepted; `Drop` is delivered only if the last `accept_drop` was true.
 - `Desktop: HasDisplayHandle`, `Peer: HasWindowHandle`; headless returns `NotSupported`.
+- `Desktop::displays` is never empty, primary first; a display's scale is finite and
+  positive (bad values become 1.0).
+- Dialog callbacks run exactly once, later, on the message thread, never inside the
+  request; on `Err` they are dropped unrun. An empty path list means cancelled.
+- Accessibility: send a full tree after `AccessibilityActivated`, then incremental updates.
+  `accesskit` types are re-exported as-is (third-party, so their public fields are theirs).
 - IME: `Preedit` ranges are byte ranges into the preedit string. `set_ime_caret(None)`
   turns IME input off.
 
@@ -51,6 +62,5 @@ cargo syrp test --crate syrp-peer-api
 ```
 
 ## Known gaps
-Increments 1 and 2 of WP-0.2-08 are in. Still to come in this WP: clipboard, display
-enumeration with work areas and scale, async native file and alert dialogs (B4), and
-`accesskit` tree updates (B5), each with headless support. Custom image cursors also come later.
+None for the contract: WP-0.2-08 is complete after increment 3. Custom image cursors and
+rich clipboard formats (images, files) are left to later WPs if the ledger asks for them.
