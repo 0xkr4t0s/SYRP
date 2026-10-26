@@ -1,0 +1,1 @@
+{"wp": "WP-1.1-01", "kind": "added", "summary": "syrp-var increment 2: Var conversions (as_bool, as_i32, as_i64, as_f64, to_text), strict PartialEq, loose_eq and eq_same_type; copy-on-write array_mut and cycle-safe deep_clone; NamedValueSet get/set/remove/contains/iter and DynamicObject property API."}

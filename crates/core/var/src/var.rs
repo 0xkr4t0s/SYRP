@@ -30,8 +30,9 @@ pub(crate) enum Repr {
 ///
 /// Build one with a `From` impl or a named constructor, test its type with the `is_*`
 /// predicates, and read it with the borrowing accessors (`as_str`, `as_array`, `as_object`,
-/// `as_bytes`) or match on [`Var::as_view`]. Coercing conversions and equality arrive in the
-/// next increment.
+/// `as_bytes`) or match on [`Var::as_view`], and convert it with the coercing accessors
+/// (`as_bool`, `as_i32`, `as_i64`, `as_f64`, `to_text`), whose rules are in the crate
+/// documentation.
 ///
 /// ```
 /// use syrp_var::Var;
@@ -416,5 +417,12 @@ impl fmt::Debug for Var {
             VarView::Object(object) => f.debug_tuple("Object").field(object).finish(),
             VarView::Binary(bytes) => f.debug_tuple("Binary").field(&bytes).finish(),
         }
+    }
+}
+
+impl fmt::Display for Var {
+    /// Writes [`Var::to_text`].
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.to_text())
     }
 }
