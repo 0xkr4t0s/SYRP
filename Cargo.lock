@@ -248,6 +248,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "syrp-error"
+version = "0.0.1"
+dependencies = [
+ "serde",
+ "serde_json",
+ "syrp-error",
+ "toml",
+]
+
+[[package]]
 name = "syrp-provenance"
 version = "0.0.1"
 dependencies = [
