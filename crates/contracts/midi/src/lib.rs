@@ -3,7 +3,8 @@
 //!
 //! [`MidiMessage`] (owned, message thread) and [`MidiMessageRef`] (borrowed view) share the
 //! [`MidiData`] accessors. [`MidiBuffer`] is a packed, sample-ordered event list whose
-//! [`try_add_event`](MidiBuffer::try_add_event) never allocates. UMP follows later.
+//! [`try_add_event`](MidiBuffer::try_add_event) never allocates. [`UmpPacket`] is a MIDI 2.0
+//! Universal MIDI Packet and [`UmpBuffer`] stores packets in the same packed layout.
 //!
 //! Messages are stored as their MIDI 1.0 bytes: channel messages as status plus data bytes,
 //! SysEx framed by `0xF0` and `0xF7`, and Standard MIDI File meta events as `0xFF`, type,
@@ -21,9 +22,13 @@ use syrp_error::{Diagnostic, ErrorCode};
 
 mod buffer;
 mod message;
+mod ump;
+mod ump_buffer;
 
 pub use buffer::{Events, MidiBuffer};
 pub use message::{MidiMessage, MidiMessageRef};
+pub use ump::{SysExStatus, UmpMessageType, UmpPacket};
+pub use ump_buffer::{UmpBuffer, UmpEvent, UmpEvents};
 
 /// What kind of MIDI message a byte sequence holds.
 ///
@@ -74,6 +79,8 @@ pub enum MidiError {
     ValueOutOfRange,
     /// A non-allocating add found the event or byte capacity full (`SYRP-MIDI-0003`).
     BufferFull,
+    /// The words are not one well-formed Universal MIDI Packet (`SYRP-MIDI-0004`).
+    MalformedUmp,
 }
 
 impl fmt::Display for MidiError {
@@ -81,7 +88,8 @@ impl fmt::Display for MidiError {
         f.write_str(match self {
             MidiError::Malformed => "malformed MIDI message bytes",
             MidiError::ValueOutOfRange => "MIDI value out of range",
-            MidiError::BufferFull => "MidiBuffer capacity is full",
+            MidiError::BufferFull => "MIDI buffer capacity is full",
+            MidiError::MalformedUmp => "malformed Universal MIDI Packet",
         })
     }
 }
@@ -94,6 +102,7 @@ impl Diagnostic for MidiError {
             MidiError::Malformed => "SYRP-MIDI-0001",
             MidiError::ValueOutOfRange => "SYRP-MIDI-0002",
             MidiError::BufferFull => "SYRP-MIDI-0003",
+            MidiError::MalformedUmp => "SYRP-MIDI-0004",
         })
     }
 }
