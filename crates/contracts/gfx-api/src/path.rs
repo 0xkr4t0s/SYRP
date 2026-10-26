@@ -252,7 +252,7 @@ impl<'a> PathView<'a> {
     /// ```
     /// assert!(syrp_gfx_api::Path::new().as_view().verbs().is_empty());
     /// ```
-    pub fn verbs(&self) -> &'a [PathVerb] {
+    pub fn verbs(self) -> &'a [PathVerb] {
         self.verbs
     }
 
@@ -260,7 +260,7 @@ impl<'a> PathView<'a> {
     /// ```
     /// assert!(syrp_gfx_api::Path::new().as_view().points().is_empty());
     /// ```
-    pub fn points(&self) -> &'a [Point<f32>] {
+    pub fn points(self) -> &'a [Point<f32>] {
         self.points
     }
 
@@ -269,7 +269,7 @@ impl<'a> PathView<'a> {
     /// let p = syrp_gfx_api::Path::new();
     /// assert_eq!(p.as_view().fill_rule(), syrp_gfx_api::FillRule::NonZero);
     /// ```
-    pub fn fill_rule(&self) -> FillRule {
+    pub fn fill_rule(self) -> FillRule {
         self.fill_rule
     }
 
@@ -277,7 +277,7 @@ impl<'a> PathView<'a> {
     /// ```
     /// assert_eq!(syrp_gfx_api::Path::new().as_view().elements().count(), 0);
     /// ```
-    pub fn elements(&self) -> impl Iterator<Item = PathEl> + use<'a> {
+    pub fn elements(self) -> impl Iterator<Item = PathEl> + use<'a> {
         let mut pts = self.points.iter().copied();
         let mut next = move || pts.next().unwrap_or_default();
         self.verbs.iter().map(move |verb| match verb {
@@ -296,7 +296,7 @@ impl<'a> PathView<'a> {
     /// p.quad_to(5.0, 10.0, 10.0, 0.0);
     /// assert_eq!(p.as_view().bounds().unwrap().height(), 10.0);
     /// ```
-    pub fn bounds(&self) -> Option<Rect<f32>> {
+    pub fn bounds(self) -> Option<Rect<f32>> {
         let mut it = self
             .points
             .iter()
@@ -461,11 +461,15 @@ impl<'a> StrokeRef<'a> {
         StrokeRef { params, dashes }
     }
 
+    pub(crate) fn params(self) -> StrokeParams {
+        self.params
+    }
+
     /// Stroke width in user units.
     /// ```
     /// assert_eq!(syrp_gfx_api::Stroke::new(2.0).as_view().width(), 2.0);
     /// ```
-    pub fn width(&self) -> f32 {
+    pub fn width(self) -> f32 {
         self.params.width
     }
 
@@ -473,7 +477,7 @@ impl<'a> StrokeRef<'a> {
     /// ```
     /// assert_eq!(syrp_gfx_api::Stroke::new(2.0).as_view().join(), syrp_gfx_api::Join::Miter);
     /// ```
-    pub fn join(&self) -> Join {
+    pub fn join(self) -> Join {
         self.params.join
     }
 
@@ -481,7 +485,7 @@ impl<'a> StrokeRef<'a> {
     /// ```
     /// assert_eq!(syrp_gfx_api::Stroke::new(2.0).as_view().cap(), syrp_gfx_api::Cap::Butt);
     /// ```
-    pub fn cap(&self) -> Cap {
+    pub fn cap(self) -> Cap {
         self.params.cap
     }
 
@@ -489,7 +493,7 @@ impl<'a> StrokeRef<'a> {
     /// ```
     /// assert_eq!(syrp_gfx_api::Stroke::new(2.0).as_view().miter_limit(), 4.0);
     /// ```
-    pub fn miter_limit(&self) -> f32 {
+    pub fn miter_limit(self) -> f32 {
         self.params.miter_limit
     }
 
@@ -497,7 +501,7 @@ impl<'a> StrokeRef<'a> {
     /// ```
     /// assert!(syrp_gfx_api::Stroke::new(2.0).as_view().dashes().is_empty());
     /// ```
-    pub fn dashes(&self) -> &'a [f32] {
+    pub fn dashes(self) -> &'a [f32] {
         self.dashes
     }
 
@@ -505,7 +509,19 @@ impl<'a> StrokeRef<'a> {
     /// ```
     /// assert_eq!(syrp_gfx_api::Stroke::new(2.0).as_view().dash_offset(), 0.0);
     /// ```
-    pub fn dash_offset(&self) -> f32 {
+    pub fn dash_offset(self) -> f32 {
         self.params.dash_offset
+    }
+}
+
+impl<'a> From<&'a Path> for PathView<'a> {
+    fn from(path: &'a Path) -> Self {
+        path.as_view()
+    }
+}
+
+impl<'a> From<&'a Stroke> for StrokeRef<'a> {
+    fn from(stroke: &'a Stroke) -> Self {
+        stroke.as_view()
     }
 }

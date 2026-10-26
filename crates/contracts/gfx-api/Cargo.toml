@@ -1,6 +1,6 @@
 [package]
 name = "syrp-gfx-api"
-description = "The Syrp drawing contract: paths, strokes, brushes and image and font handles (DisplayList and Renderer to follow)."
+description = "The Syrp drawing contract: DisplayList, paths, strokes, brushes and image and font handles (Renderer to follow)."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

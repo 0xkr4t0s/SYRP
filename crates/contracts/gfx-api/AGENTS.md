@@ -1,16 +1,17 @@
 # syrp-gfx-api
 
 ## Purpose
-The L1 drawing contract (master plan §5.7, ADR 0003) between UI code and renderers. This first
-increment holds the value types that ops are recorded from: `Path` (verb array plus point
+The L1 drawing contract (master plan §5.7, ADR 0003) between UI code and renderers:
+`DisplayList` (recorded ops read back as borrowed `Op` views, `Glyph` runs, `BlendMode`,
+`ResamplingQuality`) and the value types that ops are recorded from: `Path` (verb array plus point
 array) with `PathView` and `PathEl`, `Stroke`/`StrokeRef` (width, `Join`, `Cap`, miter limit,
 dashes), `Colour`, `GradientStop`, `Brush`/`BrushRef`/`BrushKind` (solid, linear, radial,
 two-point conical), and opaque `ImageHandle`/`FontHandle` ids. Covers JUCE's Path,
-PathStrokeType, Colour, ColourGradient and FillType.
+PathStrokeType, Colour, ColourGradient, FillType and the recording side of Graphics.
 
 ## Ledger rows
 juce_graphics/Path, juce_graphics/PathStrokeType, juce_graphics/Colour,
-juce_graphics/ColourGradient, juce_graphics/FillType (shared with `syrp-gfx`)
+juce_graphics/ColourGradient, juce_graphics/FillType, juce_graphics/Graphics (shared with `syrp-gfx`)
 
 ## Invariants
 - Contract types have no public fields (ADR 0003 D3); the `b7_` test scans the sources.
@@ -25,11 +26,18 @@ juce_graphics/ColourGradient, juce_graphics/FillType (shared with `syrp-gfx`)
 - Widths, miter limits, radii and dash lengths are `>= 0`; negative, NaN and `-0.0` become
   `+0.0` so equal inputs have equal bits. Gradient stop offsets are clamped to `[0, 1]` and
   stops are sorted stably by offset.
+- `DisplayList`: `ops` holds `(tag, index into that kind's payload array)`; paths, stops,
+  glyphs and dashes are copied into shared arenas addressed by `u32` spans. `clear()` keeps
+  every capacity, and re-recording the same shape must not allocate (counting-allocator test).
+  `Push*` ops open scopes closed innermost-first by `Pop`; `pop()` with none open records
+  nothing. Opacity is clamped to `[0, 1]`, glyph size to `>= 0`. Rects are stored as `f32`.
+- Views have by-value accessors returning `&'a` data; op iterators are `+ use<'a>`.
 - `Colour` is straight-alpha ARGB8. Coordinates are `f32` user units, y down.
 
 ## Thread affinity
 Plain data: all types are `Send + Sync`; no `MessageThread` needed. Building a `Path` or a
-gradient `Brush` allocates; do it outside RT or per-frame hot loops and reuse.
+gradient `Brush` allocates; reuse them. Recording into a cleared, warmed `DisplayList` does
+not allocate.
 
 ## Stability
 contract (frozen in `contracts/syrp-gfx-api.public-api.txt` once WP-0.2-07 is final).
@@ -40,7 +48,6 @@ cargo syrp test --crate syrp-gfx-api
 ```
 
 ## Known gaps
-WP-0.2-07 is not complete. Still to come in the next increment: `DisplayList` (op-tag stream,
-per-kind payloads, shared arenas, allocation-free re-recording, borrowed op views),
-`Glyph` runs, `BlendMode`, `ResamplingQuality`, `Renderer`/`RenderTarget`/`RenderError`
-(with an `errors/gfx.toml` domain), the seedless content hash and the `serde` feature.
+WP-0.2-07 is not complete. The third increment adds `Renderer`/`RenderTarget`/`RenderError`
+(with an `errors/gfx.toml` domain), the seedless 64-bit content hash, the `serde` feature,
+and the public-API snapshot.

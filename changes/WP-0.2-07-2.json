@@ -1,0 +1,1 @@
+{"wp": "WP-0.2-07", "kind": "added", "summary": "syrp-gfx-api (increment 2): DisplayList with an op-tag stream, per-kind payload arrays and shared arenas, allocation-free re-recording after clear(), borrowed Op views, Glyph runs, BlendMode layers and ResamplingQuality; view accessors are now by value."}
