@@ -1,0 +1,11 @@
+id = "1.9"
+phase = 1
+title = "Compatibility front-ends (syrp-compat-*), parked until their core crates have WPs"
+# ADR 0003 D1: each compat crate ships with or after its core crate. Disabled until the
+# syrp-state, syrp-audio-basics and syrp-ui WPs exist; the spec room enables it per package.
+enabled = false
+packages = [
+  "WP-1.9-01",
+  "WP-1.9-02",
+  "WP-1.9-03",
+]

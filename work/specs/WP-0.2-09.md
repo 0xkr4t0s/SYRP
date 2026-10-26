@@ -8,7 +8,7 @@ Decide the reference CPU renderer (master plan §11, risk R2). Output is a decis
 - B2. Measure determinism: same output bytes across 10 runs; and across x86_64 and aarch64 if CI provides both (otherwise record as open).
 - B3. Measure speed per scene.
 - B4. Implement a golden comparator: per-pixel tolerance, max differing pixel ratio, and a diff PNG.
-- B5. Write `docs/design/0003-renderer-spike.md` with results and a recommendation.
+- B5. Write `docs/design/0004-renderer-spike.md` (0003 is the data-layout ADR) with results and a recommendation.
 
 ## Crate setup
 Create `crates/spikes/render-spike/` with `Cargo.toml` (inherit `version`, `edition`, `rust-version`, `repository`, `authors`, `publish` from the workspace; `[lints] workspace = true`), `[package.metadata.syrp] layer = "L6"`, an `AGENTS.md` following `docs/agents/crate-agents-template.md`, and `src/lib.rs`. Workspace members are globbed, so no root edit is needed.

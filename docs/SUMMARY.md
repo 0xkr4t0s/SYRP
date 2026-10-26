@@ -27,4 +27,5 @@
 # Design
 
 - [Open decisions and defaults](design/0002-open-decisions.md)
+- [Data layout and API layering (ADR 0003)](design/0003-data-layout.md)
 - [Master plan](design/master-plan.md)
