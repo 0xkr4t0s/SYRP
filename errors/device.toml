@@ -1,0 +1,36 @@
+# Error catalogue: audio and MIDI device backends (syrp-device-api and backend crates). Never renumber.
+
+[[error]]
+code = "SYRP-DEVICE-0001"
+title = "No device with that id"
+severity = "error"
+cause = "A backend was asked to create or open a device whose id is not in its current device list. The device may have been unplugged, or the id was saved by another backend."
+fix = "List the backend's devices again and pick one from the list. Store DeviceId values, never names or list positions."
+
+[[error]]
+code = "SYRP-DEVICE-0002"
+title = "Device setup not supported"
+severity = "error"
+cause = "The sample rate or buffer size is not one the device reports as available, or a channel mask names a channel the device does not have. A fake driver also reports it for blocks of the wrong length."
+fix = "Choose values from available_sample_rates and available_buffer_sizes, and only channels below the device's channel count."
+
+[[error]]
+code = "SYRP-DEVICE-0003"
+title = "Device not open"
+severity = "error"
+cause = "start was called before open succeeded, or after close. A fake driver also reports it when no callback is running."
+fix = "Call open with a supported setup first, and check its result."
+
+[[error]]
+code = "SYRP-DEVICE-0004"
+title = "Device already running"
+severity = "error"
+cause = "start was called while another callback was running on the device."
+fix = "Call stop first (it returns the old callback), then start the new one."
+
+[[error]]
+code = "SYRP-DEVICE-0005"
+title = "Device disconnected"
+severity = "error"
+cause = "The device was unplugged or its driver went away while it was in use."
+fix = "Close it, list devices again, and open the same DeviceId when it comes back or choose another device."
