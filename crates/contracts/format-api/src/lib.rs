@@ -1,16 +1,18 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 //! The Syrp audio file format contract (master plan §4, L1).
 //!
-//! This first increment holds the data the codec traits exchange:
-//!
-//! - [`AudioSpec`], [`SampleKind`] and [`WriterOptions`]: the shape of a stream and what a
-//!   writer is asked to produce.
+//! - [`AudioFormat`]: a codec's description (name, extensions, rates, bit depths), header
+//!   sniffing with [`AudioFormat::can_read`], and factories for readers and writers.
+//! - [`AudioReader`]: random-access reads into `syrp-audio-api` views, zero-filled outside the
+//!   file, plus the file's [`Metadata`].
+//! - [`AudioWriter`]: sequential writes from views, `flush` and `finish`, all reporting I/O
+//!   failure as [`FormatError`] instead of panicking.
 //! - [`Metadata`] and [`MetadataItem`]: typed BWF `bext`, cue points, loops and text tags, with
 //!   an [`MetadataItem::Other`] escape for anything else.
-//! - [`FormatError`]: every failure, catalogued in `errors/format.toml`.
 //!
-//! The `AudioFormat`, `AudioReader` and `AudioWriter` traits follow in the next increment;
-//! they move samples only through `syrp-audio-api` views.
+//! Sample data only moves through [`syrp_audio_api::AudioBlock`] and
+//! [`syrp_audio_api::AudioBlockMut`]; [`AnyBlock`] and [`AnyBlockMut`] only say which of the two
+//! sample types a call carries.
 //!
 //! ```
 //! use syrp_audio_api::ChannelSet;
@@ -26,9 +28,13 @@ use std::io;
 
 use syrp_error::{Diagnostic, ErrorCode};
 
+mod block;
+mod format;
 mod metadata;
 mod spec;
 
+pub use block::{AnyBlock, AnyBlockMut};
+pub use format::{AudioFormat, AudioReader, AudioWriter, ReadSeek, WriteSeek};
 pub use metadata::{Bext, CuePoint, LoopKind, Metadata, MetadataItem, SampleLoop, Tag};
 pub use spec::{AudioSpec, SampleKind, WriterOptions};
 
