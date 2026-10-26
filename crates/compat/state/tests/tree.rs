@@ -164,7 +164,7 @@ fn b1_store_errors_are_returned_not_panics() {
         assert_eq!(e.kind(), StateErrorKind::IndexOutOfRange);
         let foreign = ValueTree::new_in(mt, &Rc::new(Store::new()), "F");
         assert!(a.append_child(mt, &foreign, None).is_err());
-        assert!(!a.is_equivalent_to(&foreign));
+        assert!(!a.is_equivalent_to(&foreign)); // different types
         assert_eq!(a.num_children(), 1);
     });
 }
@@ -241,4 +241,73 @@ fn b5_dependency_direction_is_compat_to_state_only() {
     }
     let own = std::fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/Cargo.toml")).unwrap();
     assert!(own.contains("syrp-state"));
+}
+
+/// Builds `Root{name, n} -> [Voice{i: 0}, Voice{i: 1} -> [Osc{wave}]]` in `store`, setting the
+/// root's properties in the given order.
+fn build(
+    mt: &MessageThread<'_>,
+    store: &Rc<Store>,
+    props: &[(&str, Var)],
+    wave: &str,
+) -> ValueTree {
+    let root = ValueTree::new_in(mt, store, "Root");
+    for (k, v) in props {
+        root.set_property(mt, *k, v.clone(), None).unwrap();
+    }
+    for i in 0..2 {
+        let voice = ValueTree::new_in(mt, store, "Voice");
+        voice.set_property(mt, "i", i, None).unwrap();
+        root.append_child(mt, &voice, None).unwrap();
+    }
+    let osc = ValueTree::new_in(mt, store, "Osc");
+    osc.set_property(mt, "wave", wave, None).unwrap();
+    root.child(1).append_child(mt, &osc, None).unwrap();
+    root
+}
+
+#[test]
+fn b1_is_equivalent_to_compares_content_across_stores() {
+    ManualLoop::new().with_token(|mt| {
+        let (s1, s2) = (Rc::new(Store::new()), Rc::new(Store::new()));
+        // The second store interns the identifiers in another order, so its property order differs.
+        ValueTree::new_in(mt, &s2, "Root")
+            .set_property(mt, "n", 0, None)
+            .unwrap();
+        let ab = [("name", Var::from("lead")), ("n", Var::from(2))];
+        let ba = [("n", Var::from(2)), ("name", Var::from("lead"))];
+        let a = build(mt, &s1, &ab, "saw");
+        let b = build(mt, &s2, &ba, "saw");
+        assert!(a.is_equivalent_to(&b) && b.is_equivalent_to(&a));
+        assert!(a.is_equivalent_to(&a.deep_clone(mt)));
+
+        let deep_diff = build(mt, &s2, &ab, "sine");
+        assert!(
+            !a.is_equivalent_to(&deep_diff),
+            "grandchild property differs"
+        );
+        let value_diff = build(
+            mt,
+            &s2,
+            &[("name", Var::from("lead")), ("n", Var::from(3))],
+            "saw",
+        );
+        assert!(!a.is_equivalent_to(&value_diff));
+        let type_diff = build(
+            mt,
+            &s2,
+            &[("name", Var::from("lead")), ("n", Var::from("2"))],
+            "saw",
+        );
+        assert!(
+            !a.is_equivalent_to(&type_diff),
+            "strict Var ==: \"2\" is not 2"
+        );
+        let fewer = build(mt, &s2, &ab[..1], "saw");
+        assert!(!a.is_equivalent_to(&fewer) && !fewer.is_equivalent_to(&a));
+        let reordered = build(mt, &s2, &ab, "saw");
+        reordered.move_child(mt, 0, 1, None).unwrap();
+        assert!(!a.is_equivalent_to(&reordered), "children order matters");
+        assert!(!a.is_equivalent_to(&ValueTree::default()));
+    });
 }

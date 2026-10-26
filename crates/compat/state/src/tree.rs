@@ -720,23 +720,53 @@ impl ValueTree {
         self.wrap_opt(self.read(|s, n| s.deep_copy(mt, n).map(Some)))
     }
 
-    /// Whether both trees have the same type, properties and equivalent children. Two invalid
-    /// trees are equivalent; trees in different stores never are.
+    /// Whether both trees have the same type, the same properties (in any order, compared with
+    /// `Var`'s `==`) and equivalent children in the same order. Two invalid trees are
+    /// equivalent. Trees in different stores are compared the same way, by content.
     ///
     /// ```
+    /// # use std::rc::Rc;
     /// # syrp_loop_api::ManualLoop::new().with_token(|mt| {
     /// let (a, b) = (syrp_compat_state::ValueTree::new(mt, "A"), syrp_compat_state::ValueTree::new(mt, "A"));
     /// assert!(a.is_equivalent_to(&b) && a != b);
+    /// let elsewhere = syrp_compat_state::ValueTree::new_in(mt, &Rc::new(syrp_state::Store::new()), "A");
+    /// assert!(a.is_equivalent_to(&elsewhere));
     /// # });
     /// ```
     #[doc(alias = "isEquivalentTo")]
     #[must_use]
     pub fn is_equivalent_to(&self, other: &ValueTree) -> bool {
-        match (&self.node, other.node_ref()) {
+        match (&self.node, &other.node) {
             (None, None) => true,
-            (Some(n), Some(o)) => n.store.is_equivalent(&n.node, o).unwrap_or(false),
+            (Some(n), Some(o)) if Rc::ptr_eq(&n.store, &o.store) => {
+                n.store.is_equivalent(&n.node, &o.node).unwrap_or(false)
+            }
+            (Some(_), Some(_)) => Self::equivalent_across_stores(self, other),
             _ => false,
         }
+    }
+
+    /// Structural comparison through the public read API, for trees in different stores.
+    /// Iterative, so deep trees cannot overflow the stack.
+    fn equivalent_across_stores(a: &ValueTree, b: &ValueTree) -> bool {
+        let mut stack = vec![(a.clone(), b.clone())];
+        while let Some((x, y)) = stack.pop() {
+            let n = x.num_properties();
+            if x.node_type() != y.node_type()
+                || n != y.num_properties()
+                || x.num_children() != y.num_children()
+            {
+                return false;
+            }
+            let same = (0..n)
+                .filter_map(|i| x.property_name(i))
+                .all(|id| y.has_property(id) && x.property(id) == y.property(id));
+            if !same {
+                return false;
+            }
+            stack.extend(x.children().zip(y.children()));
+        }
+        true
     }
 
     /// The node's reference count: references to it, its parent link, the undo history's and
