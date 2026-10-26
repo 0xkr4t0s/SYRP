@@ -54,7 +54,8 @@ impl Collector {
 
     /// Drops every value handed over so far, through any of this collector's handles, and
     /// returns how many it dropped. Never blocks: values handed over while it runs are either
-    /// dropped now or on the next call.
+    /// dropped now or on the next call. Queues of handles that have been dropped are freed
+    /// once drained, so creating and dropping handles does not leak.
     ///
     /// ```
     /// let mut c = syrp_rt::Collector::new();
@@ -66,12 +67,15 @@ impl Collector {
     /// ```
     pub fn collect(&mut self) -> usize {
         let mut dropped = 0;
-        for queue in &mut self.queues {
+        self.queues.retain_mut(|queue| {
             while let Some(garbage) = queue.try_pop() {
                 drop(garbage);
                 dropped += 1;
             }
-        }
+            // Dropping an abandoned queue frees its ring here, off the audio thread; the ring's
+            // own drop takes anything pushed after the drain above.
+            !queue.is_abandoned()
+        });
         dropped
     }
 }

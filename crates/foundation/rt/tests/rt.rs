@@ -164,6 +164,26 @@ fn b4_deferred_values_are_dropped_by_collect_on_the_collector_thread() {
 }
 
 #[test]
+fn b4_dropped_handles_are_reclaimed_by_collect_after_their_values() {
+    let marker = Arc::new(());
+    let mut collector = Collector::new();
+    let mut kept = collector.handle(1);
+    for _ in 0..3 {
+        let mut d = collector.handle(2);
+        d.defer(Box::new(Arc::clone(&marker))).unwrap();
+        drop(d); // deferred values must survive the handle
+    }
+    assert_eq!(format!("{collector:?}"), "Collector { handles: 4 }");
+    assert_eq!(Arc::strong_count(&marker), 4);
+    assert_eq!(collector.collect(), 3);
+    assert_eq!(Arc::strong_count(&marker), 1);
+    assert_eq!(format!("{collector:?}"), "Collector { handles: 1 }");
+    kept.defer(Box::new(Arc::clone(&marker))).unwrap();
+    assert_eq!(collector.collect(), 1);
+    assert_eq!(format!("{collector:?}"), "Collector { handles: 1 }");
+}
+
+#[test]
 fn b6_no_alloc_passes_through_results_and_nests() {
     let v = [1_u32, 2, 3];
     let sum = no_alloc(|| no_alloc(|| v.iter().sum::<u32>()) + 1);

@@ -234,6 +234,11 @@ impl<T> Consumer<T> {
         self.ring.head.load(Relaxed) == self.ring.tail.load(Acquire)
     }
 
+    /// Whether the [`Producer`] has been dropped (this end holds the last reference).
+    pub(crate) fn is_abandoned(&self) -> bool {
+        Arc::strong_count(&self.ring) == 1
+    }
+
     /// The fixed number of values the queue can hold.
     ///
     /// ```
