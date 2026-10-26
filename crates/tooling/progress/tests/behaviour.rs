@@ -219,6 +219,8 @@ fn b4_page_embeds_data_and_cannot_be_broken_out_of() {
     }];
     let mut p = syrp_progress::load(&root, &open).unwrap();
     p.waves[0].wps[2].title = "</script><b>".into();
+    p.waves[0].wps[1].title = r#"<img src=x onerror="alert(1)">'"#.into();
+    p.waves[0].title = "<svg onload=alert(1)>".into();
     let html = syrp_progress::render_html(&p);
     assert!(html.starts_with("<!doctype html>"));
     assert!(!html.contains("/*DATA*/"));
@@ -227,7 +229,19 @@ fn b4_page_embeds_data_and_cannot_be_broken_out_of() {
         1,
         "only the page's own closing tag"
     );
-    assert!(html.contains(r#""title":"<\/script><b>""#));
+    assert!(html.contains(r#""title":"\u003c/script>\u003cb>""#));
+    // The embedded data never contains a raw `<`, whatever the titles hold.
+    let data = html
+        .split("const D = ")
+        .nth(1)
+        .unwrap()
+        .split(";\n")
+        .next()
+        .unwrap();
+    assert!(!data.contains('<'), "raw < in embedded data: {data}");
+    assert!(data.contains(r#"\u003cimg src=x onerror=\"alert(1)\">'"#));
+    let back: serde_json::Value = serde_json::from_str(data).unwrap();
+    assert_eq!(back["waves"][0]["title"], "<svg onload=alert(1)>");
 }
 
 #[test]

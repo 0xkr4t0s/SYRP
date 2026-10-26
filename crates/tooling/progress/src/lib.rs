@@ -296,15 +296,16 @@ pub fn load(root: &Path, open: &[OpenPr]) -> Result<Progress, ProgressError> {
 
 /// Renders the snapshot as one self-contained HTML page (spec B4).
 ///
-/// The JSON is embedded in a script element with every `</` written as `<\/`, so no text
-/// from the board or a PR title can close that element early.
+/// The JSON is embedded in a script element with every `<` written as the JSON escape `\u003c`,
+/// so no text from the board or a PR title can close that element or open another tag. The
+/// page script escapes those strings again before it puts them into the document.
 ///
 /// ```
 /// let p = syrp_progress::Progress { commit: "</script>".into(), ..Default::default() };
 /// let html = syrp_progress::render_html(&p);
-/// assert!(html.contains(r#""commit":"<\/script>""#));
+/// assert!(html.contains(r#""commit":"\u003c/script>""#));
 /// ```
 pub fn render_html(p: &Progress) -> String {
     let json = serde_json::to_string(p).expect("snapshot always serialises");
-    TEMPLATE.replacen("/*DATA*/", &json.replace("</", "<\\/"), 1)
+    TEMPLATE.replacen("/*DATA*/", &json.replace('<', "\\u003c"), 1)
 }
