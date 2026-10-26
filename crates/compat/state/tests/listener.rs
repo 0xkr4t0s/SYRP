@@ -402,3 +402,13 @@ fn b6_listener_lives_with_its_wrapper() {
         assert_eq!(take(calls), ["w prop A.x"]);
     });
 }
+
+#[test]
+fn b2_temporary_listener_does_nothing_caller_owns_it() {
+    with(|mt, s, calls| {
+        let mut a = ValueTree::new_in(mt, s, "A");
+        a.add_listener(mt, &Rec::new("tmp", calls));
+        a.set_property(mt, "x", 1, None).unwrap();
+        assert!(take(calls).is_empty());
+    });
+}

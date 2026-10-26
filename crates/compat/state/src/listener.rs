@@ -217,6 +217,11 @@ impl ValueTree {
     /// or the listener itself is dropped; the wrapper holds it weakly. Adding it twice does
     /// nothing. On an invalid tree it waits until [`ValueTree::assign`] makes the tree valid.
     ///
+    /// **The caller owns the listener.** Because the wrapper holds it weakly, passing a
+    /// temporary `Rc` (`tree.add_listener(mt, &Rc::new(RefCell::new(l)))`) does nothing: the
+    /// listener is dropped at the end of the statement and never called. Keep the `Rc` alive
+    /// for as long as the listener should hear changes, as you would keep a JUCE `Listener*`.
+    ///
     /// ```
     /// # use std::{cell::RefCell, rc::Rc};
     /// # use syrp_compat_state::{Listener, ValueTree};
