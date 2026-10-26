@@ -1,0 +1,1 @@
+{"wp": "WP-1.2-03", "kind": "added", "summary": "syrp-state increment 1: Store (slotmap node arena, !Send, mutations take &MessageThread) with sorted properties and ordered children, NodeRef handles with identity equality, NodeKey and upgrade, reference counts that free detached subtrees, and coded StateError (new errors/state.toml, SYRP-STATE-0001..0005)."}
