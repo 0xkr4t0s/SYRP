@@ -1,0 +1,249 @@
+pub mod syrp_peer_api
+pub use syrp_peer_api::ActionRequest
+pub use syrp_peer_api::CursorIcon
+pub use syrp_peer_api::HasDisplayHandle
+pub use syrp_peer_api::HasWindowHandle
+pub use syrp_peer_api::KeyboardEvent
+pub use syrp_peer_api::Modifiers
+pub use syrp_peer_api::PeerId
+pub use syrp_peer_api::RawWindowHandle
+pub use syrp_peer_api::TreeUpdate
+pub use syrp_peer_api::accesskit
+pub use syrp_peer_api::cursor_icon
+pub use syrp_peer_api::keyboard_types
+pub use syrp_peer_api::raw_window_handle
+pub mod syrp_peer_api::headless
+#[non_exhaustive] pub enum syrp_peer_api::headless::Request
+pub syrp_peer_api::headless::Request::AcceptDrop(syrp_loop_api::PeerId, bool)
+pub syrp_peer_api::headless::Request::Alert(core::option::Option<syrp_loop_api::PeerId>, syrp_peer_api::AlertDialog)
+pub syrp_peer_api::headless::Request::Create(syrp_loop_api::PeerId, syrp_peer_api::PeerOptions)
+pub syrp_peer_api::headless::Request::Destroy(syrp_loop_api::PeerId)
+pub syrp_peer_api::headless::Request::FileDialog(core::option::Option<syrp_loop_api::PeerId>, syrp_peer_api::FileDialog)
+pub syrp_peer_api::headless::Request::GrabFocus(syrp_loop_api::PeerId)
+pub syrp_peer_api::headless::Request::Repaint(syrp_loop_api::PeerId, syrp_geom::rect::Rect<f64>)
+pub syrp_peer_api::headless::Request::SetBounds(syrp_loop_api::PeerId, syrp_geom::rect::Rect<f64>)
+pub syrp_peer_api::headless::Request::SetClipboard(alloc::string::String)
+pub syrp_peer_api::headless::Request::SetCursor(syrp_loop_api::PeerId, core::option::Option<cursor_icon::CursorIcon>)
+pub syrp_peer_api::headless::Request::SetImeCaret(syrp_loop_api::PeerId, core::option::Option<syrp_geom::rect::Rect<f64>>)
+pub syrp_peer_api::headless::Request::SetState(syrp_loop_api::PeerId, syrp_peer_api::WindowState)
+pub syrp_peer_api::headless::Request::SetTitle(syrp_loop_api::PeerId, alloc::string::String)
+pub syrp_peer_api::headless::Request::SetVisible(syrp_loop_api::PeerId, bool)
+pub syrp_peer_api::headless::Request::UpdateAccessibility(syrp_loop_api::PeerId, accesskit::TreeUpdate)
+pub struct syrp_peer_api::headless::HeadlessDesktop
+impl syrp_peer_api::headless::HeadlessDesktop
+pub fn syrp_peer_api::headless::HeadlessDesktop::answer_alert(&self, &syrp_loop_api::MessageThread<'_>, core::option::Option<usize>) -> bool
+pub fn syrp_peer_api::headless::HeadlessDesktop::answer_file_dialog(&self, &syrp_loop_api::MessageThread<'_>, alloc::vec::Vec<std::path::PathBuf>) -> bool
+pub fn syrp_peer_api::headless::HeadlessDesktop::set_displays(&self, alloc::vec::Vec<syrp_peer_api::Display>)
+impl syrp_peer_api::headless::HeadlessDesktop
+pub fn syrp_peer_api::headless::HeadlessDesktop::inject(&self, &syrp_loop_api::MessageThread<'_>, syrp_loop_api::PeerId, &syrp_peer_api::Event) -> bool
+pub fn syrp_peer_api::headless::HeadlessDesktop::new(f64) -> Self
+pub fn syrp_peer_api::headless::HeadlessDesktop::requests(&self) -> alloc::vec::Vec<syrp_peer_api::headless::Request>
+pub fn syrp_peer_api::headless::HeadlessDesktop::set_scale(&self, &syrp_loop_api::MessageThread<'_>, f64)
+pub fn syrp_peer_api::headless::HeadlessDesktop::take_requests(&self) -> alloc::vec::Vec<syrp_peer_api::headless::Request>
+impl raw_window_handle::borrowed::HasDisplayHandle for syrp_peer_api::headless::HeadlessDesktop
+pub fn syrp_peer_api::headless::HeadlessDesktop::display_handle(&self) -> core::result::Result<raw_window_handle::borrowed::DisplayHandle<'_>, raw_window_handle::HandleError>
+impl syrp_peer_api::Desktop for syrp_peer_api::headless::HeadlessDesktop
+pub fn syrp_peer_api::headless::HeadlessDesktop::clipboard_text(&mut self, &syrp_loop_api::MessageThread<'_>) -> core::result::Result<core::option::Option<alloc::string::String>, syrp_peer_api::PeerError>
+pub fn syrp_peer_api::headless::HeadlessDesktop::create_peer(&mut self, &syrp_loop_api::MessageThread<'_>, syrp_peer_api::PeerOptions, syrp_peer_api::EventSink) -> core::result::Result<alloc::boxed::Box<dyn syrp_peer_api::Peer>, syrp_peer_api::PeerError>
+pub fn syrp_peer_api::headless::HeadlessDesktop::displays(&self) -> alloc::vec::Vec<syrp_peer_api::Display>
+pub fn syrp_peer_api::headless::HeadlessDesktop::set_clipboard_text(&mut self, &syrp_loop_api::MessageThread<'_>, &str) -> core::result::Result<(), syrp_peer_api::PeerError>
+pub fn syrp_peer_api::headless::HeadlessDesktop::show_alert(&mut self, &syrp_loop_api::MessageThread<'_>, core::option::Option<syrp_loop_api::PeerId>, syrp_peer_api::AlertDialog, syrp_peer_api::AlertDone) -> core::result::Result<(), syrp_peer_api::PeerError>
+pub fn syrp_peer_api::headless::HeadlessDesktop::show_file_dialog(&mut self, &syrp_loop_api::MessageThread<'_>, core::option::Option<syrp_loop_api::PeerId>, syrp_peer_api::FileDialog, syrp_peer_api::FileDialogDone) -> core::result::Result<(), syrp_peer_api::PeerError>
+#[non_exhaustive] pub enum syrp_peer_api::AlertKind
+pub syrp_peer_api::AlertKind::Error
+pub syrp_peer_api::AlertKind::Info
+pub syrp_peer_api::AlertKind::Question
+pub syrp_peer_api::AlertKind::Warning
+#[non_exhaustive] pub enum syrp_peer_api::DragData
+pub syrp_peer_api::DragData::Files(alloc::vec::Vec<std::path::PathBuf>)
+pub syrp_peer_api::DragData::Text(alloc::string::String)
+#[non_exhaustive] pub enum syrp_peer_api::DragPhase
+pub syrp_peer_api::DragPhase::Drop
+pub syrp_peer_api::DragPhase::Enter
+pub syrp_peer_api::DragPhase::Leave
+pub syrp_peer_api::DragPhase::Over
+#[non_exhaustive] pub enum syrp_peer_api::Event
+pub syrp_peer_api::Event::AccessibilityAction(accesskit::ActionRequest)
+pub syrp_peer_api::Event::AccessibilityActivated
+pub syrp_peer_api::Event::AccessibilityDeactivated
+pub syrp_peer_api::Event::BoundsChanged(syrp_geom::rect::Rect<f64>)
+pub syrp_peer_api::Event::CloseRequested
+pub syrp_peer_api::Event::Drag(syrp_peer_api::DragEvent)
+pub syrp_peer_api::Event::Expose(syrp_geom::rect::Rect<f64>)
+pub syrp_peer_api::Event::FocusGained
+pub syrp_peer_api::Event::FocusLost
+pub syrp_peer_api::Event::Ime(syrp_peer_api::ImeEvent)
+pub syrp_peer_api::Event::Key(keyboard_types::keyboard_event::KeyboardEvent)
+pub syrp_peer_api::Event::Magnify(syrp_geom::point::Point<f64>, f64)
+pub syrp_peer_api::Event::Pointer(syrp_peer_api::PointerEvent)
+pub syrp_peer_api::Event::ScaleChanged(f64)
+pub syrp_peer_api::Event::StateChanged(syrp_peer_api::WindowState)
+pub syrp_peer_api::Event::Wheel(syrp_peer_api::WheelEvent)
+#[non_exhaustive] pub enum syrp_peer_api::FileDialogKind
+pub syrp_peer_api::FileDialogKind::Folder
+pub syrp_peer_api::FileDialogKind::Open
+pub syrp_peer_api::FileDialogKind::Save
+#[non_exhaustive] pub enum syrp_peer_api::ImeEvent
+pub syrp_peer_api::ImeEvent::Commit(alloc::string::String)
+pub syrp_peer_api::ImeEvent::End
+pub syrp_peer_api::ImeEvent::Preedit(alloc::string::String, core::option::Option<core::ops::range::Range<usize>>)
+pub syrp_peer_api::ImeEvent::Start
+#[non_exhaustive] pub enum syrp_peer_api::PeerError
+pub syrp_peer_api::PeerError::Backend(alloc::string::String)
+pub syrp_peer_api::PeerError::InvalidParent
+pub syrp_peer_api::PeerError::Unsupported
+impl core::error::Error for syrp_peer_api::PeerError
+impl core::fmt::Display for syrp_peer_api::PeerError
+pub fn syrp_peer_api::PeerError::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl syrp_error::Diagnostic for syrp_peer_api::PeerError
+pub fn syrp_peer_api::PeerError::code(&self) -> syrp_error::ErrorCode
+#[non_exhaustive] pub enum syrp_peer_api::PointerButton
+pub syrp_peer_api::PointerButton::Back
+pub syrp_peer_api::PointerButton::Forward
+pub syrp_peer_api::PointerButton::Middle
+pub syrp_peer_api::PointerButton::Primary
+pub syrp_peer_api::PointerButton::Secondary
+#[non_exhaustive] pub enum syrp_peer_api::PointerKind
+pub syrp_peer_api::PointerKind::Mouse
+pub syrp_peer_api::PointerKind::Pen
+pub syrp_peer_api::PointerKind::Touch
+#[non_exhaustive] pub enum syrp_peer_api::PointerPhase
+pub syrp_peer_api::PointerPhase::Cancel
+pub syrp_peer_api::PointerPhase::Down
+pub syrp_peer_api::PointerPhase::Enter
+pub syrp_peer_api::PointerPhase::Exit
+pub syrp_peer_api::PointerPhase::Move
+pub syrp_peer_api::PointerPhase::Up
+#[non_exhaustive] pub enum syrp_peer_api::WheelUnit
+pub syrp_peer_api::WheelUnit::Lines
+pub syrp_peer_api::WheelUnit::Pixels
+#[non_exhaustive] pub enum syrp_peer_api::WindowState
+pub syrp_peer_api::WindowState::Fullscreen
+pub syrp_peer_api::WindowState::Maximised
+pub syrp_peer_api::WindowState::Minimised
+pub syrp_peer_api::WindowState::Normal
+pub struct syrp_peer_api::AlertDialog
+impl syrp_peer_api::AlertDialog
+pub fn syrp_peer_api::AlertDialog::buttons(&self) -> &[alloc::string::String]
+pub fn syrp_peer_api::AlertDialog::kind(&self) -> syrp_peer_api::AlertKind
+pub fn syrp_peer_api::AlertDialog::message(&self) -> &str
+pub fn syrp_peer_api::AlertDialog::new(syrp_peer_api::AlertKind, impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn syrp_peer_api::AlertDialog::title(&self) -> &str
+pub fn syrp_peer_api::AlertDialog::with_buttons<S: core::convert::Into<alloc::string::String>>(self, impl core::iter::traits::collect::IntoIterator<Item = S>) -> Self
+pub struct syrp_peer_api::Display
+impl syrp_peer_api::Display
+pub fn syrp_peer_api::Display::bounds(&self) -> syrp_geom::rect::Rect<f64>
+pub fn syrp_peer_api::Display::is_primary(&self) -> bool
+pub fn syrp_peer_api::Display::new(syrp_geom::rect::Rect<f64>, syrp_geom::rect::Rect<f64>, f64) -> Self
+pub fn syrp_peer_api::Display::scale(&self) -> f64
+pub fn syrp_peer_api::Display::with_primary(self, bool) -> Self
+pub fn syrp_peer_api::Display::work_area(&self) -> syrp_geom::rect::Rect<f64>
+pub struct syrp_peer_api::DragEvent
+impl syrp_peer_api::DragEvent
+pub fn syrp_peer_api::DragEvent::data(&self) -> &syrp_peer_api::DragData
+pub fn syrp_peer_api::DragEvent::new(syrp_peer_api::DragPhase, syrp_geom::point::Point<f64>, syrp_peer_api::DragData) -> Self
+pub fn syrp_peer_api::DragEvent::phase(&self) -> syrp_peer_api::DragPhase
+pub fn syrp_peer_api::DragEvent::position(&self) -> syrp_geom::point::Point<f64>
+pub struct syrp_peer_api::FileDialog
+impl syrp_peer_api::FileDialog
+pub fn syrp_peer_api::FileDialog::allows_multiple(&self) -> bool
+pub fn syrp_peer_api::FileDialog::filters(&self) -> &[(alloc::string::String, alloc::vec::Vec<alloc::string::String>)]
+pub fn syrp_peer_api::FileDialog::kind(&self) -> syrp_peer_api::FileDialogKind
+pub fn syrp_peer_api::FileDialog::new(syrp_peer_api::FileDialogKind) -> Self
+pub fn syrp_peer_api::FileDialog::start(&self) -> core::option::Option<&std::path::Path>
+pub fn syrp_peer_api::FileDialog::title(&self) -> &str
+pub fn syrp_peer_api::FileDialog::with_filter<S: core::convert::Into<alloc::string::String>>(self, impl core::convert::Into<alloc::string::String>, impl core::iter::traits::collect::IntoIterator<Item = S>) -> Self
+pub fn syrp_peer_api::FileDialog::with_multiple(self, bool) -> Self
+pub fn syrp_peer_api::FileDialog::with_start(self, impl core::convert::Into<std::path::PathBuf>) -> Self
+pub fn syrp_peer_api::FileDialog::with_title(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub struct syrp_peer_api::PeerOptions
+impl syrp_peer_api::PeerOptions
+pub fn syrp_peer_api::PeerOptions::bounds(&self) -> syrp_geom::rect::Rect<f64>
+pub unsafe fn syrp_peer_api::PeerOptions::child(raw_window_handle::RawWindowHandle, syrp_geom::rect::Rect<f64>) -> Self
+pub fn syrp_peer_api::PeerOptions::is_decorated(&self) -> bool
+pub fn syrp_peer_api::PeerOptions::is_visible(&self) -> bool
+pub fn syrp_peer_api::PeerOptions::parent(&self) -> core::option::Option<raw_window_handle::RawWindowHandle>
+pub fn syrp_peer_api::PeerOptions::title(&self) -> &str
+pub fn syrp_peer_api::PeerOptions::top_level(syrp_geom::rect::Rect<f64>) -> Self
+pub fn syrp_peer_api::PeerOptions::with_decorations(self, bool) -> Self
+pub fn syrp_peer_api::PeerOptions::with_title(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn syrp_peer_api::PeerOptions::with_visible(self, bool) -> Self
+pub struct syrp_peer_api::PointerButtons(_)
+impl syrp_peer_api::PointerButtons
+pub const syrp_peer_api::PointerButtons::NONE: Self
+pub fn syrp_peer_api::PointerButtons::contains(self, syrp_peer_api::PointerButton) -> bool
+pub fn syrp_peer_api::PointerButtons::is_empty(self) -> bool
+pub fn syrp_peer_api::PointerButtons::with(self, syrp_peer_api::PointerButton) -> Self
+pub fn syrp_peer_api::PointerButtons::without(self, syrp_peer_api::PointerButton) -> Self
+pub struct syrp_peer_api::PointerEvent
+impl syrp_peer_api::PointerEvent
+pub fn syrp_peer_api::PointerEvent::button(&self) -> core::option::Option<syrp_peer_api::PointerButton>
+pub fn syrp_peer_api::PointerEvent::buttons(&self) -> syrp_peer_api::PointerButtons
+pub fn syrp_peer_api::PointerEvent::modifiers(&self) -> keyboard_types::modifiers::Modifiers
+pub fn syrp_peer_api::PointerEvent::new(syrp_peer_api::PointerPhase, syrp_peer_api::PointerSource, syrp_geom::point::Point<f64>) -> Self
+pub fn syrp_peer_api::PointerEvent::phase(&self) -> syrp_peer_api::PointerPhase
+pub fn syrp_peer_api::PointerEvent::position(&self) -> syrp_geom::point::Point<f64>
+pub fn syrp_peer_api::PointerEvent::pressure(&self) -> core::option::Option<f32>
+pub fn syrp_peer_api::PointerEvent::source(&self) -> syrp_peer_api::PointerSource
+pub fn syrp_peer_api::PointerEvent::tilt(&self) -> core::option::Option<(f32, f32)>
+pub fn syrp_peer_api::PointerEvent::time(&self) -> core::option::Option<core::time::Duration>
+pub fn syrp_peer_api::PointerEvent::with_button(self, syrp_peer_api::PointerButton) -> Self
+pub fn syrp_peer_api::PointerEvent::with_buttons(self, syrp_peer_api::PointerButtons) -> Self
+pub fn syrp_peer_api::PointerEvent::with_modifiers(self, keyboard_types::modifiers::Modifiers) -> Self
+pub fn syrp_peer_api::PointerEvent::with_pressure(self, f32) -> Self
+pub fn syrp_peer_api::PointerEvent::with_tilt(self, f32, f32) -> Self
+pub fn syrp_peer_api::PointerEvent::with_time(self, core::time::Duration) -> Self
+pub struct syrp_peer_api::PointerSource(_, _)
+impl syrp_peer_api::PointerSource
+pub const syrp_peer_api::PointerSource::MOUSE: Self
+pub const fn syrp_peer_api::PointerSource::id(self) -> u32
+pub const fn syrp_peer_api::PointerSource::kind(self) -> syrp_peer_api::PointerKind
+pub const fn syrp_peer_api::PointerSource::new(syrp_peer_api::PointerKind, u32) -> Self
+pub struct syrp_peer_api::WheelEvent
+impl syrp_peer_api::WheelEvent
+pub fn syrp_peer_api::WheelEvent::delta(&self) -> (f64, f64)
+pub fn syrp_peer_api::WheelEvent::is_inertial(&self) -> bool
+pub fn syrp_peer_api::WheelEvent::modifiers(&self) -> keyboard_types::modifiers::Modifiers
+pub fn syrp_peer_api::WheelEvent::new(syrp_geom::point::Point<f64>, f64, f64, syrp_peer_api::WheelUnit) -> Self
+pub fn syrp_peer_api::WheelEvent::position(&self) -> syrp_geom::point::Point<f64>
+pub fn syrp_peer_api::WheelEvent::time(&self) -> core::option::Option<core::time::Duration>
+pub fn syrp_peer_api::WheelEvent::unit(&self) -> syrp_peer_api::WheelUnit
+pub fn syrp_peer_api::WheelEvent::with_inertial(self, bool) -> Self
+pub fn syrp_peer_api::WheelEvent::with_modifiers(self, keyboard_types::modifiers::Modifiers) -> Self
+pub fn syrp_peer_api::WheelEvent::with_time(self, core::time::Duration) -> Self
+pub trait syrp_peer_api::Desktop: raw_window_handle::borrowed::HasDisplayHandle
+pub fn syrp_peer_api::Desktop::clipboard_text(&mut self, &syrp_loop_api::MessageThread<'_>) -> core::result::Result<core::option::Option<alloc::string::String>, syrp_peer_api::PeerError>
+pub fn syrp_peer_api::Desktop::create_peer(&mut self, &syrp_loop_api::MessageThread<'_>, syrp_peer_api::PeerOptions, syrp_peer_api::EventSink) -> core::result::Result<alloc::boxed::Box<dyn syrp_peer_api::Peer>, syrp_peer_api::PeerError>
+pub fn syrp_peer_api::Desktop::displays(&self) -> alloc::vec::Vec<syrp_peer_api::Display>
+pub fn syrp_peer_api::Desktop::set_clipboard_text(&mut self, &syrp_loop_api::MessageThread<'_>, &str) -> core::result::Result<(), syrp_peer_api::PeerError>
+pub fn syrp_peer_api::Desktop::show_alert(&mut self, &syrp_loop_api::MessageThread<'_>, core::option::Option<syrp_loop_api::PeerId>, syrp_peer_api::AlertDialog, syrp_peer_api::AlertDone) -> core::result::Result<(), syrp_peer_api::PeerError>
+pub fn syrp_peer_api::Desktop::show_file_dialog(&mut self, &syrp_loop_api::MessageThread<'_>, core::option::Option<syrp_loop_api::PeerId>, syrp_peer_api::FileDialog, syrp_peer_api::FileDialogDone) -> core::result::Result<(), syrp_peer_api::PeerError>
+impl syrp_peer_api::Desktop for syrp_peer_api::headless::HeadlessDesktop
+pub fn syrp_peer_api::headless::HeadlessDesktop::clipboard_text(&mut self, &syrp_loop_api::MessageThread<'_>) -> core::result::Result<core::option::Option<alloc::string::String>, syrp_peer_api::PeerError>
+pub fn syrp_peer_api::headless::HeadlessDesktop::create_peer(&mut self, &syrp_loop_api::MessageThread<'_>, syrp_peer_api::PeerOptions, syrp_peer_api::EventSink) -> core::result::Result<alloc::boxed::Box<dyn syrp_peer_api::Peer>, syrp_peer_api::PeerError>
+pub fn syrp_peer_api::headless::HeadlessDesktop::displays(&self) -> alloc::vec::Vec<syrp_peer_api::Display>
+pub fn syrp_peer_api::headless::HeadlessDesktop::set_clipboard_text(&mut self, &syrp_loop_api::MessageThread<'_>, &str) -> core::result::Result<(), syrp_peer_api::PeerError>
+pub fn syrp_peer_api::headless::HeadlessDesktop::show_alert(&mut self, &syrp_loop_api::MessageThread<'_>, core::option::Option<syrp_loop_api::PeerId>, syrp_peer_api::AlertDialog, syrp_peer_api::AlertDone) -> core::result::Result<(), syrp_peer_api::PeerError>
+pub fn syrp_peer_api::headless::HeadlessDesktop::show_file_dialog(&mut self, &syrp_loop_api::MessageThread<'_>, core::option::Option<syrp_loop_api::PeerId>, syrp_peer_api::FileDialog, syrp_peer_api::FileDialogDone) -> core::result::Result<(), syrp_peer_api::PeerError>
+pub trait syrp_peer_api::Peer: raw_window_handle::borrowed::HasWindowHandle
+pub fn syrp_peer_api::Peer::accept_drop(&mut self, &syrp_loop_api::MessageThread<'_>, bool)
+pub fn syrp_peer_api::Peer::bounds(&self) -> syrp_geom::rect::Rect<f64>
+pub fn syrp_peer_api::Peer::grab_focus(&mut self, &syrp_loop_api::MessageThread<'_>)
+pub fn syrp_peer_api::Peer::id(&self) -> syrp_loop_api::PeerId
+pub fn syrp_peer_api::Peer::is_child(&self) -> bool
+pub fn syrp_peer_api::Peer::is_visible(&self) -> bool
+pub fn syrp_peer_api::Peer::render_target(&self) -> core::result::Result<syrp_gfx_api::render::RenderTarget, syrp_gfx_api::render::RenderError>
+pub fn syrp_peer_api::Peer::repaint(&mut self, &syrp_loop_api::MessageThread<'_>, syrp_geom::rect::Rect<f64>)
+pub fn syrp_peer_api::Peer::scale_factor(&self) -> f64
+pub fn syrp_peer_api::Peer::set_bounds(&mut self, &syrp_loop_api::MessageThread<'_>, syrp_geom::rect::Rect<f64>)
+pub fn syrp_peer_api::Peer::set_cursor(&mut self, &syrp_loop_api::MessageThread<'_>, core::option::Option<cursor_icon::CursorIcon>)
+pub fn syrp_peer_api::Peer::set_ime_caret(&mut self, &syrp_loop_api::MessageThread<'_>, core::option::Option<syrp_geom::rect::Rect<f64>>)
+pub fn syrp_peer_api::Peer::set_state(&mut self, &syrp_loop_api::MessageThread<'_>, syrp_peer_api::WindowState) -> core::result::Result<(), syrp_peer_api::PeerError>
+pub fn syrp_peer_api::Peer::set_title(&mut self, &syrp_loop_api::MessageThread<'_>, &str)
+pub fn syrp_peer_api::Peer::set_visible(&mut self, &syrp_loop_api::MessageThread<'_>, bool)
+pub fn syrp_peer_api::Peer::state(&self) -> syrp_peer_api::WindowState
+pub fn syrp_peer_api::Peer::title(&self) -> &str
+pub fn syrp_peer_api::Peer::update_accessibility(&mut self, &syrp_loop_api::MessageThread<'_>, accesskit::TreeUpdate)
+pub type syrp_peer_api::AlertDone = alloc::boxed::Box<dyn core::ops::function::FnOnce(&syrp_loop_api::MessageThread<'_>, core::option::Option<usize>)>
+pub type syrp_peer_api::EventSink = alloc::boxed::Box<dyn core::ops::function::FnMut(&syrp_loop_api::MessageThread<'_>, &syrp_peer_api::Event)>
+pub type syrp_peer_api::FileDialogDone = alloc::boxed::Box<dyn core::ops::function::FnOnce(&syrp_loop_api::MessageThread<'_>, alloc::vec::Vec<std::path::PathBuf>)>
