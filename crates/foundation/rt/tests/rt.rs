@@ -34,6 +34,7 @@ fn b1_rt_safe_covers_primitives_arrays_tuples_and_crate_types() {
     rt_safe::<Producer<f32>>();
     rt_safe::<Consumer<(u8, f64)>>();
     rt_safe::<DeferredDrop>();
+    rt_safe::<HandoffReader<Vec<f32>>>();
 }
 
 #[test]
@@ -184,6 +185,51 @@ fn b4_dropped_handles_are_reclaimed_by_collect_after_their_values() {
 }
 
 #[test]
+fn b5_reader_switches_to_latest_without_allocating_and_old_values_are_collected() {
+    let drops = Arc::new(Mutex::new(Vec::new()));
+    let spy = || Box::new(DropSpy(Arc::clone(&drops)));
+    let mut collector = Collector::new();
+    let (writer, mut reader) = RtHandoff::new(spy(), collector.handle(1));
+    let first = std::ptr::from_ref(reader.current()).addr();
+
+    writer.publish(spy());
+    writer.publish(spy()); // replaces the unread one: dropped by the writer
+    assert_eq!(drops.lock().unwrap().len(), 1);
+    let audio = thread::spawn(move || {
+        let switched = no_alloc(|| std::ptr::from_ref(reader.latest()).addr() != first);
+        assert!(switched);
+        reader
+    });
+    let mut reader = audio.join().unwrap();
+    assert_eq!(
+        drops.lock().unwrap().len(),
+        1,
+        "nothing freed on the audio thread"
+    );
+
+    writer.publish(spy());
+    let held: *const DropSpy = reader.current();
+    // The DeferredDrop is full (capacity 1), so the reader must keep its value.
+    assert!(no_alloc(|| std::ptr::eq(reader.latest(), held)));
+    assert_eq!(collector.collect(), 1); // the initial value
+    assert_eq!(drops.lock().unwrap().len(), 2);
+    assert!(!std::ptr::eq(reader.latest(), held));
+    drop((writer, reader));
+    assert_eq!(collector.collect(), 1);
+    assert_eq!(drops.lock().unwrap().len(), 4);
+}
+
+#[test]
+fn b5_unread_value_is_freed_when_both_sides_drop() {
+    let marker = Arc::new(());
+    let mut collector = Collector::new();
+    let (writer, reader) = RtHandoff::new(Box::new(Arc::clone(&marker)), collector.handle(1));
+    writer.publish(Box::new(Arc::clone(&marker)));
+    drop((reader, writer));
+    assert_eq!(Arc::strong_count(&marker), 1);
+}
+
+#[test]
 fn b6_no_alloc_passes_through_results_and_nests() {
     let v = [1_u32, 2, 3];
     let sum = no_alloc(|| no_alloc(|| v.iter().sum::<u32>()) + 1);
@@ -243,6 +289,7 @@ fn b7_every_unsafe_block_and_impl_has_a_safety_comment() {
         include_str!("../src/atomic.rs"),
         include_str!("../src/spsc.rs"),
         include_str!("../src/deferred.rs"),
+        include_str!("../src/handoff.rs"),
         include_str!("../src/alloc_guard.rs"),
     ];
     for src in sources {

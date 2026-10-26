@@ -3,9 +3,16 @@
 //! model-checked as written.
 
 #[cfg(loom)]
-pub(crate) use loom::{cell::UnsafeCell, sync::Arc, sync::atomic::AtomicUsize};
+pub(crate) use loom::{
+    cell::UnsafeCell,
+    sync::Arc,
+    sync::atomic::{AtomicPtr, AtomicUsize},
+};
 #[cfg(not(loom))]
-pub(crate) use std::sync::{Arc, atomic::AtomicUsize};
+pub(crate) use std::sync::{
+    Arc,
+    atomic::{AtomicPtr, AtomicUsize},
+};
 
 /// `core::cell::UnsafeCell` with loom's closure-based access API.
 #[cfg(not(loom))]

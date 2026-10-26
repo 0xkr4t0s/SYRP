@@ -8,6 +8,8 @@
 //! - [`spsc`]: a bounded single-producer, single-consumer queue.
 //! - [`DeferredDrop`] and [`Collector`]: hand values from the audio thread to another thread
 //!   so their destructors (and deallocations) never run on the audio thread.
+//! - [`RtHandoff`]: publish a new `Box<T>` to an audio thread; the old one is reclaimed through
+//!   [`DeferredDrop`].
 //! - [`GuardedAllocator`] and [`no_alloc`]: a debug-build allocation guard for tests.
 //!
 //! ```
@@ -24,12 +26,14 @@
 mod alloc_guard;
 mod atomic;
 mod deferred;
+mod handoff;
 pub mod spsc;
 mod sync;
 
 pub use alloc_guard::{GuardedAllocator, no_alloc};
 pub use atomic::{AtomicF32, AtomicF64};
 pub use deferred::{Collector, DeferredDrop};
+pub use handoff::{HandoffReader, RtHandoff};
 
 /// Marker for types that may be used on an audio thread.
 ///
