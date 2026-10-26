@@ -928,6 +928,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "syrp-device-api"
+version = "0.0.1"
+dependencies = [
+ "syrp-audio-api",
+ "syrp-error",
+ "syrp-rt",
+]
+
+[[package]]
 name = "syrp-docgen"
 version = "0.0.1"
 dependencies = [
