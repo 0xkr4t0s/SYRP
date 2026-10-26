@@ -28,6 +28,11 @@ impl Assets {
         }
     }
 
+    /// Every image with its handle, for renderers that convert them once up front.
+    pub(crate) fn images(&self) -> impl Iterator<Item = (ImageHandle, &RgbaImage)> {
+        self.images.iter().map(|(h, i)| (*h, i))
+    }
+
     pub(crate) fn image(&self, handle: ImageHandle) -> Option<&RgbaImage> {
         self.images
             .iter()

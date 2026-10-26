@@ -5,8 +5,8 @@ use std::sync::Arc;
 
 use syrp_geom::{AffineTransform, Rect};
 use syrp_gfx_api::{
-    BlendMode, BrushKind, BrushRef, Cap, DisplayList, FillRule, Join, PathEl, PathView,
-    RenderError, RenderTarget, Renderer, ResamplingQuality, StrokeRef,
+    BlendMode, BrushKind, BrushRef, Cap, DisplayList, FillRule, ImageHandle, Join, PathEl,
+    PathView, RenderError, RenderTarget, Renderer, ResamplingQuality, StrokeRef,
 };
 use vello_cpu::kurbo::{self, Affine, BezPath, Point};
 use vello_cpu::peniko::{self, ImageQuality, ImageSampler, Mix};
@@ -15,7 +15,7 @@ use vello_cpu::{
     RenderContext, RenderSettings, Resources, TargetInit, color::AlphaColor, color::Srgb,
 };
 
-use crate::assets::{Assets, RgbaImage};
+use crate::assets::Assets;
 use crate::replay::{Shape, Sink, paints_nothing, replay};
 
 /// How `vello_cpu` picks its SIMD code path.
@@ -48,6 +48,8 @@ pub enum VelloMode {
 pub struct VelloCpuRenderer {
     mode: VelloMode,
     assets: Assets,
+    /// The built-in images, converted once so draws share them instead of copying.
+    images: Vec<(ImageHandle, Arc<Pixmap>)>,
     resources: Resources,
 }
 
@@ -57,9 +59,23 @@ impl VelloCpuRenderer {
     /// let _r = syrp_render_spike::VelloCpuRenderer::new(syrp_render_spike::VelloMode::NativeSimd);
     /// ```
     pub fn new(mode: VelloMode) -> Self {
+        let assets = Assets::new();
+        let meta = PixelMetadata::new(peniko::ImageAlphaType::AlphaPremultiplied, true);
+        let images = assets
+            .images()
+            .filter_map(|(handle, img)| {
+                let (w, h) = (
+                    u16::try_from(img.width).ok()?,
+                    u16::try_from(img.height).ok()?,
+                );
+                let pixmap = Pixmap::from_parts(img.data.clone(), w, h, meta);
+                Some((handle, Arc::new(pixmap)))
+            })
+            .collect();
         Self {
             mode,
-            assets: Assets::new(),
+            assets,
+            images,
             resources: Resources::new(),
         }
     }
@@ -80,6 +96,7 @@ impl Renderer for VelloCpuRenderer {
         let mut sink = VelloSink {
             ctx: RenderContext::new_with(w, h, settings),
             path: BezPath::new(),
+            images: &self.images,
         };
         replay(list, target.scale(), &self.assets, &mut sink)?;
         let pixels = target.pixels_mut().ok_or(RenderError::InvalidTarget)?;
@@ -95,9 +112,10 @@ impl Renderer for VelloCpuRenderer {
     }
 }
 
-struct VelloSink {
+struct VelloSink<'a> {
     ctx: RenderContext,
     path: BezPath,
+    images: &'a [(ImageHandle, Arc<Pixmap>)],
 }
 
 fn affine(t: &AffineTransform) -> Affine {
@@ -180,7 +198,7 @@ fn mix(blend: BlendMode) -> Mix {
     }
 }
 
-impl VelloSink {
+impl VelloSink<'_> {
     /// Loads `path` into the scratch path and sets its fill rule on the context.
     fn load(&mut self, path: PathView<'_>) {
         self.path.truncate(0);
@@ -197,7 +215,7 @@ impl VelloSink {
     }
 }
 
-impl Sink for VelloSink {
+impl Sink for VelloSink<'_> {
     fn fill(&mut self, shape: Shape<'_>, brush: BrushRef<'_>, xf: &AffineTransform) {
         if paints_nothing(brush) {
             return;
@@ -252,24 +270,22 @@ impl Sink for VelloSink {
 
     fn image(
         &mut self,
-        image: &RgbaImage,
+        handle: ImageHandle,
         image_xf: &AffineTransform,
         area: Rect<f32>,
         quality: ResamplingQuality,
         xf: &AffineTransform,
     ) {
-        let (Ok(w), Ok(h)) = (u16::try_from(image.width), u16::try_from(image.height)) else {
+        let Some((_, pixmap)) = self.images.iter().find(|(h, _)| *h == handle) else {
             return;
         };
-        let meta = PixelMetadata::new(peniko::ImageAlphaType::AlphaPremultiplied, true);
-        let pixmap = Pixmap::from_parts(image.data.clone(), w, h, meta);
         let quality = match quality {
             ResamplingQuality::Low => ImageQuality::Low,
             ResamplingQuality::High => ImageQuality::High,
             _ => ImageQuality::Medium,
         };
         let brush = Image {
-            image: ImageSource::Pixmap(Arc::new(pixmap)),
+            image: ImageSource::Pixmap(Arc::clone(pixmap)),
             sampler: ImageSampler::new().with_quality(quality),
         };
         self.ctx.set_transform(affine(xf));

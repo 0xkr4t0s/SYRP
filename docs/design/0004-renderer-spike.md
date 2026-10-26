@@ -8,11 +8,12 @@
   `vello_cpu` (as the plan assumes) or `tiny-skia`, can its output be byte-stable enough for
   goldens, and what should the golden comparator look like?
 
-**Short answer: keep `vello_cpu`, in a pinned deterministic mode, with tolerance-based goldens.**
-It was 1.7–2.0x faster over the scene set, has native layers, clips and blend modes, and was
-byte-identical across 10 runs of every scene. Byte identity does *not* survive a change of SIMD
-level, so goldens must be compared with a small tolerance, never by hash, once more than one
+**Short answer: keep `vello_cpu`, in a pinned deterministic mode, with tolerance-based goldens.** It
+was 1.7x faster over the scene set at 1x and 1.9x at 2x, has native layers, clips and blend modes,
+and was byte-identical across 10 runs of every scene. Byte identity does *not* survive a change of
+SIMD level, so goldens must be compared with a small tolerance, never by hash, once more than one
 machine produces them. Keep `tiny-skia` as an independent cross-check in tests, not as a backend.
+
 
 ## What was built
 - **20 scenes** (`scenes()`), each a `syrp_gfx_api::DisplayList` on a 120 x 90 logical canvas,
@@ -26,7 +27,8 @@ machine produces them. Keep `tiny-skia` as an independent cross-check in tests, 
   get the same geometry: glyphs become outlines, images become a placed rectangle plus an
   image-to-user transform, and the device scale is the root transform.
 - **Backends.** `VelloCpuRenderer` maps ops 1:1 onto `vello_cpu` 0.3.0 (`push_clip_path`,
-  `push_layer` with opacity and `Mix`, paint transforms for images). `TinySkiaRenderer` maps onto
+  `push_layer` with opacity and `Mix`, paint transforms for images, `TargetInit::SrcOver` so a
+  render draws over the target's contents). `TinySkiaRenderer` maps onto
   `tiny-skia` 0.12.0, which has no layer or clip stack: layers are offscreen pixmaps composited
   on pop, clips are full-size coverage masks intersected on push.
 - **Golden comparator** (`compare`, B4): a pixel differs when any premultiplied channel is more
@@ -39,35 +41,36 @@ machine produces them. Keep `tiny-skia` as an independent cross-check in tests, 
 ## Results
 Machine: x86_64, Intel Xeon @ 2.10 GHz (AVX2 and AVX-512 present), 4 vCPUs, shared VM; release
 build; single thread; median of 51 renders, including target allocation. Absolute numbers are
-noisy on this VM (two runs differed by up to 2x on a few small scenes); ratios were stable.
+noisy on this VM (two runs differed by up to 1.9x on a few small scenes); the totals agreed within
+2% and the ratios were stable.
 
 | scene | vello 1x | skia 1x | vello 2x | skia 2x | differing @1x (tol 8 / 32) |
 |---|---:|---:|---:|---:|---:|
-| rects_solid | 17 µs | 51 µs | 43 µs | 112 µs | 1.28% / 0.00% |
-| path_star_nonzero | 24 µs | 42 µs | 55 µs | 85 µs | 0.99% / 0.04% |
-| path_star_evenodd | 30 µs | 49 µs | 67 µs | 102 µs | 1.26% / 0.06% |
-| path_cubic_blob | 28 µs | 44 µs | 55 µs | 89 µs | 2.45% / 0.94% |
-| stroke_joins_caps | 55 µs | 132 µs | 115 µs | 262 µs | 1.35% / 0.06% |
-| stroke_dashes | 119 µs | 110 µs | 173 µs | 323 µs | 4.84% / 1.68% |
-| stroke_hairlines | 82 µs | 89 µs | 160 µs | 338 µs | 10.35% / 0.00% |
-| gradient_linear | 62 µs | 234 µs | 184 µs | 786 µs | 39.17% / 30.00% |
-| gradient_radial | 67 µs | 237 µs | 210 µs | 800 µs | 0.00% / 0.00% |
-| gradient_conical | 49 µs | 85 µs | 124 µs | 243 µs | 1.86% / 0.52% |
-| gradient_hard_stop_path | 77 µs | 163 µs | 137 µs | 414 µs | 0.98% / 0.00% |
-| glyphs_solid | 80 µs | 170 µs | 120 µs | 320 µs | 2.88% / 0.45% |
-| glyphs_gradient_rotated | 100 µs | 272 µs | 224 µs | 716 µs | 0.60% / 0.02% |
-| image_stretched | 191 µs | 178 µs | 732 µs | 775 µs | 0.00% / 0.00% |
-| image_nearest_rotated | 51 µs | 88 µs | 150 µs | 238 µs | 0.45% / 0.00% |
-| image_alpha_centred | 518 µs | 441 µs | 1983 µs | 1766 µs | 0.00% / 0.00% |
-| clip_rects_nested | 68 µs | 293 µs | 174 µs | 894 µs | 0.00% / 0.00% |
-| clip_path_mixed | 79 µs | 231 µs | 222 µs | 852 µs | 1.16% / 0.00% |
-| layer_opacity | 60 µs | 183 µs | 163 µs | 629 µs | 1.47% / 0.00% |
-| layer_blend | 104 µs | 400 µs | 344 µs | 1017 µs | 1.52% / 0.00% |
-| **total** | **1859 µs** | **3493 µs** | **5437 µs** | **10761 µs** | |
+| rects_solid | 13 µs | 28 µs | 35 µs | 63 µs | 1.28% / 0.00% |
+| path_star_nonzero | 17 µs | 23 µs | 45 µs | 49 µs | 0.99% / 0.04% |
+| path_star_evenodd | 21 µs | 28 µs | 51 µs | 60 µs | 1.26% / 0.06% |
+| path_cubic_blob | 20 µs | 25 µs | 44 µs | 55 µs | 2.45% / 0.94% |
+| stroke_joins_caps | 58 µs | 135 µs | 126 µs | 264 µs | 1.35% / 0.06% |
+| stroke_dashes | 126 µs | 106 µs | 187 µs | 313 µs | 4.84% / 1.68% |
+| stroke_hairlines | 83 µs | 55 µs | 120 µs | 194 µs | 10.35% / 0.00% |
+| gradient_linear | 40 µs | 133 µs | 131 µs | 497 µs | 39.17% / 30.00% |
+| gradient_radial | 45 µs | 141 µs | 148 µs | 515 µs | 0.00% / 0.00% |
+| gradient_conical | 33 µs | 54 µs | 88 µs | 165 µs | 1.86% / 0.52% |
+| gradient_hard_stop_path | 53 µs | 95 µs | 95 µs | 230 µs | 0.98% / 0.00% |
+| glyphs_solid | 58 µs | 90 µs | 93 µs | 177 µs | 2.88% / 0.45% |
+| glyphs_gradient_rotated | 66 µs | 164 µs | 156 µs | 470 µs | 0.60% / 0.02% |
+| image_stretched | 138 µs | 143 µs | 506 µs | 604 µs | 0.00% / 0.00% |
+| image_nearest_rotated | 37 µs | 51 µs | 120 µs | 160 µs | 0.45% / 0.00% |
+| image_alpha_centred | 391 µs | 335 µs | 1492 µs | 1352 µs | 0.00% / 0.00% |
+| clip_rects_nested | 44 µs | 178 µs | 115 µs | 578 µs | 0.00% / 0.00% |
+| clip_path_mixed | 77 µs | 226 µs | 223 µs | 873 µs | 1.16% / 0.00% |
+| layer_opacity | 61 µs | 180 µs | 174 µs | 627 µs | 1.47% / 0.00% |
+| layer_blend | 114 µs | 284 µs | 370 µs | 1097 µs | 1.52% / 0.00% |
+| **total** | **1495 µs** | **2474 µs** | **4319 µs** | **8343 µs** | |
 
-The image scenes copy the source pixels on every draw in both adapters (the spike has no image
-cache), which is why they are the slowest and roughly level; a real renderer registers images
-once.
+Each renderer converts the built-in images once and shares them across draws, so these numbers
+contain no per-draw image copies. The image scenes are still the slowest because they resample
+most of the canvas (bicubic for the upscaled sprite), where the two crates are level.
 
 **Determinism (B2).**
 - 10 runs, fresh renderer each time, every scene at every scale: **byte-identical on both
@@ -100,11 +103,11 @@ flattening and dash phase arithmetic). The exception is a **semantic** one:
   anti-aliased mask. Worth a parity scenario too.
 
 ## Recommendation
-1. **Reference renderer: `vello_cpu`** (as master plan §5.7 assumes). Faster on 17 of 20 scenes
-   at 1x (1.7–2.0x over the whole set across two runs), native clip and layer stacks, the same
-   code family as `vello_gpu`, and all 16 blend modes. `tiny-skia` needs offscreen layers and
-   full-size clip masks emulated on top, uses `f32` transforms, and releases rarely (0.11.4 in
-   2024, 0.12.0 in February 2026).
+1. **Reference renderer: `vello_cpu`** (as master plan §5.7 assumes). Faster on 16–17 of 20 scenes
+   at 1x and 19 of 20 at 2x (1.7x and 1.9x over the whole set, across two runs), native clip and
+   layer stacks, the same code family as `vello_gpu`, and all 16 blend modes. `tiny-skia` needs
+   offscreen layers and full-size clip masks emulated on top, uses `f32` transforms, and releases
+   rarely (0.11.4 in 2024, 0.12.0 in February 2026).
 2. **Deterministic mode** for goldens = single thread, u8 pipeline, SIMD level pinned to the
    architecture baseline (`Level::baseline()`), exact crate version pinned. Use it in CI.
 3. **Goldens are per architecture and compared with tolerance**, not by hash: start with

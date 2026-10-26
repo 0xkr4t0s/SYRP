@@ -4,12 +4,12 @@
 
 use syrp_geom::{AffineTransform, Rect};
 use syrp_gfx_api::{
-    BlendMode, BrushKind, BrushRef, Cap, DisplayList, FillRule, Join, PathEl, PathView,
-    RenderError, RenderTarget, Renderer, ResamplingQuality, StrokeRef,
+    BlendMode, BrushKind, BrushRef, Cap, DisplayList, FillRule, ImageHandle, Join, PathEl,
+    PathView, RenderError, RenderTarget, Renderer, ResamplingQuality, StrokeRef,
 };
 use tiny_skia as ts;
 
-use crate::assets::{Assets, RgbaImage};
+use crate::assets::Assets;
 use crate::replay::{Shape, Sink, paints_nothing, replay};
 
 /// Renders a [`DisplayList`] with `tiny-skia` (anti-aliased scanline rasteriser).
@@ -25,6 +25,8 @@ use crate::replay::{Shape, Sink, paints_nothing, replay};
 #[derive(Debug)]
 pub struct TinySkiaRenderer {
     assets: Assets,
+    /// The built-in images, converted once so draws borrow them instead of copying.
+    images: Vec<(ImageHandle, ts::Pixmap)>,
 }
 
 impl TinySkiaRenderer {
@@ -34,9 +36,15 @@ impl TinySkiaRenderer {
     /// ```
     #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
-        Self {
-            assets: Assets::new(),
-        }
+        let assets = Assets::new();
+        let images = assets
+            .images()
+            .filter_map(|(handle, img)| {
+                let size = ts::IntSize::from_wh(img.width, img.height)?;
+                Some((handle, ts::Pixmap::from_vec(img.data.clone(), size)?))
+            })
+            .collect();
+        Self { assets, images }
     }
 }
 
@@ -48,6 +56,7 @@ impl Renderer for TinySkiaRenderer {
             base: ts::PixmapMut::from_bytes(pixels, w, h).ok_or(RenderError::InvalidTarget)?,
             layers: Vec::new(),
             clips: Vec::new(),
+            images: &self.images,
         };
         replay(list, scale, &self.assets, &mut sink)
     }
@@ -57,6 +66,7 @@ struct SkiaSink<'a> {
     base: ts::PixmapMut<'a>,
     layers: Vec<(ts::Pixmap, f32, BlendMode)>,
     clips: Vec<ts::Mask>,
+    images: &'a [(ImageHandle, ts::Pixmap)],
 }
 
 fn transform(t: &AffineTransform) -> ts::Transform {
@@ -228,14 +238,14 @@ impl Sink for SkiaSink<'_> {
 
     fn image(
         &mut self,
-        image: &RgbaImage,
+        handle: ImageHandle,
         image_xf: &AffineTransform,
         area: Rect<f32>,
         quality: ResamplingQuality,
         xf: &AffineTransform,
     ) {
-        let size = ts::IntSize::from_wh(image.width, image.height);
-        let Some(pixmap) = size.and_then(|s| ts::Pixmap::from_vec(image.data.clone(), s)) else {
+        let images = self.images;
+        let Some((_, pixmap)) = images.iter().find(|(h, _)| *h == handle) else {
             return;
         };
         let Some(rect) = ts::Rect::from_xywh(area.x(), area.y(), area.width(), area.height())
