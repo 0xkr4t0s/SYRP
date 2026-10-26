@@ -25,6 +25,11 @@ pub use manual::ManualLoop;
 ///
 /// Zero-sized, `!Send` and `!Sync`. Loops pass `&MessageThread` to every task, timer and
 /// VBlank callback; safe code cannot make one any other way.
+///
+/// Tokens are per thread, not per process: several loops (parallel tests, an app and a hosted
+/// plugin) can hand out tokens on different threads at once. Message-thread state must be
+/// `!Send`, thread-local or owned per loop; a token never justifies unsynchronised access to
+/// process-global state.
 /// ```compile_fail
 /// let mt = syrp_loop_api::MessageThread { _p: std::marker::PhantomData }; // private
 /// ```
@@ -47,8 +52,8 @@ impl MessageThread<'_> {
     ///
     /// # Safety
     /// The caller must be a [`MessageLoop`] implementation on its message thread, and the token
-    /// must not outlive the callback it was made for: other code relies on it to touch `!Send`
-    /// message-thread state without locks.
+    /// must not outlive the callback it was made for. Tokens are per thread, not per process
+    /// (other loops may hold one at once): a token never makes unsynchronised global access sound.
     /// ```
     /// // SAFETY: this doctest plays the part of a loop on its own message thread.
     /// let _mt = unsafe { syrp_loop_api::MessageThread::new_unchecked() };
@@ -94,7 +99,7 @@ impl Task {
 pub type TimerFn = Box<dyn FnMut(&MessageThread<'_>)>;
 
 /// A VBlank callback: runs on the message thread once per display refresh of its peer, with
-/// the refresh time on the loop's clock (for [`ManualLoop`], its virtual time).
+/// the refresh time on the same monotonic clock and epoch as the loop's timers.
 pub type VBlankFn = Box<dyn FnMut(&MessageThread<'_>, Duration)>;
 
 /// Identifies a native window peer (see `syrp-peer-api`).
