@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only OR BUSL-1.1
-//! Tests for work/specs/WP-2.1-05.md, increments 1–2 (B1–B4).
+//! Tests for work/specs/WP-2.1-05.md, increments 1–3 (B1–B6).
 
 use syrp_audio_basics::AudioBuffer;
 use syrp_audio_basics::voice::{
@@ -15,13 +15,14 @@ static ALLOC: syrp_rt::GuardedAllocator = syrp_rt::GuardedAllocator;
 
 /// B1's test voice: a naive saw (-1 to 1, 220 Hz plus one hertz per note above 60) times a
 /// linear gate that ramps to the velocity in 8 samples on start and to zero on a tail-off.
-/// Logs every call except `render`, unless `quiet` (logging allocates).
+/// Logs every call except `render`, which it counts, unless `quiet` (logging allocates).
 struct SawVoice<S> {
     phase: S,
     increment: S,
     gate: S,
     target: S,
     step: S,
+    renders: usize,
     quiet: bool,
     log: Vec<String>,
 }
@@ -44,6 +45,7 @@ impl<S: VoiceSample> SawVoice<S> {
             gate: z,
             target: z,
             step: z,
+            renders: 0,
             quiet: false,
             log,
         }
@@ -84,6 +86,7 @@ impl<S: VoiceSample> Voice<S> for SawVoice<S> {
         self.say(|| format!("cc {lane} {number} {value}"));
     }
     fn render(&mut self, out: &mut [&mut [S]], frames: usize) {
+        self.renders += 1;
         for i in 0..frames {
             let up = self.gate.simd_lt(self.target);
             let rising = (self.gate + self.step).min(self.target);
@@ -559,4 +562,95 @@ fn b4_sostenuto_holds_only_keys_down_when_pressed() {
     );
     step(&mut p, &[]);
     assert_eq!(notes(&p)[..2], [Some((1, 60)), None]);
+}
+
+/// A full scalar pool holding `held` (started in order), with every gate fully open.
+fn full(held: &[u8]) -> Pool<f32> {
+    let mut p = pool::<f32>(held.len(), 64, 1);
+    let ons: Vec<_> = held
+        .iter()
+        .map(|&n| VoiceEvent::note_on(0, 1, n, 1.0))
+        .collect();
+    run(&mut p, 1, 16, 0.0, &ons);
+    p
+}
+
+fn stolen(p: &mut Pool<f32>, voice: usize) -> &[String] {
+    let log = log(p, voice);
+    &log[log.len() - 2..]
+}
+
+#[test]
+fn b5_steals_the_oldest_released_lane_first() {
+    let mut p = full(&[60, 61, 62, 63]);
+    let offs = [61, 60].map(|n| VoiceEvent::note_off(0, 1, n, 0.0));
+    run(&mut p, 1, 1, 0.0, &offs);
+    assert_eq!(
+        p.active_voices(),
+        4,
+        "both released lanes are in their tails"
+    );
+    run(&mut p, 1, 1, 0.0, &[VoiceEvent::note_on(0, 1, 70, 1.0)]);
+    assert_eq!(stolen(&mut p, 0), ["stop 0 false", "start 0 1 70 1 8192 0"]);
+    assert_eq!(
+        notes(&p),
+        [Some((1, 70)), Some((1, 61)), Some((1, 62)), Some((1, 63))]
+    );
+}
+
+#[test]
+fn b5_then_the_oldest_held_lane_that_is_not_lowest_or_highest() {
+    let mut p = full(&[60, 67, 64, 62]);
+    run(&mut p, 1, 1, 0.0, &[VoiceEvent::note_on(0, 1, 70, 1.0)]);
+    assert_eq!(stolen(&mut p, 2), ["stop 0 false", "start 0 1 70 1 8192 0"]);
+    assert_eq!(notes(&p)[2], Some((1, 70)));
+}
+
+#[test]
+fn b5_then_the_oldest_held_lane() {
+    let mut p = full(&[62, 60]);
+    run(&mut p, 1, 1, 0.0, &[VoiceEvent::note_on(0, 1, 70, 1.0)]);
+    assert_eq!(notes(&p), [Some((1, 70)), Some((1, 60))]);
+    run(&mut p, 1, 1, 0.0, &[VoiceEvent::note_on(0, 1, 72, 1.0)]);
+    assert_eq!(notes(&p), [Some((1, 70)), Some((1, 72))]);
+}
+
+#[test]
+fn b5_without_stealing_the_new_note_is_dropped() {
+    let mut p = full(&[60, 62, 64]);
+    p.set_note_stealing(false);
+    run(&mut p, 1, 1, 0.0, &[VoiceEvent::note_on(0, 1, 70, 1.0)]);
+    assert_eq!(notes(&p), [Some((1, 60)), Some((1, 62)), Some((1, 64))]);
+    assert!((0..3).all(|v| !log(&mut p, v).iter().any(|l| l.contains(" 70 "))));
+}
+
+#[test]
+fn b6_silent_packs_sleep_and_finished_lanes_free() {
+    let mut p = pool::<F32x8>(64, 128, 2);
+    let renders = |p: &mut Pool<F32x8>| -> Vec<usize> {
+        (0..8)
+            .map(|k| p.pack_mut(VoiceHandle::new(k, 0)).unwrap().renders)
+            .collect()
+    };
+    let ons = [
+        VoiceEvent::note_on(0, 1, 60, 1.0),
+        VoiceEvent::note_on(0, 1, 64, 1.0),
+    ];
+    run(&mut p, 2, 128, 0.0, &ons);
+    assert_eq!(renders(&mut p), [1, 0, 0, 0, 0, 0, 0, 0]);
+    assert_eq!(p.active_voices(), 2);
+    run(&mut p, 2, 128, 0.0, &[VoiceEvent::note_off(0, 1, 60, 0.0)]);
+    assert_eq!(
+        (p.active_voices(), notes(&p)[..2].to_vec()),
+        (1, vec![None, Some((1, 64))])
+    );
+    run(&mut p, 2, 128, 0.0, &[VoiceEvent::note_off(0, 1, 64, 0.0)]);
+    let out = run(&mut p, 2, 128, 0.0, &[]);
+    assert_eq!(p.active_voices(), 0);
+    assert_eq!(
+        renders(&mut p),
+        [3, 0, 0, 0, 0, 0, 0, 0],
+        "the idle pack is skipped"
+    );
+    assert!(out.channel(0).iter().all(|&x| x == 0.0));
 }
