@@ -1248,6 +1248,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "syrp-maths"
+version = "0.0.1"
+dependencies = [
+ "syrp-error",
+]
+
+[[package]]
 name = "syrp-mcp"
 version = "0.0.1"
 dependencies = [

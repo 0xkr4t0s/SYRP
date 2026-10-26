@@ -1,0 +1,20 @@
+[package]
+name = "syrp-maths"
+description = "Numeric types for Syrp: Range and NormalisableRange (numeric helpers, Random and statistics to follow)."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "AGPL-3.0-only OR BUSL-1.1"
+repository.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[package.metadata.syrp]
+layer = "L2"
+wp = "WP-1.1-11"
+
+[dependencies]
+syrp-error = { version = "0.0.1", path = "../../foundation/error" }
+
+[lints]
+workspace = true
