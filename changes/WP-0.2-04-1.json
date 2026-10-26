@@ -1,0 +1,1 @@
+{"wp": "WP-0.2-04", "kind": "added", "summary": "syrp-format-api (first increment): AudioSpec, SampleKind and WriterOptions; the metadata model (Metadata, MetadataItem with Bext, CuePoint, SampleLoop, Tag and an Other escape); FormatError and a new errors/format.toml domain (SYRP-FORMAT-0001..0005). The AudioFormat, AudioReader and AudioWriter traits follow."}
