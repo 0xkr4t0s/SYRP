@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
-//! Events a peer delivers to its [`EventSink`]: keyboard, focus, IME and window changes.
-//! Areas are logical units relative to the peer's top-left.
+//! Events a peer delivers to its [`EventSink`]: pointer, wheel, magnify, keyboard, focus,
+//! IME, drag-and-drop and window changes. Positions and areas are logical units relative to
+//! the peer's top-left.
 
 use std::ops::Range;
 
 use keyboard_types::KeyboardEvent;
-use syrp_geom::Rect;
+use syrp_geom::{Point, Rect};
 use syrp_loop_api::MessageThread;
 
-use crate::WindowState;
+use crate::{DragEvent, PointerEvent, WheelEvent, WindowState};
 
 /// Receives a peer's events on the message thread, in the order the platform produced them.
 /// ```
@@ -26,6 +27,14 @@ pub type EventSink = Box<dyn FnMut(&MessageThread<'_>, &Event)>;
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
 pub enum Event {
+    /// A mouse, touch or pen event.
+    Pointer(PointerEvent),
+    /// A scroll-wheel or trackpad scroll.
+    Wheel(WheelEvent),
+    /// A pinch gesture at a position: the factor is the change since the last one (1.0 = none).
+    Magnify(Point<f64>, f64),
+    /// An external drag of files or text over the peer.
+    Drag(DragEvent),
     /// A key press or release (`keyboard-types` vocabulary).
     Key(KeyboardEvent),
     /// Input-method composition.
