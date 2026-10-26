@@ -1,6 +1,6 @@
 [package]
 name = "syrp-gfx-api"
-description = "The Syrp drawing contract: DisplayList, paths, strokes, brushes and image and font handles (Renderer to follow)."
+description = "The Syrp drawing contract: DisplayList, paths, strokes, brushes, image and font handles, RenderTarget and the Renderer trait."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -13,8 +13,18 @@ publish.workspace = true
 layer = "L1"
 wp = "WP-0.2-07"
 
+[features]
+# `serde::Serialize` for `DisplayList`: op-by-op JSON for inspection and golden debugging.
+serde = ["dep:serde"]
+
 [dependencies]
+syrp-error = { version = "0.0.1", path = "../../foundation/error" }
 syrp-geom = { version = "0.0.1", path = "../../foundation/geom" }
+serde = { workspace = true, optional = true }
+
+[dev-dependencies]
+syrp-gfx-api = { version = "0.0.1", path = ".", features = ["serde"] }
+serde_json.workspace = true
 
 [lints]
 workspace = true

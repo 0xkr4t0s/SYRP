@@ -1,0 +1,29 @@
+# Error catalogue: drawing and rendering (syrp-gfx-api and the renderers). Never renumber.
+
+[[error]]
+code = "SYRP-GFX-0001"
+title = "Invalid render target"
+severity = "error"
+cause = "A RenderTarget was given a scale that is not finite and positive, a logical size that is negative or not finite, a side above u32::MAX pixels, or a pixel buffer too large to address."
+fix = "Pass a positive, finite scale factor and a non-negative size. For a very large target, render in tiles."
+
+[[error]]
+code = "SYRP-GFX-0002"
+title = "Unknown image handle"
+severity = "error"
+cause = "The display list refers to an ImageHandle that the renderer cannot resolve: the image was never registered with it, or has been released."
+fix = "Register the image with the renderer's image store before rendering, and keep it alive while any list refers to it."
+
+[[error]]
+code = "SYRP-GFX-0003"
+title = "Unknown font handle"
+severity = "error"
+cause = "The display list refers to a FontHandle that the renderer cannot resolve."
+fix = "Load the font through the renderer's font store before rendering lists that use it."
+
+[[error]]
+code = "SYRP-GFX-0004"
+title = "Render backend failure"
+severity = "error"
+cause = "The renderer's backend failed, for example a lost GPU device or a failed surface acquisition. The message names the backend's own error."
+fix = "Retry the frame; on a lost device, recreate the renderer. If it persists, fall back to the CPU renderer and report the message."

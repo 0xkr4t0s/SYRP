@@ -7,6 +7,11 @@ use syrp_geom::{Point, Rect};
 /// ```
 /// assert_eq!(syrp_gfx_api::PathVerb::CubicTo.point_count(), 3);
 /// ```
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize),
+    serde(rename_all = "snake_case")
+)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum PathVerb {
     /// Starts a subpath at one point.
@@ -41,6 +46,11 @@ impl PathVerb {
 /// assert_eq!(syrp_gfx_api::FillRule::default(), syrp_gfx_api::FillRule::NonZero);
 /// ```
 #[doc(alias = "setUsingNonZeroWinding")]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize),
+    serde(rename_all = "snake_case")
+)]
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub enum FillRule {
     /// Inside where the winding number is not zero (the default).
@@ -315,6 +325,11 @@ impl<'a> PathView<'a> {
 /// assert_eq!(syrp_gfx_api::Join::default(), syrp_gfx_api::Join::Miter);
 /// ```
 #[doc(alias = "JointStyle")]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize),
+    serde(rename_all = "snake_case")
+)]
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub enum Join {
     /// Sharp corners, bevelled beyond the miter limit (the default).
@@ -331,6 +346,11 @@ pub enum Join {
 /// assert_eq!(syrp_gfx_api::Cap::default(), syrp_gfx_api::Cap::Butt);
 /// ```
 #[doc(alias = "EndCapStyle")]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize),
+    serde(rename_all = "snake_case")
+)]
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub enum Cap {
     /// Ends flat at the end point (the default).

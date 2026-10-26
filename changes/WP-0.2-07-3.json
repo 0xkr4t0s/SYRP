@@ -1,0 +1,1 @@
+{"wp": "WP-0.2-07", "kind": "added", "summary": "syrp-gfx-api (increment 3, final): Renderer trait, RenderTarget with an explicit scale factor and logical-to-physical rounding, RenderError (new errors/gfx.toml domain, SYRP-GFX-0001..0004), DisplayList::content_hash (fixed, seedless 64-bit FNV-1a over the canonical op encoding) and the serde feature (op-by-op JSON)."}

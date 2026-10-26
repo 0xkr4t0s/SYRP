@@ -50,6 +50,11 @@ impl Glyph {
 /// ```
 /// assert_eq!(syrp_gfx_api::BlendMode::default(), syrp_gfx_api::BlendMode::Normal);
 /// ```
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize),
+    serde(rename_all = "snake_case")
+)]
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum BlendMode {
@@ -92,6 +97,11 @@ pub enum BlendMode {
 /// ```
 /// assert_eq!(syrp_gfx_api::ResamplingQuality::default(), syrp_gfx_api::ResamplingQuality::Medium);
 /// ```
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize),
+    serde(rename_all = "snake_case")
+)]
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub enum ResamplingQuality {
     /// Nearest neighbour.

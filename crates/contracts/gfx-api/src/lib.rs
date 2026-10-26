@@ -7,8 +7,11 @@
 //! - [`Path`] (a verb array plus a point array) with [`PathView`], and [`Stroke`] parameters;
 //! - [`Brush`]: a solid [`Colour`] or a linear, radial or two-point-conical gradient;
 //! - opaque [`ImageHandle`] and [`FontHandle`] ids that renderers resolve.
+//! - [`Renderer`] draws a list into a [`RenderTarget`] (physical pixels plus an explicit scale
+//!   factor), failing with a [`RenderError`];
+//! - [`DisplayList::content_hash`], a fixed seedless 64-bit hash of the ops, and (feature
+//!   `serde`) op-by-op JSON, both from the same [`Op`] views.
 //!
-//! `Renderer`, `RenderTarget`, the content hash and JSON follow in the next increment.
 //! Following ADR 0003 D3, every type keeps its fields private: owned types expose
 //! constructors and accessors, and borrowed views ([`PathView`], [`StrokeRef`], [`BrushRef`])
 //! are what a display list hands back, so storage can change without a contract change.
@@ -28,12 +31,15 @@
 //! ```
 
 mod brush;
+mod encode;
 mod list;
 mod path;
+mod render;
 
 pub use brush::{Brush, BrushKind, BrushRef, Colour, GradientStop};
 pub use list::{BlendMode, DisplayList, Glyph, Op, ResamplingQuality};
 pub use path::{Cap, FillRule, Join, Path, PathEl, PathVerb, PathView, Stroke, StrokeRef};
+pub use render::{RenderError, RenderTarget, Renderer};
 
 /// An opaque image id. Its owner (an image cache) assigns the raw value; renderers resolve it.
 /// ```
