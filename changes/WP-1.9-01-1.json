@@ -1,0 +1,1 @@
+{"wp": "WP-1.9-01", "kind": "added", "summary": "syrp-compat-state, increment 1: JUCE-shaped ValueTree handle over the syrp-state store (shallow clone, identity equality, deep_clone, is_equivalent_to, properties, children, navigation, optional UndoManager on every mutation) and handle() returning the native NodeKey."}

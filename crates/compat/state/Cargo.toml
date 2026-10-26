@@ -1,0 +1,22 @@
+[package]
+name = "syrp-compat-state"
+description = "JUCE-shaped ValueTree, Value and CachedValue over the syrp-state store, for porting JUCE code (ADR 0003 D1)."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "AGPL-3.0-only OR BUSL-1.1"
+repository.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[package.metadata.syrp]
+layer = "L5"
+wp = "WP-1.9-01"
+
+[dependencies]
+syrp-loop-api = { version = "0.0.1", path = "../../contracts/loop-api" }
+syrp-state = { version = "0.0.1", path = "../../core/state" }
+syrp-var = { version = "0.0.1", path = "../../core/var" }
+
+[lints]
+workspace = true
