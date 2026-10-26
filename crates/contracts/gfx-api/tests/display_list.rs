@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
-//! B1 tests (work/specs/WP-0.2-07.md): recording and reading back a `DisplayList`.
+//! B1 and B6 tests (work/specs/WP-0.2-07.md): recording, reading back, hashing and JSON.
 
 use std::alloc::{GlobalAlloc, Layout, System};
 use std::cell::Cell;
@@ -288,5 +288,195 @@ fn b1_clear_keeps_capacity_so_rerecording_allocates_nothing() {
     assert!(
         allocations_during(|| record_all(&mut DisplayList::new(), &path, &brush, &stroke, &run))
             > 0
+    );
+}
+
+/// Every op kind, with fixed values (the golden for the hash).
+fn sample() -> DisplayList {
+    let stroke = Stroke::new(2.0).with_dashes([4.0, 2.0], 1.0);
+    let run = [Glyph::new(36, Point::new(1.0, 20.0))];
+    let mut list = DisplayList::new();
+    record_all(&mut list, &triangle(), &gradient(), &stroke, &run);
+    list
+}
+
+#[test]
+fn b6_same_ops_hash_the_same_whatever_the_recording_history() {
+    let fresh = sample();
+    // A list that grew bigger, was cleared (leaving spare capacity and stale arena bytes),
+    // and then recorded the same ops.
+    let mut reused = DisplayList::new();
+    let mut big = triangle();
+    big.cubic_to(1.0, 2.0, 3.0, 4.0, 5.0, 6.0);
+    for _ in 0..50 {
+        reused.fill_path(&big, &gradient());
+        reused.draw_glyphs(
+            FontHandle::from_raw(9),
+            3.0,
+            &[Glyph::new(1, Point::origin()); 9],
+            Colour::WHITE,
+        );
+    }
+    reused.clear();
+    let s = sample();
+    for op in s.ops() {
+        // Re-record op by op through the public views, in another arena order.
+        match op {
+            Op::Pop => assert!(reused.pop()),
+            _ => record_op(&mut reused, op),
+        }
+    }
+    assert_eq!(reused.content_hash(), fresh.content_hash());
+    assert_eq!(
+        serde_json::to_value(&reused).unwrap(),
+        serde_json::to_value(&fresh).unwrap()
+    );
+    assert_eq!(fresh.clone().content_hash(), fresh.content_hash());
+}
+
+fn record_op(list: &mut DisplayList, op: Op<'_>) {
+    match op {
+        Op::FillRect { rect, brush, .. } => list.fill_rect(rect, brush),
+        Op::FillPath { path, brush, .. } => list.fill_path(path, brush),
+        Op::StrokePath {
+            path,
+            stroke,
+            brush,
+            ..
+        } => list.stroke_path(path, stroke, brush),
+        Op::DrawImage {
+            image,
+            dest,
+            placement,
+            quality,
+            ..
+        } => list.draw_image(image, dest, placement, quality),
+        Op::DrawGlyphs {
+            font,
+            size,
+            glyphs,
+            brush,
+            ..
+        } => list.draw_glyphs(font, size, glyphs, brush),
+        Op::PushClipRect { rect, .. } => list.push_clip_rect(rect),
+        Op::PushClipPath { path, .. } => list.push_clip_path(path),
+        Op::PushClipMask {
+            image, transform, ..
+        } => list.push_clip_mask(image, transform),
+        Op::PushTransform { transform, .. } => list.push_transform(transform),
+        Op::PushLayer { opacity, blend, .. } => list.push_layer(opacity, blend),
+        other => panic!("{other:?}"),
+    }
+}
+
+#[test]
+fn b6_any_change_in_content_or_order_changes_the_hash() {
+    let one = |f: &dyn Fn(&mut DisplayList)| {
+        let mut l = DisplayList::new();
+        f(&mut l);
+        l.content_hash()
+    };
+    let r = Rect::new(0, 0, 4, 4);
+    let base = one(&|l| l.fill_rect(r, Colour::BLACK));
+    let mut tri = triangle();
+    let variants = [
+        one(&|l| l.fill_rect(r, Colour::WHITE)),
+        one(&|l| l.fill_rect(Rect::new(0, 0, 4, 5), Colour::BLACK)),
+        one(&|l| l.fill_rect(r, &Brush::radial(Point::origin(), 1.0, []))),
+        one(&|l| {
+            l.fill_rect(r, Colour::BLACK);
+            l.fill_rect(r, Colour::BLACK);
+        }),
+        one(&|l| l.fill_path(&triangle(), Colour::BLACK)),
+        one(&|l| l.push_clip_rect(r)),
+        one(&|_| ()),
+    ];
+    for (i, v) in variants.iter().enumerate() {
+        assert_ne!(*v, base, "variant {i}");
+    }
+    // Order of ops and the path's fill rule both count.
+    let ab = one(&|l| {
+        l.push_layer(1.0, BlendMode::Normal);
+        l.fill_rect(r, Colour::BLACK);
+    });
+    let ba = one(&|l| {
+        l.fill_rect(r, Colour::BLACK);
+        l.push_layer(1.0, BlendMode::Normal);
+    });
+    assert_ne!(ab, ba);
+    let nonzero = one(&|l| l.fill_path(&tri, Colour::BLACK));
+    tri.set_fill_rule(FillRule::EvenOdd);
+    assert_ne!(one(&|l| l.fill_path(&tri, Colour::BLACK)), nonzero);
+}
+
+#[test]
+fn b6_floats_hash_by_bit_pattern() {
+    let hash = |x: f32| {
+        let mut l = DisplayList::new();
+        l.fill_rect(Rect::new(x, 0.0, 1.0, 1.0), Colour::BLACK);
+        l.content_hash()
+    };
+    assert_ne!(hash(0.0), hash(-0.0));
+    let (nan_a, nan_b) = (f32::from_bits(0x7fc0_0000), f32::from_bits(0x7fc0_0001));
+    assert_eq!(hash(nan_a), hash(f32::from_bits(nan_a.to_bits())));
+    assert_ne!(hash(nan_a), hash(nan_b));
+    // Integer and float rects that convert to the same f32 values hash the same.
+    let mut a = DisplayList::new();
+    a.fill_rect(Rect::new(1, 2, 3, 4), Colour::BLACK);
+    let mut b = DisplayList::new();
+    b.fill_rect(Rect::new(1.0_f64, 2.0, 3.0, 4.0), Colour::BLACK);
+    assert_eq!(a.content_hash(), b.content_hash());
+}
+
+#[test]
+fn b6_hash_is_fixed_and_seedless() {
+    // 64-bit FNV-1a: the empty list hashes to the offset basis; the golden below must never
+    // change across runs, builds or platforms (a change is a contract change).
+    assert_eq!(DisplayList::new().content_hash(), 0xcbf2_9ce4_8422_2325);
+    assert_eq!(sample().content_hash(), GOLDEN);
+}
+
+const GOLDEN: u64 = 0x9edd_b817_af66_fcef;
+
+#[test]
+fn b6_serde_json_lists_ops_in_order() {
+    let json = serde_json::to_value(sample()).unwrap();
+    let ops = json.as_array().unwrap();
+    assert_eq!(ops.len(), sample().len());
+    let kinds: Vec<&str> = ops.iter().map(|o| o["op"].as_str().unwrap()).collect();
+    assert_eq!(
+        kinds[..6],
+        [
+            "push_transform",
+            "push_clip_rect",
+            "push_clip_path",
+            "push_clip_mask",
+            "push_layer",
+            "fill_rect"
+        ]
+    );
+    assert_eq!(
+        ops[0]["transform"],
+        serde_json::json!([1.0, 0.0, 1.0, 0.0, 1.0, 2.0])
+    );
+    assert_eq!(
+        ops[2]["path"]["verbs"],
+        serde_json::json!(["move_to", "line_to", "quad_to", "close"])
+    );
+    assert_eq!(ops[4]["blend"], "multiply");
+    assert_eq!(ops[5]["brush"]["kind"], "linear");
+    assert_eq!(
+        ops[5]["brush"]["stops"][1],
+        serde_json::json!([1.0, 0xffff_ffff_u32])
+    );
+    assert_eq!(ops[7]["dashes"], serde_json::json!([4.0, 2.0]));
+    assert_eq!(ops[8]["quality"], "high");
+    assert_eq!(ops[9]["glyphs"], serde_json::json!([[36, [1.0, 20.0]]]));
+    assert_eq!(kinds[10], "pop");
+    let mut nan = DisplayList::new();
+    nan.push_transform(AffineTransform::translation(f64::NAN, 0.0));
+    assert_eq!(
+        serde_json::to_value(&nan).unwrap()[0]["transform"][2],
+        serde_json::Value::Null
     );
 }

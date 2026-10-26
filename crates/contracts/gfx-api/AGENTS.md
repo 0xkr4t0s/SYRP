@@ -3,11 +3,13 @@
 ## Purpose
 The L1 drawing contract (master plan §5.7, ADR 0003) between UI code and renderers:
 `DisplayList` (recorded ops read back as borrowed `Op` views, `Glyph` runs, `BlendMode`,
-`ResamplingQuality`) and the value types that ops are recorded from: `Path` (verb array plus point
+`ResamplingQuality`, `content_hash`, `serde` JSON), `Renderer`, `RenderTarget` and
+`RenderError` (`errors/gfx.toml`), and the value types that ops are recorded from: `Path` (verb array plus point
 array) with `PathView` and `PathEl`, `Stroke`/`StrokeRef` (width, `Join`, `Cap`, miter limit,
 dashes), `Colour`, `GradientStop`, `Brush`/`BrushRef`/`BrushKind` (solid, linear, radial,
 two-point conical), and opaque `ImageHandle`/`FontHandle` ids. Covers JUCE's Path,
-PathStrokeType, Colour, ColourGradient, FillType and the recording side of Graphics.
+PathStrokeType, Colour, ColourGradient, FillType, the recording side of Graphics and
+LowLevelGraphicsContext's role.
 
 ## Ledger rows
 juce_graphics/Path, juce_graphics/PathStrokeType, juce_graphics/Colour,
@@ -15,7 +17,7 @@ juce_graphics/ColourGradient, juce_graphics/FillType, juce_graphics/Graphics (sh
 
 ## Invariants
 - Contract types have no public fields (ADR 0003 D3); the `b7_` test scans the sources.
-  Owned types (`Path`, `Stroke`, `Brush`) lend borrowed views; a display list will hand back
+  Owned types (`Path`, `Stroke`, `Brush`) lend borrowed views; a display list hands back
   the same views over its arenas, so renderers never see the owned types.
   The view accessor is always `as_view()`.
 - Colours and brushes are this crate's own types, never peniko re-exports, so the frozen
@@ -31,23 +33,34 @@ juce_graphics/ColourGradient, juce_graphics/FillType, juce_graphics/Graphics (sh
   every capacity, and re-recording the same shape must not allocate (counting-allocator test).
   `Push*` ops open scopes closed innermost-first by `Pop`; `pop()` with none open records
   nothing. Opacity is clamped to `[0, 1]`, glyph size to `>= 0`. Rects are stored as `f32`.
+- `content_hash` and the JSON both walk the public `Op` views (never the Vecs): 64-bit FNV-1a
+  over little-endian bytes, floats by bit pattern, slices length-prefixed. Op codes and enum
+  discriminant order (`BlendMode`, `FillRule`, `PathVerb`, `Join`, `Cap`, `ResamplingQuality`)
+  are part of the encoding: append variants only, never reorder. The `b6_` golden pins it.
+  `encode.rs` binds every `Op`/`BrushKind` field with no `..` (non_exhaustive does not bind
+  in-crate), so a new field fails to compile until hashed and serialised. `StrokeRef` and
+  `PathView` are hashed accessor by accessor: a new accessor must be added to `Fnv::op` and
+  `OpJson` too.
+- `RenderTarget`: physical `u32` size plus a finite positive `f64` scale; `from_logical`
+  rounds each side up but snaps products within `1e-9` relative of a whole number. CPU buffers
+  are RGBA8 premultiplied, tightly packed, top row first, cleared on create and resize.
 - Views have by-value accessors returning `&'a` data; op iterators are `+ use<'a>`.
 - `Colour` is straight-alpha ARGB8. Coordinates are `f32` user units, y down.
 
 ## Thread affinity
 Plain data: all types are `Send + Sync`; no `MessageThread` needed. Building a `Path` or a
 gradient `Brush` allocates; reuse them. Recording into a cleared, warmed `DisplayList` does
-not allocate.
+not allocate. `Renderer::render` runs wherever the renderer lives (usually the message thread
+or a render thread); nothing here is RT-safe.
 
 ## Stability
-contract (frozen in `contracts/syrp-gfx-api.public-api.txt` once WP-0.2-07 is final).
+contract (frozen in `contracts/syrp-gfx-api.public-api.txt`, committed by the PR manager).
 
 ## How to test
 ```sh
-cargo syrp test --crate syrp-gfx-api
+cargo syrp test --crate syrp-gfx-api   # tests enable the `serde` feature
 ```
 
 ## Known gaps
-WP-0.2-07 is not complete. The third increment adds `Renderer`/`RenderTarget`/`RenderError`
-(with an `errors/gfx.toml` domain), the seedless 64-bit content hash, the `serde` feature,
-and the public-API snapshot.
+None for the contract. Renderers (`syrp-render-cpu`, `syrp-render-gpu`) and the `Graphics`
+front-end (`syrp-gfx`) are separate WPs; image filters (DropShadow, Glow) arrive with them.

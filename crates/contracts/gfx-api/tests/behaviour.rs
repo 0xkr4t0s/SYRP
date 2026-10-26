@@ -226,6 +226,8 @@ fn b7_contract_types_have_no_public_fields() {
         include_str!("../src/path.rs"),
         include_str!("../src/brush.rs"),
         include_str!("../src/list.rs"),
+        include_str!("../src/render.rs"),
+        include_str!("../src/encode.rs"),
     ];
     let mut in_struct = false;
     for line in src.iter().flat_map(|s| s.lines()) {
