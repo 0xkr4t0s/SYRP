@@ -73,6 +73,23 @@ fn b3_contains_rect_spanning_several_rects_in_both_coordinate_kinds() {
 /// How a grid cell's new state follows from its old state and whether the op's rect covers it.
 type Combine = fn(bool, bool) -> bool;
 
+#[test]
+fn b3_building_a_large_list_is_not_cubic() {
+    // 3,000 disjoint, unmergeable 2x2 rects (gaps between them). With incremental merging this
+    // is a few million cheap comparisons; the old restart-the-scan merge took minutes in debug.
+    let start = std::time::Instant::now();
+    let mut list = RectList::new();
+    for i in 0..3000 {
+        list.add(Rect::new((i % 60) * 3, (i / 60) * 3, 2, 2));
+    }
+    assert_eq!(list.len(), 3000);
+    // Filling the gaps merges everything into one rectangle.
+    list.add(Rect::new(0, 0, 180, 150));
+    assert_eq!(list.len(), 1);
+    let elapsed = start.elapsed();
+    assert!(elapsed.as_secs() < 10, "took {elapsed:?}");
+}
+
 #[derive(Clone, Debug)]
 enum Op {
     Add(Rect<i32>),

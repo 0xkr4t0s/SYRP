@@ -82,3 +82,24 @@ fn b5_parallelogram_from_rect_and_transform() {
     let sheared = Parallelogram::new(Point::new(0, 0), Point::new(4, 0), Point::new(-2, 3));
     assert_eq!(sheared.bounding_box(), Rect::from_ltrb(-2, 0, 4, 3));
 }
+
+#[test]
+fn b5_float_segment_starting_exactly_on_another_meets_it() {
+    // `b` starts on `a`, but the exact arithmetic puts `b`'s parameter at about -1e-17.
+    let a = Line::new(Point::new(0.1_f64, 0.3), Point::new(0.7, 0.9));
+    let b = Line::new(Point::new(0.4, 0.6), Point::new(3.0, -1.0));
+    for p in [a.intersection(&b), b.intersection(&a)] {
+        let p = p.expect("endpoint touch must count");
+        assert!(
+            (p.x - 0.4).abs() < 1e-12 && (p.y - 0.6).abs() < 1e-12,
+            "{p:?}"
+        );
+    }
+    // Clearly beyond the end still misses.
+    let c = Line::new(Point::new(0.4, 0.6 + 1e-6), Point::new(3.0, -1.0));
+    let d = Line::new(Point::new(0.8, 1.0), Point::new(3.0, -1.0));
+    assert_eq!(
+        (a.intersection(&c).is_some(), a.intersection(&d)),
+        (true, None)
+    );
+}

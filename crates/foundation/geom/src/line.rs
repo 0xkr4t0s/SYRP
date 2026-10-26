@@ -111,7 +111,9 @@ impl<T: Coord> Line<T> {
     }
 
     /// The point where the two segments cross, or `None` if they do not meet. Endpoints count
-    /// as part of each segment. Parallel segments (including overlapping collinear ones) return
+    /// as part of each segment; the segment positions get a 1e-12 tolerance so floating-point
+    /// error cannot lose an exact endpoint touch. This is segment-only: lines that would only
+    /// meet if extended return `None`. Parallel segments (including overlapping collinear ones) return
     /// `None`. Integer results are rounded to nearest.
     /// ```
     /// use syrp_geom::{Line, Point};
@@ -120,7 +122,6 @@ impl<T: Coord> Line<T> {
     /// assert_eq!(a.intersection(&b), Some(Point::new(2.0, 2.0)));
     /// ```
     #[doc(alias = "intersects")]
-    #[doc(alias = "getIntersection")]
     pub fn intersection(&self, other: &Self) -> Option<Point<T>> {
         let (r, s) = (self.delta(), other.delta());
         let denom = cross(r, s);
@@ -133,8 +134,11 @@ impl<T: Coord> Line<T> {
         );
         let t = cross(qp, s) / denom;
         let u = cross(qp, r) / denom;
-        let inside = |v: f64| (0.0..=1.0).contains(&v);
-        (inside(t) && inside(u)).then(|| self.point_along_proportionally(t))
+        // A small tolerance so that a segment starting exactly on the other still meets it
+        // when floating-point error puts `t` or `u` a hair outside 0..=1.
+        const EPS: f64 = 1e-12;
+        let inside = |v: f64| (-EPS..=1.0 + EPS).contains(&v);
+        (inside(t) && inside(u)).then(|| self.point_along_proportionally(t.clamp(0.0, 1.0)))
     }
 }
 

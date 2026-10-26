@@ -126,8 +126,7 @@ impl<T: Coord> RectList<T> {
                 return;
             }
         }
-        self.rects.extend(pending);
-        self.merge();
+        self.settle(pending);
     }
 
     /// Removes the area of `r` from the region.
@@ -141,12 +140,17 @@ impl<T: Coord> RectList<T> {
         if r.is_empty() || !self.intersects_rect(&r) {
             return;
         }
-        let mut out = Vec::with_capacity(self.rects.len() + 3);
-        for existing in self.rects.drain(..) {
-            push_difference(existing, &r, &mut out);
+        // Untouched rects stay settled; only the pieces of cut rects need merging.
+        let mut pieces = Vec::new();
+        let mut i = 0;
+        while i < self.rects.len() {
+            if self.rects[i].intersects(&r) {
+                push_difference(self.rects.swap_remove(i), &r, &mut pieces);
+            } else {
+                i += 1;
+            }
         }
-        self.rects = out;
-        self.merge();
+        self.settle(pieces);
     }
 
     /// Keeps only the part of the region inside `r`.
@@ -158,11 +162,13 @@ impl<T: Coord> RectList<T> {
     /// ```
     #[doc(alias = "clipTo")]
     pub fn clip_to(&mut self, r: &Rect<T>) {
-        for x in &mut self.rects {
-            *x = x.intersection(r);
-        }
-        self.rects.retain(|x| !x.is_empty());
-        self.merge();
+        let clipped: Vec<_> = self
+            .rects
+            .drain(..)
+            .map(|x| x.intersection(r))
+            .filter(|x| !x.is_empty())
+            .collect();
+        self.settle(clipped);
     }
 
     /// The smallest rectangle enclosing the whole region (`Rect::default()` when empty).
@@ -219,19 +225,16 @@ impl<T: Coord> RectList<T> {
         self.rects.iter().any(|x| x.intersects(r))
     }
 
-    /// Merges pairs of rectangles that share a whole edge until none are left.
-    fn merge(&mut self) {
-        'again: loop {
-            for i in 0..self.rects.len() {
-                for j in i + 1..self.rects.len() {
-                    if mergeable(&self.rects[i], &self.rects[j]) {
-                        let b = self.rects.swap_remove(j);
-                        self.rects[i] = self.rects[i].union(&b);
-                        continue 'again;
-                    }
-                }
+    /// Moves `worklist` rects (which must not overlap the list or each other) into the list,
+    /// merging as it goes. The list is kept free of mergeable pairs: each incoming rect is
+    /// checked once against the list; on a match the partner is removed and the union goes
+    /// back on the worklist. Cost is O(list length) per incoming rect or merge.
+    fn settle(&mut self, mut worklist: Vec<Rect<T>>) {
+        while let Some(r) = worklist.pop() {
+            match self.rects.iter().position(|x| mergeable(x, &r)) {
+                Some(i) => worklist.push(self.rects.swap_remove(i).union(&r)),
+                None => self.rects.push(r),
             }
-            return;
         }
     }
 }
