@@ -1,0 +1,1 @@
+{"wp": "WP-0.2-04", "kind": "added", "summary": "syrp-format-api (second increment): the AudioFormat trait (descriptors, can_read, create_reader/create_writer, check_spec), AudioReader with a zero-filling read into AudioBlockMut views, AudioWriter with write/flush/finish that report I/O failure as errors, and the AnyBlock/AnyBlockMut sums of the syrp-audio-api views."}

@@ -1,0 +1,157 @@
+pub mod syrp_format_api
+#[non_exhaustive] pub enum syrp_format_api::AnyBlock<'a>
+pub syrp_format_api::AnyBlock::F32(syrp_audio_api::block::AudioBlock<'a, f32>)
+pub syrp_format_api::AnyBlock::F64(syrp_audio_api::block::AudioBlock<'a, f64>)
+impl syrp_format_api::AnyBlock<'_>
+pub fn syrp_format_api::AnyBlock<'_>::channels(&self) -> usize
+pub fn syrp_format_api::AnyBlock<'_>::frames(&self) -> usize
+pub fn syrp_format_api::AnyBlock<'_>::precision(&self) -> syrp_audio_api::config::Precision
+impl<'a> core::convert::From<syrp_audio_api::block::AudioBlock<'a, f32>> for syrp_format_api::AnyBlock<'a>
+pub fn syrp_format_api::AnyBlock<'a>::from(syrp_audio_api::block::AudioBlock<'a, f32>) -> Self
+impl<'a> core::convert::From<syrp_audio_api::block::AudioBlock<'a, f64>> for syrp_format_api::AnyBlock<'a>
+pub fn syrp_format_api::AnyBlock<'a>::from(syrp_audio_api::block::AudioBlock<'a, f64>) -> Self
+#[non_exhaustive] pub enum syrp_format_api::AnyBlockMut<'a>
+pub syrp_format_api::AnyBlockMut::F32(syrp_audio_api::block::AudioBlockMut<'a, f32>)
+pub syrp_format_api::AnyBlockMut::F64(syrp_audio_api::block::AudioBlockMut<'a, f64>)
+impl syrp_format_api::AnyBlockMut<'_>
+pub fn syrp_format_api::AnyBlockMut<'_>::channels(&self) -> usize
+pub fn syrp_format_api::AnyBlockMut<'_>::clear(&mut self)
+pub fn syrp_format_api::AnyBlockMut<'_>::frames(&self) -> usize
+pub fn syrp_format_api::AnyBlockMut<'_>::precision(&self) -> syrp_audio_api::config::Precision
+pub fn syrp_format_api::AnyBlockMut<'_>::slice_channels_mut(&mut self, core::ops::range::Range<usize>) -> syrp_format_api::AnyBlockMut<'_>
+pub fn syrp_format_api::AnyBlockMut<'_>::slice_frames_mut(&mut self, core::ops::range::Range<usize>) -> syrp_format_api::AnyBlockMut<'_>
+impl<'a> core::convert::From<syrp_audio_api::block::AudioBlockMut<'a, f32>> for syrp_format_api::AnyBlockMut<'a>
+pub fn syrp_format_api::AnyBlockMut<'a>::from(syrp_audio_api::block::AudioBlockMut<'a, f32>) -> Self
+impl<'a> core::convert::From<syrp_audio_api::block::AudioBlockMut<'a, f64>> for syrp_format_api::AnyBlockMut<'a>
+pub fn syrp_format_api::AnyBlockMut<'a>::from(syrp_audio_api::block::AudioBlockMut<'a, f64>) -> Self
+#[non_exhaustive] pub enum syrp_format_api::FormatError
+#[non_exhaustive] pub syrp_format_api::FormatError::ChannelMismatch
+pub syrp_format_api::FormatError::ChannelMismatch::actual: usize
+pub syrp_format_api::FormatError::ChannelMismatch::expected: usize
+#[non_exhaustive] pub syrp_format_api::FormatError::InvalidData
+pub syrp_format_api::FormatError::InvalidData::reason: alloc::string::String
+#[non_exhaustive] pub syrp_format_api::FormatError::InvalidSpec
+pub syrp_format_api::FormatError::InvalidSpec::reason: &'static str
+pub syrp_format_api::FormatError::Io(core::io::error::Error)
+#[non_exhaustive] pub syrp_format_api::FormatError::Unsupported
+pub syrp_format_api::FormatError::Unsupported::reason: alloc::string::String
+impl syrp_format_api::FormatError
+pub fn syrp_format_api::FormatError::invalid_data(impl core::convert::Into<alloc::string::String>) -> Self
+pub fn syrp_format_api::FormatError::unsupported(impl core::convert::Into<alloc::string::String>) -> Self
+impl core::convert::From<core::io::error::Error> for syrp_format_api::FormatError
+pub fn syrp_format_api::FormatError::from(core::io::error::Error) -> Self
+impl core::error::Error for syrp_format_api::FormatError
+pub fn syrp_format_api::FormatError::source(&self) -> core::option::Option<&(dyn core::error::Error + 'static)>
+impl core::fmt::Display for syrp_format_api::FormatError
+pub fn syrp_format_api::FormatError::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl syrp_error::Diagnostic for syrp_format_api::FormatError
+pub fn syrp_format_api::FormatError::code(&self) -> syrp_error::ErrorCode
+#[non_exhaustive] pub enum syrp_format_api::LoopKind
+pub syrp_format_api::LoopKind::Backward
+pub syrp_format_api::LoopKind::Forward
+pub syrp_format_api::LoopKind::PingPong
+#[non_exhaustive] pub enum syrp_format_api::MetadataItem
+pub syrp_format_api::MetadataItem::Bext(syrp_format_api::Bext)
+pub syrp_format_api::MetadataItem::Cue(syrp_format_api::CuePoint)
+pub syrp_format_api::MetadataItem::Loop(syrp_format_api::SampleLoop)
+pub syrp_format_api::MetadataItem::Other(alloc::string::String, alloc::vec::Vec<u8>)
+pub syrp_format_api::MetadataItem::Tag(syrp_format_api::Tag, alloc::string::String)
+#[non_exhaustive] pub enum syrp_format_api::SampleKind
+pub syrp_format_api::SampleKind::Float
+pub syrp_format_api::SampleKind::Int
+#[non_exhaustive] pub enum syrp_format_api::Tag
+pub syrp_format_api::Tag::Album
+pub syrp_format_api::Tag::Artist
+pub syrp_format_api::Tag::Comment
+pub syrp_format_api::Tag::Copyright
+pub syrp_format_api::Tag::Custom(alloc::string::String)
+pub syrp_format_api::Tag::Date
+pub syrp_format_api::Tag::Encoder
+pub syrp_format_api::Tag::Genre
+pub syrp_format_api::Tag::Title
+pub syrp_format_api::Tag::TrackNumber
+pub struct syrp_format_api::AudioSpec
+impl syrp_format_api::AudioSpec
+pub fn syrp_format_api::AudioSpec::bits_per_sample(&self) -> u32
+pub fn syrp_format_api::AudioSpec::channel_count(&self) -> usize
+pub fn syrp_format_api::AudioSpec::channels(&self) -> syrp_audio_api::channels::ChannelSet
+pub fn syrp_format_api::AudioSpec::is_float(&self) -> bool
+pub fn syrp_format_api::AudioSpec::new(f64, syrp_audio_api::channels::ChannelSet, u32, syrp_format_api::SampleKind) -> core::result::Result<Self, syrp_format_api::FormatError>
+pub fn syrp_format_api::AudioSpec::sample_kind(&self) -> syrp_format_api::SampleKind
+pub fn syrp_format_api::AudioSpec::sample_rate(&self) -> f64
+pub struct syrp_format_api::Bext
+impl syrp_format_api::Bext
+pub fn syrp_format_api::Bext::coding_history(&self) -> &str
+pub fn syrp_format_api::Bext::description(&self) -> &str
+pub fn syrp_format_api::Bext::new() -> Self
+pub fn syrp_format_api::Bext::origination_date(&self) -> &str
+pub fn syrp_format_api::Bext::origination_time(&self) -> &str
+pub fn syrp_format_api::Bext::originator(&self) -> &str
+pub fn syrp_format_api::Bext::originator_reference(&self) -> &str
+pub fn syrp_format_api::Bext::time_reference(&self) -> u64
+pub fn syrp_format_api::Bext::with_coding_history(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn syrp_format_api::Bext::with_description(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn syrp_format_api::Bext::with_origination_date(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn syrp_format_api::Bext::with_origination_time(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn syrp_format_api::Bext::with_originator(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn syrp_format_api::Bext::with_originator_reference(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn syrp_format_api::Bext::with_time_reference(self, u64) -> Self
+pub struct syrp_format_api::CuePoint
+impl syrp_format_api::CuePoint
+pub fn syrp_format_api::CuePoint::id(&self) -> u32
+pub fn syrp_format_api::CuePoint::label(&self) -> core::option::Option<&str>
+pub fn syrp_format_api::CuePoint::new(u32, u64) -> Self
+pub fn syrp_format_api::CuePoint::position(&self) -> u64
+pub fn syrp_format_api::CuePoint::with_label(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub struct syrp_format_api::Metadata
+impl syrp_format_api::Metadata
+pub fn syrp_format_api::Metadata::bext(&self) -> core::option::Option<&syrp_format_api::Bext>
+pub fn syrp_format_api::Metadata::is_empty(&self) -> bool
+pub fn syrp_format_api::Metadata::items(&self) -> &[syrp_format_api::MetadataItem]
+pub fn syrp_format_api::Metadata::len(&self) -> usize
+pub fn syrp_format_api::Metadata::new() -> Self
+pub fn syrp_format_api::Metadata::push(&mut self, syrp_format_api::MetadataItem)
+pub fn syrp_format_api::Metadata::set_tag(&mut self, syrp_format_api::Tag, impl core::convert::Into<alloc::string::String>)
+pub fn syrp_format_api::Metadata::tag(&self, &syrp_format_api::Tag) -> core::option::Option<&str>
+pub struct syrp_format_api::SampleLoop
+impl syrp_format_api::SampleLoop
+pub fn syrp_format_api::SampleLoop::end(&self) -> u64
+pub fn syrp_format_api::SampleLoop::kind(&self) -> syrp_format_api::LoopKind
+pub fn syrp_format_api::SampleLoop::new(syrp_format_api::LoopKind, u64, u64) -> core::option::Option<Self>
+pub fn syrp_format_api::SampleLoop::play_count(&self) -> u32
+pub fn syrp_format_api::SampleLoop::start(&self) -> u64
+pub fn syrp_format_api::SampleLoop::with_play_count(self, u32) -> Self
+pub struct syrp_format_api::WriterOptions
+impl syrp_format_api::WriterOptions
+pub fn syrp_format_api::WriterOptions::metadata(&self) -> &syrp_format_api::Metadata
+pub fn syrp_format_api::WriterOptions::new(syrp_format_api::AudioSpec) -> Self
+pub fn syrp_format_api::WriterOptions::quality(&self) -> core::option::Option<u32>
+pub fn syrp_format_api::WriterOptions::spec(&self) -> &syrp_format_api::AudioSpec
+pub fn syrp_format_api::WriterOptions::with_metadata(self, syrp_format_api::Metadata) -> Self
+pub fn syrp_format_api::WriterOptions::with_quality(self, u32) -> Self
+pub trait syrp_format_api::AudioFormat: core::marker::Send + core::marker::Sync
+pub fn syrp_format_api::AudioFormat::bit_depths(&self) -> &[u32]
+pub fn syrp_format_api::AudioFormat::can_read(&self, &[u8]) -> bool
+pub fn syrp_format_api::AudioFormat::check_spec(&self, &syrp_format_api::AudioSpec) -> core::result::Result<(), syrp_format_api::FormatError>
+pub fn syrp_format_api::AudioFormat::create_reader(&self, alloc::boxed::Box<dyn syrp_format_api::ReadSeek>) -> core::result::Result<alloc::boxed::Box<dyn syrp_format_api::AudioReader>, syrp_format_api::FormatError>
+pub fn syrp_format_api::AudioFormat::create_writer(&self, alloc::boxed::Box<dyn syrp_format_api::WriteSeek>, &syrp_format_api::WriterOptions) -> core::result::Result<alloc::boxed::Box<dyn syrp_format_api::AudioWriter>, syrp_format_api::FormatError>
+pub fn syrp_format_api::AudioFormat::file_extensions(&self) -> &[&str]
+pub fn syrp_format_api::AudioFormat::matches_extension(&self, &str) -> bool
+pub fn syrp_format_api::AudioFormat::name(&self) -> &str
+pub fn syrp_format_api::AudioFormat::sample_rates(&self) -> &[u32]
+pub trait syrp_format_api::AudioReader: core::marker::Send
+pub fn syrp_format_api::AudioReader::length(&self) -> u64
+pub fn syrp_format_api::AudioReader::metadata(&self) -> &syrp_format_api::Metadata
+pub fn syrp_format_api::AudioReader::read(&mut self, syrp_format_api::AnyBlockMut<'_>, i64) -> core::result::Result<(), syrp_format_api::FormatError>
+pub fn syrp_format_api::AudioReader::read_samples(&mut self, syrp_format_api::AnyBlockMut<'_>, u64) -> core::result::Result<(), syrp_format_api::FormatError>
+pub fn syrp_format_api::AudioReader::spec(&self) -> &syrp_format_api::AudioSpec
+pub trait syrp_format_api::AudioWriter: core::marker::Send
+pub fn syrp_format_api::AudioWriter::finish(alloc::boxed::Box<Self>) -> core::result::Result<(), syrp_format_api::FormatError>
+pub fn syrp_format_api::AudioWriter::flush(&mut self) -> core::result::Result<(), syrp_format_api::FormatError>
+pub fn syrp_format_api::AudioWriter::spec(&self) -> &syrp_format_api::AudioSpec
+pub fn syrp_format_api::AudioWriter::write(&mut self, syrp_format_api::AnyBlock<'_>) -> core::result::Result<(), syrp_format_api::FormatError>
+pub fn syrp_format_api::AudioWriter::write_samples(&mut self, syrp_format_api::AnyBlock<'_>) -> core::result::Result<(), syrp_format_api::FormatError>
+pub trait syrp_format_api::ReadSeek: alloc::io::read::Read + core::io::seek::Seek + core::marker::Send
+impl<T: alloc::io::read::Read + core::io::seek::Seek + core::marker::Send + ?core::marker::Sized> syrp_format_api::ReadSeek for T
+pub trait syrp_format_api::WriteSeek: core::io::write::Write + core::io::seek::Seek + core::marker::Send
+impl<T: core::io::write::Write + core::io::seek::Seek + core::marker::Send + ?core::marker::Sized> syrp_format_api::WriteSeek for T

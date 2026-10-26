@@ -14,11 +14,13 @@ layer = "L6"
 wp = "WP-0.1-09"
 
 [dependencies]
+serde.workspace = true
 syrp-audio-api = { version = "0.0.1", path = "../../contracts/audio-api" }
 syrp-error = { version = "0.0.1", path = "../../foundation/error" }
 syrp-rt = { version = "0.0.1", path = "../../foundation/rt" }
 
 [dev-dependencies]
+serde_json.workspace = true
 toml.workspace = true
 
 [lints]
