@@ -1,0 +1,1 @@
+{"wp": "WP-0.2-09", "kind": "added", "summary": "Renderer spike, increment 2: vello_cpu (deterministic and native-SIMD modes) and tiny-skia renderers for the spike scenes, sharing one DisplayList lowering pass, with cross-renderer agreement tests."}
