@@ -1,0 +1,1 @@
+{"wp": "WP-1.1-01", "kind": "added", "summary": "syrp-var increment 3 (final): json::parse and json::to_string (compact and pretty) with a 100-level nesting limit both ways and coded errors with line and column (new errors/var.toml domain, SYRP-VAR-0001..0003); default-on serde feature with Serialize/Deserialize for Var using the same mapping."}

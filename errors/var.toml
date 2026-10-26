@@ -1,0 +1,22 @@
+# Error catalogue: dynamic values and JSON (syrp-var). Never renumber.
+
+[[error]]
+code = "SYRP-VAR-0001"
+title = "Invalid JSON"
+severity = "error"
+cause = "syrp_var::json::parse was given text that is not valid JSON: a syntax error, unexpected end of input, trailing characters or a number out of range. The error carries the line and column."
+fix = "Fix the JSON at the reported line and column. JSON needs double-quoted keys and strings, no trailing commas and no comments."
+
+[[error]]
+code = "SYRP-VAR-0002"
+title = "JSON nests too deeply"
+severity = "error"
+cause = "The JSON (or other serde input) nests arrays and objects more than 100 levels deep. The limit stops untrusted input from overflowing the stack while parsing or dropping the value."
+fix = "Flatten the data. Nesting of 100 levels is far beyond what property trees need."
+
+[[error]]
+code = "SYRP-VAR-0003"
+title = "Value cannot be written: too deep or cyclic"
+severity = "error"
+cause = "syrp_var::json::to_string (or serialising a Var with serde) met arrays and objects nested more than 100 levels deep, which is what a DynamicObject that contains itself looks like."
+fix = "Break the cycle by removing the property that refers back to an enclosing object, or flatten the value."
