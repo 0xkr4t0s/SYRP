@@ -1,6 +1,6 @@
 //! Per-crate `llms-<crate>.txt` slices, cut to a token budget (B5).
 
-use crate::{ApiIndex, ItemKind};
+use crate::{ApiEntry, ApiIndex, ItemKind};
 
 /// Writes the `llms-<crate>.txt` slice for `crate_name`, at most `token_budget` tokens long.
 ///
@@ -38,16 +38,7 @@ pub fn write_crate_slice(index: &ApiIndex, crate_name: &str, token_budget: usize
         return String::new();
     }
     for (written, e) in entries.iter().enumerate() {
-        let mut line = format!("- `{}`", e.signature);
-        line.push_str(&format!(" ({})", e.path));
-        if !e.aliases.is_empty() {
-            line.push_str(&format!(" [alias: {}]", e.aliases.join(", ")));
-        }
-        if !e.summary.is_empty() {
-            line.push_str(": ");
-            line.push_str(&e.summary);
-        }
-        line.push('\n');
+        let line = entry_line(e);
         let remaining = entries.len() - written - 1;
         let footer = omitted(remaining + 1);
         // Keep room for the "omitted" footer unless this is the last entry.
@@ -67,12 +58,26 @@ pub fn write_crate_slice(index: &ApiIndex, crate_name: &str, token_budget: usize
     out
 }
 
-fn omitted(n: usize) -> String {
+/// One `- `signature` (path) [alias: ...]: summary` list line, newline included.
+pub(crate) fn entry_line(e: &ApiEntry) -> String {
+    let mut line = format!("- `{}` ({})", e.signature, e.path);
+    if !e.aliases.is_empty() {
+        line.push_str(&format!(" [alias: {}]", e.aliases.join(", ")));
+    }
+    if !e.summary.is_empty() {
+        line.push_str(": ");
+        line.push_str(&e.summary);
+    }
+    line.push('\n');
+    line
+}
+
+pub(crate) fn omitted(n: usize) -> String {
     format!("- ... {n} more items omitted (token budget)\n")
 }
 
 /// Sort rank: crate-level modules, types and traits first, then everything else.
-fn rank(kind: ItemKind, path: &str) -> u8 {
+pub(crate) fn rank(kind: ItemKind, path: &str) -> u8 {
     let top_level = path.matches("::").count() == 1;
     match kind {
         ItemKind::Module

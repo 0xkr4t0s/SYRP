@@ -1,0 +1,1 @@
+{"wp": "WP-0.2-11", "kind": "added", "summary": "Agent Skill v1: five recipes (start a WP, add an error code, create a crate, fix a failing check, respond to review), the rules learned from merge gates, scripts/loop.sh with one JSON summary, scripts/refresh.sh generating references/errors.json, and tests that run --help for every quoted cargo syrp command."}
