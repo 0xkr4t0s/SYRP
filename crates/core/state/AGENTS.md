@@ -6,9 +6,12 @@ WP-0.2-15 spike (`docs/design/0005-state-arena-spike.md`). A `Store` is one docu
 arena of nodes, each with a type `Identifier`, properties as a `Vec<(Identifier, Var)>` sorted by
 identifier, and an ordered `Vec` of children. It is the data core behind JUCE's `ValueTree`
 semantics; the JUCE-shaped `ValueTree` lives in `syrp-compat-state` (WP-1.9-01), never here.
+`UndoManager` (WP-1.2-04) groups the store's reversible log records into undo transactions;
+`syrp-compat-state` passes JUCE's `UndoManager*` arguments straight through to it.
 
 ## Ledger rows
-None. `syrp-compat-state` owns the `juce_data_structures/ValueTree` rows.
+juce_data_structures/UndoManager, juce_data_structures/UndoableAction (WP-1.2-04).
+`syrp-compat-state` owns the `juce_data_structures/ValueTree` rows.
 
 ## Invariants
 - A node's count = live `NodeRef`s + `Subscription`s + 1 if it has a parent + 1 per
@@ -41,6 +44,17 @@ None. `syrp-compat-state` owns the `juce_data_structures/ValueTree` rows.
 - No `as_view()` (ADR 0003 exception): nodes sit behind a `RefCell`, so a view would keep the
   store borrowed and block mutations and handle drops. Reads return owned values instead.
 - `NodeKey` has no store identity; every API that takes one (`Store::upgrade`) says so.
+- Undo (`undo.rs`): every logged mutation has a `*_with_undo` sibling taking `&mut
+  UndoManager`; the plain method records nothing. The sibling sets `Inner::capture_from`, and
+  `flush` copies that call's own records (never a listener's) into `Inner::captured`, counting
+  their nodes, before any delivery. The manager holds those counts until a transaction is
+  discarded (redo cleared, history dropped, manager dropped). A manager binds to one store
+  (`SYRP-STATE-0007`). Undo and redo replay records through the plain mutations, so they are
+  logged and notified but not recorded; `ParentChanged` is not replayed (the child records
+  log their own). An undo whose records no longer apply stops at the error, part-done.
+- Coalescing (Syrp rule): a `PropertyChanged` for the node and property of the record just
+  before it in the same transaction merges into it (first old value, last new value). A
+  transaction that cancels out is kept until the next one starts, then dropped.
 
 ## Thread affinity
 `Store`, `NodeRef` and `Properties` are `!Send` and `!Sync` (they hold `Rc<RefCell<_>>`).
@@ -69,5 +83,7 @@ Instructions per operation from `cargo bench -p syrp-state` (Callgrind, release,
 | `set_property` (`f64`), listener on node and parent | 902 | 922 | 942 |
 
 ## Known gaps
-WP-1.2-03 is complete (B1-B8). The CLI catalogue entry for the new
+WP-1.2-03 is complete (B1-B8). WP-1.2-04 increment 1 covers its B1-B3; increment 2 adds
+`UndoableAction` and `perform` (B4), the remaining queries and the unit limits (B5), and the
+spike scenarios with undo and the undo/redo proptest (B6). The CLI catalogue entry for the new
 `errors/state.toml` domain needs a change request (the CLI crate is not owned here).

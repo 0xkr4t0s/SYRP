@@ -98,6 +98,7 @@ impl Store {
         let rc = self.rc();
         {
             let mut inner = rc.borrow_mut();
+            inner.capture(); // a `*_with_undo` call takes its own records first
             if inner.delivering {
                 return;
             }

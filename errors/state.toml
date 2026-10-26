@@ -41,3 +41,10 @@ title = "Child index out of range"
 severity = "error"
 cause = "Store::move_child was given a source index that is not less than the number of children."
 fix = "Pass a source index below Store::num_children. A destination past the end moves the child to the end."
+
+[[error]]
+code = "SYRP-STATE-0007"
+title = "Undo manager belongs to another store"
+severity = "error"
+cause = "An UndoManager records from the first store it is used with. A *_with_undo call on a different store was given that manager."
+fix = "Use one UndoManager per store document."
