@@ -1,0 +1,22 @@
+# Error catalogue: native windows (syrp-peer-api and the syrp-peer-* platform crates). Never renumber.
+
+[[error]]
+code = "SYRP-PEER-0001"
+title = "Peer operation not supported"
+severity = "error"
+cause = "The peer or platform cannot do what was asked, for example minimising, maximising or making fullscreen a child window embedded in a host, or a window kind the platform lacks."
+fix = "Check Peer::is_child before changing window state; for an embedded editor, ask the host to resize or hide its own window instead."
+
+[[error]]
+code = "SYRP-PEER-0002"
+title = "Invalid parent window handle"
+severity = "error"
+cause = "A child peer was given a parent RawWindowHandle of another platform's kind, or one that no longer refers to a live window."
+fix = "Pass the handle the host gave you for this platform, and create the child while the host's window is open."
+
+[[error]]
+code = "SYRP-PEER-0003"
+title = "Window system failure"
+severity = "error"
+cause = "The native window system refused a request, for example window or surface creation failed. The message names the platform's own error."
+fix = "Retry after the display configuration settles; if it persists, report the message with the platform and window-system version."
