@@ -3,12 +3,15 @@
 ## Purpose
 The processor and plugin contract (master plan §5.4 and §5.8). The `Processor` sketch in §5.4 is the starting point.
 
+## Data layout
+Read `docs/design/0003-data-layout.md` (ADR 0003) first. Hot-path types in this crate have no public fields (D3): expose constructors, accessors, views, handles and iterators, so storage can change without a contract change.
+
 ## Behaviour
 - B1. `trait Processor` with `prepare(&ProcessConfig, &mut PrepareCtx)`, `process(&mut ProcessIo, &Params, &mut RtCtx)` and `reset`. `PrepareCtx` cannot be obtained inside `process` (prove with a trybuild compile-fail test).
 - B2. Bus layout negotiation (`supports_layout`), latency and tail reporting, bypass, precision.
 - B3. `ParamSpec` builder: id, name, range with skew/step (NormalisableRange semantics as JUCE documents them), default, unit, value-to-text and text-to-value, smoothing, automatable flag, group. Normalise/denormalise round-trips within 1e-6.
-- B4. Runtime parameter values are atomics with a sample-accurate change iterator in `ProcessIo`.
-- B5. `trait Editor` lifecycle on the message thread, size constraints; no UI types (those live in L4) - use opaque handles.
+- B4. Each registered parameter gets a dense `ParamIndex(u32)` in registration order. Runtime values live in one contiguous array of atomics indexed by `ParamIndex`; string IDs resolve to indices at prepare time only and are never looked up in `process`. `ProcessIo` exposes one per-block change stream of `(sample_offset, ParamIndex, value)` sorted by offset, stable for equal offsets, with no allocation when filled up to the capacity fixed at prepare time.
+- B5. `trait Editor` lifecycle on the message thread, size constraints; no UI types (those live in L4) - use opaque handles. Layering: this crate is L1 and must not name `syrp-ui` (L4) types. It defines `NodeHandle`, a `Copy` newtype over a 64-bit generational key (index plus generation), which `syrp-ui`'s `ComponentId` converts to and from losslessly. It also defines `trait EditorHost` (object-safe: `root(&self) -> NodeHandle`, `as_any_mut(&mut self) -> &mut dyn Any`). The signature is `fn create(&mut self, host: &mut dyn EditorHost, params: &ParamHandles) -> Result<NodeHandle, EditorError>`. The L5 `syrp-plugin` runtime implements `EditorHost` for `syrp-ui`'s `Ui` and offers the typed accessor plugins use; this crate never sees `Ui`. The returned handle is a core node handle, never a compatibility-layer type (ADR 0003, D1).
 - B6. `PluginDescriptor` (name, vendor, version, unique ids per format, categories) and state save/load traits with a versioned envelope.
 - B7. Event I/O carrying `syrp-midi` messages and UMP.
 - B8. Contract freeze as in WP-0.2-01.

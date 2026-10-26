@@ -17,3 +17,9 @@ overridden" column says what would have to be redone.
 | 9 | Escalation contact and channel | GitHub issues labelled `needs-human`, assigned to `@0xkr4t0s`; GitHub notifications as the channel | `conductor.yml` | Add a webhook (Slack, email) to the escalate step. |
 | 10 | External contributions | Closed until a CLA is in place (target: after 1.0 or when you decide) | `LICENSE.md`, `CONTRIBUTING.md` | Add a CLA bot and open the repo to PRs. |
 | 11 | Renaming JUCE-coined terms | Keep familiar names for now (`ValueTree`, `LookAndFeel`) with `#[doc(alias)]`; revisit after counsel review | API naming in later WPs | Renames in L2/L4 crates; cheapest before Phase 1 ends. |
+
+## Decisions taken after the start
+
+| # | Decision | Taken | Record |
+|---|---|---|---|
+| 12 | Data layout and API layering | By the owner on 2026-10-26: one data-oriented core, JUCE-shaped types in optional `syrp-compat-*` crates over the same storage, lane-generic DSP | [0003-data-layout.md](0003-data-layout.md) |

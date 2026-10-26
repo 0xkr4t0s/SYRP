@@ -3,10 +3,13 @@
 ## Purpose
 MIDI 1.0 and MIDI 2.0 (UMP) data types and codecs (JUCE: MidiMessage, MidiBuffer, ump namespace; public docs only).
 
+## Data layout
+Read `docs/design/0003-data-layout.md` (ADR 0003) first. Hot-path types in this crate have no public fields (D3): expose constructors, accessors, views, handles and iterators, so storage can change without a contract change.
+
 ## Behaviour
 - B1. `MidiMessage`: construct, classify and read note on/off, controller, program change, pitch bend, channel and poly pressure, SysEx, meta events, with timestamps.
-- B2. `MidiBuffer`: a sample-position-ordered event list with stable ordering for equal positions, iteration over a range, and a pre-allocated variant usable on the RT thread without allocation (`with_capacity`, fails when full).
-- B3. UMP: packet types for every message type in the MIDI 2.0 UMP spec (utility, system, MIDI 1.0 channel voice, data 64, MIDI 2.0 channel voice, data 128, flex data, stream), parse and serialise to `u32` words.
+- B2. `MidiBuffer`: a sample-position-ordered event list with stable ordering for equal positions and iteration over a range. Storage is packed: an array of fixed-size event heads (sample offset, payload start, length, kind) plus one byte arena holding every message's bytes back to back, SysEx included. Iteration yields borrowed `MidiMessageRef<'_>` views and never copies. `with_capacity(events, bytes)` pre-allocates both; on the RT thread, adding an event never allocates and returns an error when either capacity is full. The owned `MidiMessage` remains for message-thread code.
+- B3. UMP: packet types for every message type in the MIDI 2.0 UMP spec (utility, system, MIDI 1.0 channel voice, data 64, MIDI 2.0 channel voice, data 128, flex data, stream), parse and serialise to `u32` words. A `UmpBuffer` uses the same packed layout as B2 with a `u32` word arena instead of bytes.
 - B4. Conversions between MIDI 1.0 byte streams and UMP (both directions), including SysEx splitting and running-status handling for byte streams.
 - B5. Fuzz-ready parsing: every parser returns an error instead of panicking on arbitrary input (proptest with random bytes).
 - B6. Contract freeze as in WP-0.2-01.
