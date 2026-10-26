@@ -8,7 +8,14 @@ use std::rc::Rc;
 use syrp_geom::Rect;
 use syrp_loop_api::MessageThread;
 
-use crate::{Desktop, Event, EventSink, Peer, PeerError, PeerId, PeerOptions, WindowState};
+use raw_window_handle::{
+    DisplayHandle, HandleError, HasDisplayHandle, HasWindowHandle, WindowHandle,
+};
+
+use crate::{
+    CursorIcon, Desktop, DragPhase, Event, EventSink, Peer, PeerError, PeerId, PeerOptions,
+    WindowState,
+};
 
 /// A request a headless peer received, in arrival order.
 /// ```
@@ -35,6 +42,10 @@ pub enum Request {
     GrabFocus(PeerId),
     /// [`Peer::set_ime_caret`].
     SetImeCaret(PeerId, Option<Rect<f64>>),
+    /// [`Peer::set_cursor`].
+    SetCursor(PeerId, Option<CursorIcon>),
+    /// [`Peer::accept_drop`].
+    AcceptDrop(PeerId, bool),
     /// The peer was dropped.
     Destroy(PeerId),
 }
@@ -52,6 +63,7 @@ struct Slot {
     sink: Option<EventSink>,
     bounds: Rect<f64>,
     state: WindowState,
+    drop_accepted: bool,
 }
 
 impl Shared {
@@ -117,7 +129,9 @@ impl HeadlessDesktop {
     /// does not exist (dropped) or is already handling an event (re-entrant injection).
     /// The sink may call back into the desktop or the peer. Like a platform, a delivered
     /// [`Event::BoundsChanged`] or [`Event::StateChanged`] first updates what the peer's
-    /// `bounds()` or `state()` returns.
+    /// `bounds()` or `state()` returns. Drags follow the platform rule: `Enter` resets the
+    /// peer's [`Peer::accept_drop`] answer to `false`, and a `Drop` is refused (not delivered,
+    /// `false`) unless the last answer was `true`.
     /// ```
     /// # use syrp_loop_api::ManualLoop;
     /// use syrp_peer_api::{headless::HeadlessDesktop, Event, PeerId};
@@ -136,6 +150,11 @@ impl HeadlessDesktop {
             match event {
                 Event::BoundsChanged(b) => slot.bounds = *b,
                 Event::StateChanged(st) => slot.state = *st,
+                Event::Drag(d) if d.phase() == DragPhase::Enter => slot.drop_accepted = false,
+                Event::Drag(d) if d.phase() == DragPhase::Drop && !slot.drop_accepted => {
+                    slot.sink = Some(sink);
+                    return false;
+                }
                 _ => {}
             }
             sink
@@ -186,6 +205,7 @@ impl Desktop for HeadlessDesktop {
             sink: Some(events),
             bounds: options.bounds(),
             state: WindowState::Normal,
+            drop_accepted: false,
         });
         sh.requests.push(Request::Create(id, options.clone()));
         Ok(Box::new(HeadlessPeer {
@@ -267,6 +287,27 @@ impl Peer for HeadlessPeer {
     }
     fn set_ime_caret(&mut self, _mt: &MessageThread<'_>, caret: Option<Rect<f64>>) {
         self.record(Request::SetImeCaret(self.id, caret));
+    }
+    fn set_cursor(&mut self, _mt: &MessageThread<'_>, cursor: Option<CursorIcon>) {
+        self.record(Request::SetCursor(self.id, cursor));
+    }
+    fn accept_drop(&mut self, _mt: &MessageThread<'_>, accept: bool) {
+        self.with_slot(|s| s.drop_accepted = accept);
+        self.record(Request::AcceptDrop(self.id, accept));
+    }
+}
+
+/// No native display: always [`HandleError::NotSupported`].
+impl HasDisplayHandle for HeadlessDesktop {
+    fn display_handle(&self) -> Result<DisplayHandle<'_>, HandleError> {
+        Err(HandleError::NotSupported)
+    }
+}
+
+/// No native window: always [`HandleError::NotSupported`].
+impl HasWindowHandle for HeadlessPeer {
+    fn window_handle(&self) -> Result<WindowHandle<'_>, HandleError> {
+        Err(HandleError::NotSupported)
     }
 }
 

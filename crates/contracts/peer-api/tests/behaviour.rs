@@ -5,14 +5,15 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use syrp_error::Diagnostic;
-use syrp_geom::Rect;
+use syrp_geom::{Point, Rect};
 use syrp_loop_api::{ManualLoop, MessageThread};
 use syrp_peer_api::headless::{HeadlessDesktop, Request};
 use syrp_peer_api::keyboard_types::{Code, Key, KeyState, Location, NamedKey};
-use syrp_peer_api::raw_window_handle::{RawWindowHandle, WebWindowHandle};
+use syrp_peer_api::raw_window_handle::{HandleError, RawWindowHandle, WebWindowHandle};
 use syrp_peer_api::{
-    Desktop, Event, EventSink, ImeEvent, KeyboardEvent, Modifiers, Peer, PeerError, PeerOptions,
-    WindowState,
+    CursorIcon, Desktop, DragData, DragEvent, DragPhase, Event, EventSink, HasDisplayHandle,
+    ImeEvent, KeyboardEvent, Modifiers, Peer, PeerError, PeerOptions, PointerButton, PointerEvent,
+    PointerKind, PointerPhase, PointerSource, WheelEvent, WheelUnit, WindowState,
 };
 
 type Log = Rc<RefCell<Vec<Event>>>;
@@ -239,11 +240,137 @@ fn b6_injected_bounds_and_state_events_update_the_peer_getters() {
 }
 
 #[test]
+fn b2_pointer_events_carry_pressure_tilt_and_source_ids() {
+    let pen = PointerSource::new(PointerKind::Pen, 3);
+    let down = PointerEvent::new(PointerPhase::Down, pen, Point::new(1.0, 2.0))
+        .with_button(PointerButton::Primary)
+        .with_pressure(f32::NAN)
+        .with_tilt(0.5, 9.0)
+        .with_modifiers(Modifiers::ALT);
+    assert_eq!(
+        (down.source().kind(), down.source().id()),
+        (PointerKind::Pen, 3)
+    );
+    assert_eq!(
+        (down.pressure(), down.tilt()),
+        (Some(0.0), Some((0.5, 1.0)))
+    );
+    assert!(down.buttons().contains(PointerButton::Primary) && down.modifiers().alt());
+    let finger = PointerSource::new(PointerKind::Touch, 1);
+    let up = PointerEvent::new(PointerPhase::Up, finger, Point::new(0.0, 0.0))
+        .with_button(PointerButton::Primary)
+        .with_pressure(-1.0);
+    assert!(up.buttons().is_empty() && up.pressure() == Some(0.0));
+    assert_ne!(finger, PointerSource::new(PointerKind::Touch, 2));
+    let hover = PointerEvent::new(
+        PointerPhase::Move,
+        PointerSource::MOUSE,
+        Point::new(0.0, 0.0),
+    );
+    assert_eq!(
+        (hover.pressure(), hover.tilt(), hover.button()),
+        (None, None, None)
+    );
+}
+
+#[test]
+fn b2_headless_delivers_pointer_wheel_and_magnify_in_order() {
+    let mut d = HeadlessDesktop::new(1.0);
+    ManualLoop::new().with_token(|mt| {
+        let (p, log) = open(&mut d, mt, PeerOptions::top_level(Rect::default()));
+        let at = Point::new(1.0, 1.0);
+        let events = [
+            Event::Pointer(PointerEvent::new(
+                PointerPhase::Enter,
+                PointerSource::MOUSE,
+                at,
+            )),
+            Event::Wheel(WheelEvent::new(at, 0.0, -2.5, WheelUnit::Pixels).with_inertial(true)),
+            Event::Wheel(WheelEvent::new(at, 1.0, 0.0, WheelUnit::Lines)),
+            Event::Magnify(at, 1.1),
+        ];
+        for ev in &events {
+            assert!(d.inject(mt, p.id(), ev));
+        }
+        assert_eq!(*log.borrow(), events);
+    });
+}
+
+#[test]
+fn b2_drops_arrive_only_after_the_peer_accepts_the_drag() {
+    let mut d = HeadlessDesktop::new(1.0);
+    ManualLoop::new().with_token(|mt| {
+        let (mut p, log) = open(&mut d, mt, PeerOptions::top_level(Rect::default()));
+        let files = DragData::Files(vec!["/a.wav".into(), "/b.wav".into()]);
+        let step = |ph, data: &DragData| {
+            Event::Drag(DragEvent::new(ph, Point::new(3.0, 4.0), data.clone()))
+        };
+        assert!(d.inject(mt, p.id(), &step(DragPhase::Enter, &files)));
+        assert!(
+            !d.inject(mt, p.id(), &step(DragPhase::Drop, &files)),
+            "not accepted yet"
+        );
+        p.accept_drop(mt, true);
+        assert!(d.inject(mt, p.id(), &step(DragPhase::Over, &files)));
+        assert!(d.inject(mt, p.id(), &step(DragPhase::Drop, &files)));
+        // A new drag starts unaccepted again.
+        let text = DragData::Text("C4 E4 G4".into());
+        assert!(d.inject(mt, p.id(), &step(DragPhase::Enter, &text)));
+        assert!(!d.inject(mt, p.id(), &step(DragPhase::Drop, &text)));
+        assert!(d.inject(mt, p.id(), &step(DragPhase::Leave, &text)));
+        let phases: Vec<_> = log
+            .borrow()
+            .iter()
+            .map(|e| match e {
+                Event::Drag(d) => d.phase(),
+                other => panic!("unexpected {other:?}"),
+            })
+            .collect();
+        use DragPhase::*;
+        assert_eq!(phases, [Enter, Over, Drop, Enter, Leave]);
+        assert_eq!(
+            d.requests().last(),
+            Some(&Request::AcceptDrop(p.id(), true))
+        );
+    });
+}
+
+#[test]
+fn b4_cursor_requests_are_recorded() {
+    let mut d = HeadlessDesktop::new(1.0);
+    ManualLoop::new().with_token(|mt| {
+        let (mut p, _) = open(&mut d, mt, PeerOptions::top_level(Rect::default()));
+        p.set_cursor(mt, Some(CursorIcon::EwResize));
+        p.set_cursor(mt, None);
+        let reqs = d.take_requests();
+        assert_eq!(
+            reqs[1..],
+            [
+                Request::SetCursor(p.id(), Some(CursorIcon::EwResize)),
+                Request::SetCursor(p.id(), None)
+            ]
+        );
+    });
+}
+
+#[test]
+fn b1_headless_has_no_native_window_or_display_handle() {
+    let mut d = HeadlessDesktop::new(1.0);
+    assert!(matches!(d.display_handle(), Err(HandleError::NotSupported)));
+    ManualLoop::new().with_token(|mt| {
+        let (p, _) = open(&mut d, mt, PeerOptions::top_level(Rect::default()));
+        assert!(matches!(p.window_handle(), Err(HandleError::NotSupported)));
+    });
+}
+
+#[test]
 fn b7_contract_types_have_no_public_fields() {
     let src = [
         include_str!("../src/lib.rs"),
         include_str!("../src/event.rs"),
         include_str!("../src/headless.rs"),
+        include_str!("../src/pointer.rs"),
+        include_str!("../src/drag.rs"),
     ];
     let mut in_struct = false;
     for line in src.iter().flat_map(|s| s.lines()) {

@@ -5,9 +5,11 @@
 //! - [`Desktop`] creates [`Peer`]s from [`PeerOptions`]: top-level windows or child windows
 //!   embedded in a host-provided [`RawWindowHandle`] parent (the plugin editor case).
 //! - A [`Peer`] owns one native window: bounds, visibility, [`WindowState`], title, scale
-//!   factor, repaint requests, focus and the IME caret rectangle.
-//! - Each peer delivers [`Event`]s (keyboard, focus, IME, window changes; pointer, wheel and
-//!   drag-and-drop arrive in a later increment) to the [`EventSink`] it was created with.
+//!   factor, repaint requests, focus, the IME caret rectangle, the mouse cursor, drop
+//!   acceptance and its native [`raw_window_handle::WindowHandle`].
+//! - Each peer delivers [`Event`]s (pointer with pressure, tilt and source ids, wheel,
+//!   magnify, keyboard, focus, IME, drag-and-drop of files and text, window changes) to the
+//!   [`EventSink`] it was created with.
 //! - [`headless`] is a platform-free implementation for tests.
 //!
 //! Units: bounds and positions are `f64` logical units, y down; a top-level peer's bounds are
@@ -26,8 +28,10 @@
 //! });
 //! ```
 
+mod drag;
 mod event;
 pub mod headless;
+mod pointer;
 
 use std::fmt;
 
@@ -36,9 +40,15 @@ use syrp_geom::Rect;
 use syrp_gfx_api::{RenderError, RenderTarget};
 use syrp_loop_api::MessageThread;
 
+pub use cursor_icon::{self, CursorIcon};
+pub use drag::{DragData, DragEvent, DragPhase};
 pub use event::{Event, EventSink, ImeEvent};
 pub use keyboard_types::{self, KeyboardEvent, Modifiers};
-pub use raw_window_handle::{self, RawWindowHandle};
+pub use pointer::{
+    PointerButton, PointerButtons, PointerEvent, PointerKind, PointerPhase, PointerSource,
+    WheelEvent, WheelUnit,
+};
+pub use raw_window_handle::{self, HasDisplayHandle, HasWindowHandle, RawWindowHandle};
 pub use syrp_loop_api::PeerId;
 
 /// Whether a window is restored, minimised, maximised or fullscreen.
@@ -206,6 +216,10 @@ impl PeerOptions {
 
 /// The platform's window system (JUCE's Desktop role). Platform crates implement it; tests
 /// use [`headless::HeadlessDesktop`].
+///
+/// Through [`HasDisplayHandle`] a desktop lends its display connection (an X11 or Wayland
+/// connection, say) to GPU renderers and web views. One with no native display (headless)
+/// returns [`HandleError::NotSupported`](raw_window_handle::HandleError::NotSupported).
 /// ```
 /// use syrp_peer_api::{Desktop, EventSink, Peer, PeerError, PeerOptions};
 /// use syrp_loop_api::MessageThread;
@@ -213,7 +227,7 @@ impl PeerOptions {
 ///     d.create_peer(mt, o, s)
 /// }
 /// ```
-pub trait Desktop {
+pub trait Desktop: HasDisplayHandle {
     /// Creates a native window that delivers its events to `events`. Dropping the returned
     /// peer destroys the window.
     ///
@@ -246,6 +260,12 @@ pub trait Desktop {
 /// and it reports changes the user makes (dragging, the maximise button) the same way. A
 /// platform never echoes a request it applied unchanged. So a getter returns whichever came
 /// last: the latest setter call or the latest platform event.
+///
+/// Through [`HasWindowHandle`] a peer lends its native window to GPU surfaces and embedded
+/// children (a web view). The handle is valid only for the borrow; implementations make it
+/// with the `unsafe` [`WindowHandle::borrow_raw`](raw_window_handle::WindowHandle::borrow_raw)
+/// and must uphold its contract. A peer with no native window (headless) returns
+/// [`HandleError::NotSupported`](raw_window_handle::HandleError::NotSupported).
 /// ```
 /// # use syrp_geom::Rect; use syrp_loop_api::ManualLoop;
 /// use syrp_peer_api::{headless::HeadlessDesktop, Desktop, PeerOptions, WindowState};
@@ -257,7 +277,7 @@ pub trait Desktop {
 /// });
 /// ```
 #[doc(alias = "ComponentPeer")]
-pub trait Peer {
+pub trait Peer: HasWindowHandle {
     /// This peer's id, used for VBlank callbacks (`MessageLoop::on_vblank`).
     /// ```
     /// fn f(p: &dyn syrp_peer_api::Peer) { let _ = p.id(); }
@@ -339,6 +359,22 @@ pub trait Peer {
     /// fn f(p: &mut dyn syrp_peer_api::Peer, mt: &syrp_loop_api::MessageThread<'_>) { let _ = p.set_ime_caret(mt, Some(syrp_geom::Rect::new(4.0, 2.0, 1.0, 12.0))); }
     /// ```
     fn set_ime_caret(&mut self, mt: &MessageThread<'_>, caret: Option<Rect<f64>>);
+    /// Sets the mouse cursor shown over the peer; `None` hides it.
+    /// ```
+    /// use syrp_peer_api::CursorIcon;
+    /// fn f(p: &mut dyn syrp_peer_api::Peer, mt: &syrp_loop_api::MessageThread<'_>) { p.set_cursor(mt, Some(CursorIcon::Grab)); }
+    /// ```
+    #[doc(alias = "MouseCursor")]
+    #[doc(alias = "setMouseCursor")]
+    fn set_cursor(&mut self, mt: &MessageThread<'_>, cursor: Option<CursorIcon>);
+    /// Answers the current external drag: whether a drop here would be accepted. Call it while
+    /// handling a [`DragPhase::Enter`] or [`DragPhase::Over`]; the platform starts each drag
+    /// as not accepted and sends [`DragPhase::Drop`] only if the last answer was `true`.
+    /// ```
+    /// fn f(p: &mut dyn syrp_peer_api::Peer, mt: &syrp_loop_api::MessageThread<'_>) { p.accept_drop(mt, true); }
+    /// ```
+    #[doc(alias = "isInterestedInFileDrag")]
+    fn accept_drop(&mut self, mt: &MessageThread<'_>, accept: bool);
 
     /// A surface [`RenderTarget`] (no CPU buffer) matching the peer's size and scale factor:
     /// each side is the logical size times the scale, rounded up as `RenderTarget::from_logical`.
