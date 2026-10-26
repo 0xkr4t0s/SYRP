@@ -1,0 +1,1 @@
+{"wp": "WP-0.1-12", "kind": "added", "summary": "syrp-provenance crate with clean-room provenance checks: WP/Change-Request and Agent-Model commit trailers, and SPDX headers on files added in a range matched to the crate licence (errors/cleanroom.toml, SYRP-CR-*)."}
