@@ -1,0 +1,112 @@
+{
+  "id": "state/value_tree/listener/property_reaches_tree_and_ancestors",
+  "title": "A property change is heard by listeners on the changed tree and on every ancestor, never by descendants",
+  "juce_tag": "9.0.4",
+  "tolerance": "exact",
+  "wp": "WP-1.9-01",
+  "ledger_rows": [
+    "juce_data_structures/ValueTree"
+  ],
+  "docs": [
+    {
+      "page": "ValueTree::Listener",
+      "member": "valueTreePropertyChanged",
+      "says": "Called when a property of the tree the listener was added to changes, and also when a property of any descendant changes, at any depth."
+    }
+  ],
+  "setup": [
+    {
+      "op": "create",
+      "tree": "root",
+      "type": "Root"
+    },
+    {
+      "op": "create",
+      "tree": "mid",
+      "type": "Mid"
+    },
+    {
+      "op": "create",
+      "tree": "leaf",
+      "type": "Leaf"
+    },
+    {
+      "op": "add_child",
+      "parent": "root",
+      "child": "mid",
+      "index": -1
+    },
+    {
+      "op": "add_child",
+      "parent": "mid",
+      "child": "leaf",
+      "index": -1
+    },
+    {
+      "op": "add_listener",
+      "tree": "root",
+      "listener": "onRoot"
+    },
+    {
+      "op": "add_listener",
+      "tree": "mid",
+      "listener": "onMid"
+    },
+    {
+      "op": "add_listener",
+      "tree": "leaf",
+      "listener": "onLeaf"
+    }
+  ],
+  "steps": [
+    {
+      "op": "set_property",
+      "tree": "leaf",
+      "name": "v",
+      "value": 1
+    },
+    {
+      "op": "set_property",
+      "tree": "mid",
+      "name": "m",
+      "value": 2
+    }
+  ],
+  "expect": {
+    "compare": "multiset",
+    "calls": [
+      {
+        "listener": "onLeaf",
+        "callback": "valueTreePropertyChanged",
+        "tree": "leaf",
+        "property": "v"
+      },
+      {
+        "listener": "onMid",
+        "callback": "valueTreePropertyChanged",
+        "tree": "leaf",
+        "property": "v"
+      },
+      {
+        "listener": "onRoot",
+        "callback": "valueTreePropertyChanged",
+        "tree": "leaf",
+        "property": "v"
+      },
+      {
+        "listener": "onMid",
+        "callback": "valueTreePropertyChanged",
+        "tree": "mid",
+        "property": "m"
+      },
+      {
+        "listener": "onRoot",
+        "callback": "valueTreePropertyChanged",
+        "tree": "mid",
+        "property": "m"
+      }
+    ]
+  },
+  "record_order": true,
+  "notes": "The documentation does not say in which order listeners are called, so the expected calls are compared as a set (a multiset where a call repeats). record_order asks the harness to record JUCE's actual sequence for the open ordering questions in docs/design/0005-state-arena-spike.md. Open questions 4 (tree before ancestors?) and 1 are observed here."
+}

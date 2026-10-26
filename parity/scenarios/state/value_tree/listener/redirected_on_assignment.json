@@ -1,0 +1,81 @@
+{
+  "id": "state/value_tree/listener/redirected_on_assignment",
+  "title": "Assigning another tree to a ValueTree object moves its listeners to the new data and calls valueTreeRedirected; the old data is no longer heard",
+  "juce_tag": "9.0.4",
+  "tolerance": "exact",
+  "wp": "WP-1.9-01",
+  "ledger_rows": [
+    "juce_data_structures/ValueTree"
+  ],
+  "docs": [
+    {
+      "page": "ValueTree::Listener",
+      "member": "valueTreeRedirected",
+      "says": "Called when the ValueTree object the listener was added to is made to refer to different shared data, for example by assignment."
+    },
+    {
+      "page": "ValueTree",
+      "member": "addListener",
+      "says": "A listener is attached to the particular ValueTree object it was added to, not to the shared data; when that object is destroyed its listeners go with it, even if other references to the data remain."
+    }
+  ],
+  "setup": [
+    {
+      "op": "create",
+      "tree": "w",
+      "type": "A"
+    },
+    {
+      "op": "copy",
+      "tree": "old",
+      "source": "w"
+    },
+    {
+      "op": "create",
+      "tree": "b",
+      "type": "B"
+    },
+    {
+      "op": "add_listener",
+      "tree": "w",
+      "listener": "onW"
+    }
+  ],
+  "steps": [
+    {
+      "op": "assign",
+      "tree": "w",
+      "source": "b"
+    },
+    {
+      "op": "set_property",
+      "tree": "old",
+      "name": "x",
+      "value": 1
+    },
+    {
+      "op": "set_property",
+      "tree": "b",
+      "name": "x",
+      "value": 1
+    }
+  ],
+  "expect": {
+    "compare": "sequence",
+    "calls": [
+      {
+        "listener": "onW",
+        "callback": "valueTreeRedirected",
+        "tree": "w"
+      },
+      {
+        "listener": "onW",
+        "callback": "valueTreePropertyChanged",
+        "tree": "b",
+        "property": "x"
+      }
+    ]
+  },
+  "record_order": false,
+  "notes": "One listener; the redirect happens in the first step and the property change in the third, so the sequence is decided. Whether assigning the same data again redirects is not decided by the documentation and is not tested."
+}

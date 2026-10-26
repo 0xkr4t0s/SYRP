@@ -1,0 +1,86 @@
+{
+  "id": "state/value_tree/listener/parent_changed_not_sent_to_descendants",
+  "title": "Adding a subtree to a parent sends parentChanged to the subtree's root only, not to its children",
+  "juce_tag": "9.0.4",
+  "tolerance": "exact",
+  "wp": "WP-1.9-01",
+  "ledger_rows": [
+    "juce_data_structures/ValueTree"
+  ],
+  "docs": [
+    {
+      "page": "ValueTree::Listener",
+      "member": "valueTreeParentChanged",
+      "says": "Called when the listened tree itself gains or loses a parent; it is not sent for descendants."
+    },
+    {
+      "page": "ValueTree::Listener",
+      "member": "valueTreeChildAdded / valueTreeChildRemoved",
+      "says": "Called for child list changes of the listened tree and of any of its descendants."
+    }
+  ],
+  "setup": [
+    {
+      "op": "create",
+      "tree": "root",
+      "type": "Root"
+    },
+    {
+      "op": "create",
+      "tree": "sub",
+      "type": "Sub"
+    },
+    {
+      "op": "create",
+      "tree": "grand",
+      "type": "Grand"
+    },
+    {
+      "op": "add_child",
+      "parent": "sub",
+      "child": "grand",
+      "index": -1
+    },
+    {
+      "op": "add_listener",
+      "tree": "root",
+      "listener": "onRoot"
+    },
+    {
+      "op": "add_listener",
+      "tree": "sub",
+      "listener": "onSub"
+    },
+    {
+      "op": "add_listener",
+      "tree": "grand",
+      "listener": "onGrand"
+    }
+  ],
+  "steps": [
+    {
+      "op": "add_child",
+      "parent": "root",
+      "child": "sub",
+      "index": -1
+    }
+  ],
+  "expect": {
+    "compare": "multiset",
+    "calls": [
+      {
+        "listener": "onRoot",
+        "callback": "valueTreeChildAdded",
+        "parent": "root",
+        "child": "sub"
+      },
+      {
+        "listener": "onSub",
+        "callback": "valueTreeParentChanged",
+        "tree": "sub"
+      }
+    ]
+  },
+  "record_order": true,
+  "notes": "The documentation does not say in which order listeners are called, so the expected calls are compared as a set (a multiset where a call repeats). record_order asks the harness to record JUCE's actual sequence for the open ordering questions in docs/design/0005-state-arena-spike.md."
+}

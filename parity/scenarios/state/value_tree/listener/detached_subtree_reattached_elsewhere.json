@@ -1,0 +1,147 @@
+{
+  "id": "state/value_tree/listener/detached_subtree_reattached_elsewhere",
+  "title": "A detached subtree held by one reference survives, is re-attached under another parent, and changes inside it reach the new ancestors only",
+  "juce_tag": "9.0.4",
+  "tolerance": "exact",
+  "wp": "WP-1.9-01",
+  "ledger_rows": [
+    "juce_data_structures/ValueTree"
+  ],
+  "docs": [
+    {
+      "page": "ValueTree",
+      "member": "class description",
+      "says": "Copying a ValueTree makes another reference to the same shared data."
+    },
+    {
+      "page": "ValueTree",
+      "member": "removeChild / addChild",
+      "says": "A tree has at most one parent; a removed child can be kept by a reference and added to another parent."
+    },
+    {
+      "page": "ValueTree::Listener",
+      "member": "valueTreePropertyChanged",
+      "says": "Called when a property of the tree the listener was added to changes, and also when a property of any descendant changes, at any depth."
+    },
+    {
+      "page": "ValueTree::Listener",
+      "member": "valueTreeChildAdded / valueTreeChildRemoved",
+      "says": "Called for child list changes of the listened tree and of any of its descendants."
+    },
+    {
+      "page": "ValueTree::Listener",
+      "member": "valueTreeParentChanged",
+      "says": "Called when the listened tree itself gains or loses a parent; it is not sent for descendants."
+    }
+  ],
+  "setup": [
+    {
+      "op": "create",
+      "tree": "oldParent",
+      "type": "Old"
+    },
+    {
+      "op": "create",
+      "tree": "newParent",
+      "type": "New"
+    },
+    {
+      "op": "create",
+      "tree": "sub",
+      "type": "Sub"
+    },
+    {
+      "op": "create",
+      "tree": "grand",
+      "type": "Grand"
+    },
+    {
+      "op": "add_child",
+      "parent": "sub",
+      "child": "grand",
+      "index": -1
+    },
+    {
+      "op": "add_child",
+      "parent": "oldParent",
+      "child": "sub",
+      "index": -1
+    },
+    {
+      "op": "add_listener",
+      "tree": "oldParent",
+      "listener": "onOld"
+    },
+    {
+      "op": "add_listener",
+      "tree": "newParent",
+      "listener": "onNew"
+    },
+    {
+      "op": "add_listener",
+      "tree": "sub",
+      "listener": "onSub"
+    }
+  ],
+  "steps": [
+    {
+      "op": "remove_child",
+      "parent": "oldParent",
+      "child": "sub"
+    },
+    {
+      "op": "add_child",
+      "parent": "newParent",
+      "child": "sub",
+      "index": -1
+    },
+    {
+      "op": "set_property",
+      "tree": "grand",
+      "name": "v",
+      "value": 1
+    }
+  ],
+  "expect": {
+    "compare": "multiset",
+    "calls": [
+      {
+        "listener": "onOld",
+        "callback": "valueTreeChildRemoved",
+        "parent": "oldParent",
+        "child": "sub",
+        "index": 0
+      },
+      {
+        "listener": "onSub",
+        "callback": "valueTreeParentChanged",
+        "tree": "sub"
+      },
+      {
+        "listener": "onNew",
+        "callback": "valueTreeChildAdded",
+        "parent": "newParent",
+        "child": "sub"
+      },
+      {
+        "listener": "onSub",
+        "callback": "valueTreeParentChanged",
+        "tree": "sub"
+      },
+      {
+        "listener": "onNew",
+        "callback": "valueTreePropertyChanged",
+        "tree": "grand",
+        "property": "v"
+      },
+      {
+        "listener": "onSub",
+        "callback": "valueTreePropertyChanged",
+        "tree": "grand",
+        "property": "v"
+      }
+    ]
+  },
+  "record_order": true,
+  "notes": "The documentation does not say in which order listeners are called, so the expected calls are compared as a set (a multiset where a call repeats). record_order asks the harness to record JUCE's actual sequence for the open ordering questions in docs/design/0005-state-arena-spike.md. The spike's B4 scenario."
+}

@@ -1,0 +1,84 @@
+{
+  "id": "state/value_tree/listener/listener_mutation_during_notification",
+  "title": "A listener that sets another property while being notified: every listener hears both changes",
+  "juce_tag": "9.0.4",
+  "tolerance": "exact",
+  "wp": "WP-1.9-01",
+  "ledger_rows": [
+    "juce_data_structures/ValueTree"
+  ],
+  "docs": [
+    {
+      "page": "ValueTree::Listener",
+      "member": "valueTreePropertyChanged",
+      "says": "Called when a property of the tree the listener was added to changes, and also when a property of any descendant changes, at any depth."
+    }
+  ],
+  "setup": [
+    {
+      "op": "create",
+      "tree": "a",
+      "type": "A"
+    },
+    {
+      "op": "add_listener",
+      "tree": "a",
+      "listener": "echo",
+      "on_property_changed": [
+        {
+          "when_property": "x",
+          "do": {
+            "op": "set_property",
+            "tree": "a",
+            "name": "y",
+            "value": 1
+          }
+        }
+      ]
+    },
+    {
+      "op": "add_listener",
+      "tree": "a",
+      "listener": "plain"
+    }
+  ],
+  "steps": [
+    {
+      "op": "set_property",
+      "tree": "a",
+      "name": "x",
+      "value": 1
+    }
+  ],
+  "expect": {
+    "compare": "multiset",
+    "calls": [
+      {
+        "listener": "echo",
+        "callback": "valueTreePropertyChanged",
+        "tree": "a",
+        "property": "x"
+      },
+      {
+        "listener": "plain",
+        "callback": "valueTreePropertyChanged",
+        "tree": "a",
+        "property": "x"
+      },
+      {
+        "listener": "echo",
+        "callback": "valueTreePropertyChanged",
+        "tree": "a",
+        "property": "y"
+      },
+      {
+        "listener": "plain",
+        "callback": "valueTreePropertyChanged",
+        "tree": "a",
+        "property": "y"
+      }
+    ]
+  },
+  "record_order": true,
+  "notes": "The documentation does not say in which order listeners are called, so the expected calls are compared as a set (a multiset where a call repeats). record_order asks the harness to record JUCE's actual sequence for the open ordering questions in docs/design/0005-state-arena-spike.md. Open question 2 (is the nested change delivered depth-first, before 'plain' hears x?) is observed here. Syrp queues it after the current change."
+}
