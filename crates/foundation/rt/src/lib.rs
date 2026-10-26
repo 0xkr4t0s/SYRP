@@ -90,13 +90,8 @@ macro_rules! rt_safe_tuples {
         $(unsafe impl<$($t: RtSafe),+> RtSafe for ($($t,)+) {})+
     };
 }
+#[rustfmt::skip]
 rt_safe_tuples!(
-    (A),
-    (A, B),
-    (A, B, C),
-    (A, B, C, D),
-    (A, B, C, D, E),
-    (A, B, C, D, E, F),
-    (A, B, C, D, E, F, G),
-    (A, B, C, D, E, F, G, H),
+    (A), (A, B), (A, B, C), (A, B, C, D), (A, B, C, D, E), (A, B, C, D, E, F),
+    (A, B, C, D, E, F, G), (A, B, C, D, E, F, G, H),
 );

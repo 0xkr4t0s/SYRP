@@ -48,6 +48,5 @@ binary with `SYRP-RT-0001`. CI wiring for Miri and loom is a separate change req
   model) is the second increment of WP-0.1-04; it was split out to keep PRs under 1,200 lines.
 - RT tokens (`RtCtx`, `PrepareCtx`) from the WP title are not specified as behaviours here;
   they belong with `syrp-plugin-api` (WP-0.2-06) unless the spec room moves them.
-- `TripleBuffer` (audio to UI) and an RT-safe logger are not in this WP.
 - SPSC has no cached indices or cache-line padding yet (correct, not tuned).
 - `SYRP-RT-0001` is in `errors/rt.toml` but not yet in the CLI's embedded catalogue.
