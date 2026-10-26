@@ -2,12 +2,14 @@
 //! Builds the Syrp progress page (WP-0.2-16).
 //!
 //! [`load`] reads the work-package board (`work/`), the JUCE class inventory and parity ledger
-//! (`parity/`) and the first-parent git history, and returns a [`Progress`] snapshot, which the
-//! `syrp-progress` binary writes as `progress.json`. The HTML page arrives in increment 2.
+//! (`parity/`) and the first-parent git history, and returns a [`Progress`] snapshot.
+//! [`render_html`] turns that snapshot into one self-contained HTML page, and the
+//! `syrp-progress` binary writes both `progress.json` and `index.html`.
 //!
 //! ```no_run
 //! let progress = syrp_progress::load(std::path::Path::new("."), &[]).unwrap();
-//! println!("{}", serde_json::to_string(&progress).unwrap());
+//! let html = syrp_progress::render_html(&progress);
+//! assert!(html.starts_with("<!doctype html>"));
 //! ```
 
 mod error;
@@ -23,6 +25,9 @@ pub use error::ProgressError;
 pub use history::{MergedPr, parse_history};
 pub use parity::{ClassStatus, Module};
 pub use syrp_error::Diagnostic;
+
+/// The page template. `/*DATA*/` is replaced by the snapshot as JSON.
+const TEMPLATE: &str = include_str!("page.html");
 
 /// Everything the page shows, as of one commit.
 ///
@@ -287,4 +292,19 @@ pub fn load(root: &Path, open: &[OpenPr]) -> Result<Progress, ProgressError> {
         modules,
         prs,
     })
+}
+
+/// Renders the snapshot as one self-contained HTML page (spec B4).
+///
+/// The JSON is embedded in a script element with every `</` written as `<\/`, so no text
+/// from the board or a PR title can close that element early.
+///
+/// ```
+/// let p = syrp_progress::Progress { commit: "</script>".into(), ..Default::default() };
+/// let html = syrp_progress::render_html(&p);
+/// assert!(html.contains(r#""commit":"<\/script>""#));
+/// ```
+pub fn render_html(p: &Progress) -> String {
+    let json = serde_json::to_string(p).expect("snapshot always serialises");
+    TEMPLATE.replacen("/*DATA*/", &json.replace("</", "<\\/"), 1)
 }

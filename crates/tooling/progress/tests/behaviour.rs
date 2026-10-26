@@ -211,6 +211,26 @@ fn b3_merged_prs_oldest_first_in_utc_with_wp() {
 }
 
 #[test]
+fn b4_page_embeds_data_and_cannot_be_broken_out_of() {
+    let root = fixture("b4");
+    let open = [OpenPr {
+        number: 9,
+        title: "[WP-0.1-03] </script><script>alert(1)".into(),
+    }];
+    let mut p = syrp_progress::load(&root, &open).unwrap();
+    p.waves[0].wps[2].title = "</script><b>".into();
+    let html = syrp_progress::render_html(&p);
+    assert!(html.starts_with("<!doctype html>"));
+    assert!(!html.contains("/*DATA*/"));
+    assert_eq!(
+        html.matches("</script>").count(),
+        1,
+        "only the page's own closing tag"
+    );
+    assert!(html.contains(r#""title":"<\/script><b>""#));
+}
+
+#[test]
 fn b5_binary_writes_both_files_and_reports_bad_input() {
     let root = fixture("b5");
     let out = root.join("site/progress");
@@ -235,6 +255,7 @@ fn b5_binary_writes_both_files_and_reports_bad_input() {
     let json: serde_json::Value =
         serde_json::from_str(&std::fs::read_to_string(out.join("progress.json")).unwrap()).unwrap();
     assert_eq!(json["waves"][0]["wps"][2]["open"][0], 9);
+    assert!(out.join("index.html").exists());
 
     std::fs::write(&open, "not json").unwrap();
     let bad = run(&[&open]);
@@ -268,5 +289,9 @@ fn b6_same_inputs_give_identical_output() {
     assert_eq!(
         serde_json::to_string(&a).unwrap(),
         serde_json::to_string(&b).unwrap()
+    );
+    assert_eq!(
+        syrp_progress::render_html(&a),
+        syrp_progress::render_html(&b)
     );
 }
