@@ -1,0 +1,1 @@
+{"wp": "WP-1.2-03", "kind": "added", "summary": "syrp-state increment 3 (final): cheap delivery (no-listener fast path, reused snapshot buffer, allocation-free set_property after warm-up), deep_copy and is_equivalent, an invariant proptest over random operation sequences, and Callgrind instruction-count benchmarks."}

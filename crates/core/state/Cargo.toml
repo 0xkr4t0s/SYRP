@@ -20,5 +20,13 @@ syrp-error = { version = "0.0.1", path = "../../foundation/error" }
 syrp-loop-api = { version = "0.0.1", path = "../../contracts/loop-api" }
 syrp-var = { version = "0.0.1", path = "../var" }
 
+[dev-dependencies]
+proptest = { version = "1.5", default-features = false, features = ["std"] }
+syrp-rt = { version = "0.0.1", path = "../../foundation/rt" }
+
+[[bench]]
+name = "instructions"
+harness = false
+
 [lints]
 workspace = true

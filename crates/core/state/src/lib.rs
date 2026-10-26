@@ -19,7 +19,7 @@
 //!
 //! Every mutation appends [`Change`] records, then delivers them to [`Subscription`] listeners
 //! once its borrow is released. [`LogCursor`]s read the log; see [`Store::subscribe`] for the
-//! delivery rules. Not yet here: deep copies, equivalence and benchmarks.
+//! delivery rules. [`Store::deep_copy`] and [`Store::is_equivalent`] work on whole subtrees.
 //!
 //! ```
 //! use syrp_state::Store;
@@ -42,6 +42,7 @@
 //! needs_send(syrp_state::Store::new());
 //! ```
 
+mod copy;
 mod delivery;
 mod error;
 mod log;
