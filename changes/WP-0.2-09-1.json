@@ -1,0 +1,1 @@
+{"wp": "WP-0.2-09", "kind": "added", "summary": "Renderer spike, increment 1: syrp-render-spike with the 20-scene DisplayList set (rendered at 1x/1.25x/1.5x/2x) and the golden image comparator (per-channel tolerance, max differing-pixel ratio, diff PNG)."}

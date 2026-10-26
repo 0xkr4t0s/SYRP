@@ -1,0 +1,23 @@
+[package]
+name = "syrp-render-spike"
+description = "Throwaway spike (WP-0.2-09): vello_cpu vs tiny-skia rendering one DisplayList scene set, with a golden image comparator."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "AGPL-3.0-only OR BUSL-1.1"
+repository.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[package.metadata.syrp]
+layer = "L6"
+wp = "WP-0.2-09"
+
+[dependencies]
+syrp-geom = { version = "0.0.1", path = "../../foundation/geom" }
+syrp-gfx-api = { version = "0.0.1", path = "../../contracts/gfx-api" }
+# MIT OR Apache-2.0. Encodes the comparator's diff images.
+png = "0.18.1"
+
+[lints]
+workspace = true
