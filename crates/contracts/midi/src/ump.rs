@@ -110,7 +110,8 @@ impl SysExStatus {
 ///
 /// A plain `Copy` value. Serialise with [`words`](Self::words); parse with
 /// [`read`](Self::read), which never panics. Groups are numbered 0 to 15 (the field value) and
-/// channels 1 to 16, as elsewhere in this crate.
+/// channels 1 to 16, as elsewhere in this crate. Equality and hashing compare all words,
+/// including unused and reserved bits (constructors zero them; `read` keeps them as given).
 /// ```
 /// use syrp_midi::UmpPacket;
 /// let p = UmpPacket::midi1_channel_voice(0, 0x90, 60, 100).unwrap();

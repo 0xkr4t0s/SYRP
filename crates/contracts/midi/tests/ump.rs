@@ -216,6 +216,10 @@ fn b3_ump_buffer_is_ordered_and_iterates_by_value() -> R {
     assert_eq!(ranged, [5, 5]);
     assert_eq!(buf.iter().next_back().map(|e| e.sample_offset()), Some(10));
     assert_eq!(
+        (buf.first_sample_offset(), buf.last_sample_offset()),
+        (Some(0), Some(10))
+    );
+    assert_eq!(
         ((&buf).into_iter().len(), buf.len(), buf.is_empty()),
         (6, 6, false)
     );
@@ -247,6 +251,9 @@ fn b3_ump_buffer_try_add_never_allocates_and_fails_when_full() -> R {
         Ok(())
     })?;
     assert_eq!((buf.event_capacity(), buf.word_capacity()), caps);
+    buf.reserve(2, 8); // off the audio thread: room for two more 4-word packets
+    let more = P::sysex8(0, Complete, 0, &[])?;
+    no_alloc(|| buf.try_add(more, 0).and(buf.try_add(more, 1)))?;
     Ok(())
 }
 

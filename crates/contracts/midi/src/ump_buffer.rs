@@ -58,6 +58,19 @@ impl UmpBuffer {
         }
     }
 
+    /// Grows both capacities so that `events` more packets and `words` more words fit.
+    /// Allocates: message thread (or prepare) only.
+    /// ```
+    /// let mut buf = syrp_midi::UmpBuffer::new();
+    /// buf.reserve(4, 16);
+    /// assert!(buf.event_capacity() >= 4 && buf.word_capacity() >= 16);
+    /// ```
+    #[doc(alias = "ensureSize")]
+    pub fn reserve(&mut self, events: usize, words: usize) {
+        self.heads.reserve(events);
+        self.arena.reserve(words);
+    }
+
     /// How many packets fit in total without allocating.
     /// ```
     /// assert_eq!(syrp_midi::UmpBuffer::new().event_capacity(), 0);
@@ -150,6 +163,24 @@ impl UmpBuffer {
     #[must_use]
     pub fn is_empty(&self) -> bool {
         self.heads.is_empty()
+    }
+
+    /// The offset of the earliest packet.
+    /// ```
+    /// assert_eq!(syrp_midi::UmpBuffer::new().first_sample_offset(), None);
+    /// ```
+    #[must_use]
+    pub fn first_sample_offset(&self) -> Option<u32> {
+        self.heads.first().map(|h| h.sample_offset)
+    }
+
+    /// The offset of the latest packet.
+    /// ```
+    /// assert_eq!(syrp_midi::UmpBuffer::new().last_sample_offset(), None);
+    /// ```
+    #[must_use]
+    pub fn last_sample_offset(&self) -> Option<u32> {
+        self.heads.last().map(|h| h.sample_offset)
     }
 
     /// Iterates over every packet in order (RT-safe).
