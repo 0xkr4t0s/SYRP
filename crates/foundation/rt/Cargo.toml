@@ -1,0 +1,23 @@
+[package]
+name = "syrp-rt"
+description = "Real-time primitives for Syrp audio threads: RtSafe, float atomics, SPSC queues, deferred drop, RtHandoff and an allocation guard."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT OR Apache-2.0"
+repository.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[package.metadata.syrp]
+layer = "L0"
+wp = "WP-0.1-04"
+
+[dependencies]
+
+# Only for `RUSTFLAGS="--cfg loom"` model-checking builds (see AGENTS.md).
+[target.'cfg(loom)'.dependencies]
+loom = "0.7.2"
+
+[lints]
+workspace = true

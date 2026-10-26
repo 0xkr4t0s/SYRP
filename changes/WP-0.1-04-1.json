@@ -1,0 +1,1 @@
+{"wp": "WP-0.1-04", "kind": "added", "summary": "syrp-rt: RtSafe marker, AtomicF32/AtomicF64, a loom-checked bounded SPSC queue, Collector/DeferredDrop, and the GuardedAllocator + no_alloc test guard (SYRP-RT-0001, new errors/rt.toml domain)."}
