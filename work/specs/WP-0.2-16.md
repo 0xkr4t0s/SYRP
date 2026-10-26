@@ -43,6 +43,11 @@ crate as data in our own words. No third-party script: the treemap layout is wri
 Publishing. A change request adds the step to `.github/workflows/docs.yml` that runs the binary
 into `target/site/progress/` after this WP merges.
 
+## Crate setup
+Create `crates/tooling/progress/` with `Cargo.toml` (inherit `version`, `edition`, `rust-version`, `repository`, `authors`, `publish` from the workspace; `[lints] workspace = true`), `[package.metadata.syrp] layer = "L6"`, an `AGENTS.md` following `docs/agents/crate-agents-template.md`, `src/lib.rs`, and a `[[bin]] name = "syrp-progress"` at `src/main.rs`. Workspace members are globbed, so no root edit is needed.
+Licence: `license = "AGPL-3.0-only OR BUSL-1.1"`.
+Error codes `SYRP-PROG-0001..` go in a new `errors/progress.toml`. Adding that domain to `cargo syrp explain` (the CLI's catalogue source list) is part of the docs.yml change request, since the CLI crate is not this WP's.
+
 ## Rules that apply to every WP
 - Clean room: work only from this spec, the master plan (`docs/design/master-plan.md`) and public JUCE *documentation* for behaviour. Never fetch or recall JUCE source code.
 - Name every test after the behaviour it proves, prefixed with its id, for example `b3_try_push_fails_when_full`.
