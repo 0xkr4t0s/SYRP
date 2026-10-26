@@ -1,0 +1,1 @@
+{"wp": "WP-0.1-05", "kind": "added", "summary": "syrp-geom: AffineTransform (identity, translation, rotation with pivot, scale, shear, followed_by, inversion, point and rect transforms) with an inverse property test."}
