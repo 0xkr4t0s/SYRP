@@ -1,0 +1,1 @@
+{"wp": "WP-0.2-07", "kind": "added", "summary": "syrp-gfx-api (increment 1): Path/PathView with verb and point arrays, Stroke parameters, Colour, gradient stops and Brush (solid, linear, radial, two-point conical), and opaque ImageHandle/FontHandle ids."}

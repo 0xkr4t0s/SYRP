@@ -935,6 +935,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "syrp-gfx-api"
+version = "0.0.1"
+dependencies = [
+ "syrp-geom",
+]
+
+[[package]]
 name = "syrp-loop-api"
 version = "0.0.1"
 dependencies = [
