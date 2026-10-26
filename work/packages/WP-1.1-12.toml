@@ -8,5 +8,5 @@ risk = ["public-api", "unsafe", "ffi", "supply-chain"]
 acceptance = "cargo syrp wp check WP-1.1-12 --json"
 platforms = ["linux", "macos", "windows"]
 role = "implementer"
-status = "planned"
+status = "done"
 budget = { agent_hours = 32, max_review_rounds = 3, max_restarts = 2 }
