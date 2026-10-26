@@ -1,8 +1,12 @@
 //! 2D geometry for Syrp with JUCE-equivalent semantics.
 //!
-//! This crate provides [`Point`], [`Rect`] (generic over the [`Coord`] scalar types
-//! `i32`, `f32` and `f64`) and [`AffineTransform`]. Coordinates follow screen conventions:
-//! x grows to the right and y grows downwards.
+//! This crate provides [`Point`], [`Rect`], [`RectList`], [`Line`], [`Parallelogram`] and
+//! [`BorderSize`] (generic over the [`Coord`] scalar types `i32`, `f32` and `f64`),
+//! and [`AffineTransform`].
+//! Coordinates follow screen conventions: x grows to the right and y grows downwards.
+//!
+//! The `kurbo` feature adds `From` conversions between the `f64` types and their `kurbo`
+//! equivalents.
 //!
 //! ```
 //! use syrp_geom::{AffineTransform, Point, Rect};
@@ -13,12 +17,20 @@
 //! assert_eq!(p, Point::new(6.0, 6.0));
 //! ```
 
+mod border;
 mod coord;
+#[cfg(feature = "kurbo")]
+mod kurbo_interop;
+mod line;
 mod point;
 mod rect;
+mod rect_list;
 mod transform;
 
+pub use border::BorderSize;
 pub use coord::Coord;
+pub use line::{Line, Parallelogram};
 pub use point::Point;
 pub use rect::Rect;
+pub use rect_list::RectList;
 pub use transform::AffineTransform;
