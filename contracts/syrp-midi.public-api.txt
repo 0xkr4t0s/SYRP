@@ -1,0 +1,250 @@
+pub mod syrp_midi
+#[non_exhaustive] pub enum syrp_midi::MidiError
+pub syrp_midi::MidiError::BufferFull
+pub syrp_midi::MidiError::Malformed
+pub syrp_midi::MidiError::MalformedUmp
+pub syrp_midi::MidiError::ValueOutOfRange
+impl core::error::Error for syrp_midi::MidiError
+impl core::fmt::Display for syrp_midi::MidiError
+pub fn syrp_midi::MidiError::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl syrp_error::Diagnostic for syrp_midi::MidiError
+pub fn syrp_midi::MidiError::code(&self) -> syrp_error::ErrorCode
+#[non_exhaustive] pub enum syrp_midi::MidiMessageKind
+pub syrp_midi::MidiMessageKind::ChannelPressure
+pub syrp_midi::MidiMessageKind::Controller
+pub syrp_midi::MidiMessageKind::Meta
+pub syrp_midi::MidiMessageKind::NoteOff
+pub syrp_midi::MidiMessageKind::NoteOn
+pub syrp_midi::MidiMessageKind::PitchBend
+pub syrp_midi::MidiMessageKind::PolyPressure
+pub syrp_midi::MidiMessageKind::ProgramChange
+pub syrp_midi::MidiMessageKind::SysEx
+pub syrp_midi::MidiMessageKind::SystemCommon
+pub syrp_midi::MidiMessageKind::SystemRealtime
+pub enum syrp_midi::SysExStatus
+pub syrp_midi::SysExStatus::Complete
+pub syrp_midi::SysExStatus::Continue
+pub syrp_midi::SysExStatus::End
+pub syrp_midi::SysExStatus::Start
+#[non_exhaustive] pub enum syrp_midi::UmpMessageType
+pub syrp_midi::UmpMessageType::Data128
+pub syrp_midi::UmpMessageType::Data64
+pub syrp_midi::UmpMessageType::FlexData
+pub syrp_midi::UmpMessageType::Midi1ChannelVoice
+pub syrp_midi::UmpMessageType::Midi2ChannelVoice
+pub syrp_midi::UmpMessageType::Reserved(u8)
+pub syrp_midi::UmpMessageType::Stream
+pub syrp_midi::UmpMessageType::System
+pub syrp_midi::UmpMessageType::Utility
+impl syrp_midi::UmpMessageType
+pub fn syrp_midi::UmpMessageType::from_nibble(u8) -> Self
+pub fn syrp_midi::UmpMessageType::word_count(self) -> usize
+pub struct syrp_midi::BytesToUmp
+impl syrp_midi::BytesToUmp
+pub fn syrp_midi::BytesToUmp::feed(&mut self, &[u8], impl core::ops::function::FnMut(syrp_midi::UmpPacket))
+pub fn syrp_midi::BytesToUmp::new(u8) -> core::option::Option<Self>
+pub fn syrp_midi::BytesToUmp::push(&mut self, u8, impl core::ops::function::FnMut(syrp_midi::UmpPacket))
+pub fn syrp_midi::BytesToUmp::reset(&mut self)
+impl syrp_rt::RtSafe for syrp_midi::BytesToUmp
+pub struct syrp_midi::Events<'a>
+impl core::iter::traits::double_ended::DoubleEndedIterator for syrp_midi::Events<'_>
+pub fn syrp_midi::Events<'_>::next_back(&mut self) -> core::option::Option<Self::Item>
+impl core::iter::traits::exact_size::ExactSizeIterator for syrp_midi::Events<'_>
+impl<'a> core::iter::traits::iterator::Iterator for syrp_midi::Events<'a>
+pub type syrp_midi::Events<'a>::Item = syrp_midi::MidiMessageRef<'a>
+pub fn syrp_midi::Events<'a>::next(&mut self) -> core::option::Option<Self::Item>
+pub fn syrp_midi::Events<'a>::size_hint(&self) -> (usize, core::option::Option<usize>)
+pub struct syrp_midi::MidiBuffer
+impl syrp_midi::MidiBuffer
+pub fn syrp_midi::MidiBuffer::add_event(&mut self, &[u8], u32) -> core::result::Result<(), syrp_midi::MidiError>
+pub fn syrp_midi::MidiBuffer::byte_capacity(&self) -> usize
+pub fn syrp_midi::MidiBuffer::clear(&mut self)
+pub fn syrp_midi::MidiBuffer::event_capacity(&self) -> usize
+pub fn syrp_midi::MidiBuffer::first_sample_offset(&self) -> core::option::Option<u32>
+pub fn syrp_midi::MidiBuffer::is_empty(&self) -> bool
+pub fn syrp_midi::MidiBuffer::iter(&self) -> syrp_midi::Events<'_>
+pub fn syrp_midi::MidiBuffer::last_sample_offset(&self) -> core::option::Option<u32>
+pub fn syrp_midi::MidiBuffer::len(&self) -> usize
+pub fn syrp_midi::MidiBuffer::new() -> Self
+pub fn syrp_midi::MidiBuffer::range(&self, core::ops::range::Range<u32>) -> syrp_midi::Events<'_>
+pub fn syrp_midi::MidiBuffer::reserve(&mut self, usize, usize)
+pub fn syrp_midi::MidiBuffer::try_add_event(&mut self, &[u8], u32) -> core::result::Result<(), syrp_midi::MidiError>
+pub fn syrp_midi::MidiBuffer::with_capacity(usize, usize) -> Self
+impl syrp_rt::RtSafe for syrp_midi::MidiBuffer
+impl<'a> core::iter::traits::collect::IntoIterator for &'a syrp_midi::MidiBuffer
+pub type &'a syrp_midi::MidiBuffer::IntoIter = syrp_midi::Events<'a>
+pub type &'a syrp_midi::MidiBuffer::Item = syrp_midi::MidiMessageRef<'a>
+pub fn &'a syrp_midi::MidiBuffer::into_iter(self) -> syrp_midi::Events<'a>
+pub struct syrp_midi::MidiMessage
+impl syrp_midi::MidiMessage
+pub fn syrp_midi::MidiMessage::as_view(&self) -> syrp_midi::MidiMessageRef<'_>
+pub fn syrp_midi::MidiMessage::channel_pressure(u8, u8) -> core::result::Result<Self, syrp_midi::MidiError>
+pub fn syrp_midi::MidiMessage::controller(u8, u8, u8) -> core::result::Result<Self, syrp_midi::MidiError>
+pub fn syrp_midi::MidiMessage::from_bytes(&[u8]) -> core::result::Result<Self, syrp_midi::MidiError>
+pub fn syrp_midi::MidiMessage::meta(u8, &[u8]) -> core::result::Result<Self, syrp_midi::MidiError>
+pub fn syrp_midi::MidiMessage::note_off(u8, u8, u8) -> core::result::Result<Self, syrp_midi::MidiError>
+pub fn syrp_midi::MidiMessage::note_on(u8, u8, u8) -> core::result::Result<Self, syrp_midi::MidiError>
+pub fn syrp_midi::MidiMessage::pitch_bend(u8, u16) -> core::result::Result<Self, syrp_midi::MidiError>
+pub fn syrp_midi::MidiMessage::poly_pressure(u8, u8, u8) -> core::result::Result<Self, syrp_midi::MidiError>
+pub fn syrp_midi::MidiMessage::program_change(u8, u8) -> core::result::Result<Self, syrp_midi::MidiError>
+pub fn syrp_midi::MidiMessage::set_timestamp(&mut self, f64)
+pub fn syrp_midi::MidiMessage::sysex(&[u8]) -> core::result::Result<Self, syrp_midi::MidiError>
+pub fn syrp_midi::MidiMessage::timestamp(&self) -> f64
+pub fn syrp_midi::MidiMessage::view(&self, u32) -> syrp_midi::MidiMessageRef<'_>
+pub fn syrp_midi::MidiMessage::with_timestamp(self, f64) -> Self
+impl syrp_midi::MidiData for syrp_midi::MidiMessage
+pub fn syrp_midi::MidiMessage::bytes(&self) -> &[u8]
+pub fn syrp_midi::MidiMessage::channel(&self) -> core::option::Option<u8>
+pub fn syrp_midi::MidiMessage::channel_pressure_value(&self) -> core::option::Option<u8>
+pub fn syrp_midi::MidiMessage::controller_number(&self) -> core::option::Option<u8>
+pub fn syrp_midi::MidiMessage::controller_value(&self) -> core::option::Option<u8>
+pub fn syrp_midi::MidiMessage::is_note_off(&self) -> bool
+pub fn syrp_midi::MidiMessage::is_note_on(&self) -> bool
+pub fn syrp_midi::MidiMessage::kind(&self) -> syrp_midi::MidiMessageKind
+pub fn syrp_midi::MidiMessage::meta_data(&self) -> core::option::Option<&[u8]>
+pub fn syrp_midi::MidiMessage::meta_type(&self) -> core::option::Option<u8>
+pub fn syrp_midi::MidiMessage::note_number(&self) -> core::option::Option<u8>
+pub fn syrp_midi::MidiMessage::pitch_bend_value(&self) -> core::option::Option<u16>
+pub fn syrp_midi::MidiMessage::poly_pressure_value(&self) -> core::option::Option<u8>
+pub fn syrp_midi::MidiMessage::program_number(&self) -> core::option::Option<u8>
+pub fn syrp_midi::MidiMessage::sysex_data(&self) -> core::option::Option<&[u8]>
+pub fn syrp_midi::MidiMessage::velocity(&self) -> core::option::Option<u8>
+pub struct syrp_midi::MidiMessageRef<'a>
+impl<'a> syrp_midi::MidiMessageRef<'a>
+pub fn syrp_midi::MidiMessageRef<'a>::as_slice(self) -> &'a [u8]
+pub fn syrp_midi::MidiMessageRef<'a>::meta_data(self) -> core::option::Option<&'a [u8]>
+pub fn syrp_midi::MidiMessageRef<'a>::new(&'a [u8], u32) -> core::result::Result<Self, syrp_midi::MidiError>
+pub fn syrp_midi::MidiMessageRef<'a>::sample_offset(self) -> u32
+pub fn syrp_midi::MidiMessageRef<'a>::sysex_data(self) -> core::option::Option<&'a [u8]>
+pub fn syrp_midi::MidiMessageRef<'a>::to_message(self) -> syrp_midi::MidiMessage
+impl syrp_midi::MidiData for syrp_midi::MidiMessageRef<'_>
+pub fn syrp_midi::MidiMessageRef<'_>::bytes(&self) -> &[u8]
+pub fn syrp_midi::MidiMessageRef<'_>::channel(&self) -> core::option::Option<u8>
+pub fn syrp_midi::MidiMessageRef<'_>::channel_pressure_value(&self) -> core::option::Option<u8>
+pub fn syrp_midi::MidiMessageRef<'_>::controller_number(&self) -> core::option::Option<u8>
+pub fn syrp_midi::MidiMessageRef<'_>::controller_value(&self) -> core::option::Option<u8>
+pub fn syrp_midi::MidiMessageRef<'_>::is_note_off(&self) -> bool
+pub fn syrp_midi::MidiMessageRef<'_>::is_note_on(&self) -> bool
+pub fn syrp_midi::MidiMessageRef<'_>::kind(&self) -> syrp_midi::MidiMessageKind
+pub fn syrp_midi::MidiMessageRef<'_>::meta_data(&self) -> core::option::Option<&[u8]>
+pub fn syrp_midi::MidiMessageRef<'_>::meta_type(&self) -> core::option::Option<u8>
+pub fn syrp_midi::MidiMessageRef<'_>::note_number(&self) -> core::option::Option<u8>
+pub fn syrp_midi::MidiMessageRef<'_>::pitch_bend_value(&self) -> core::option::Option<u16>
+pub fn syrp_midi::MidiMessageRef<'_>::poly_pressure_value(&self) -> core::option::Option<u8>
+pub fn syrp_midi::MidiMessageRef<'_>::program_number(&self) -> core::option::Option<u8>
+pub fn syrp_midi::MidiMessageRef<'_>::sysex_data(&self) -> core::option::Option<&[u8]>
+pub fn syrp_midi::MidiMessageRef<'_>::velocity(&self) -> core::option::Option<u8>
+impl syrp_rt::RtSafe for syrp_midi::MidiMessageRef<'_>
+pub struct syrp_midi::UmpBuffer
+impl syrp_midi::UmpBuffer
+pub fn syrp_midi::UmpBuffer::add(&mut self, syrp_midi::UmpPacket, u32) -> core::result::Result<(), syrp_midi::MidiError>
+pub fn syrp_midi::UmpBuffer::clear(&mut self)
+pub fn syrp_midi::UmpBuffer::event_capacity(&self) -> usize
+pub fn syrp_midi::UmpBuffer::first_sample_offset(&self) -> core::option::Option<u32>
+pub fn syrp_midi::UmpBuffer::is_empty(&self) -> bool
+pub fn syrp_midi::UmpBuffer::iter(&self) -> syrp_midi::UmpEvents<'_>
+pub fn syrp_midi::UmpBuffer::last_sample_offset(&self) -> core::option::Option<u32>
+pub fn syrp_midi::UmpBuffer::len(&self) -> usize
+pub fn syrp_midi::UmpBuffer::new() -> Self
+pub fn syrp_midi::UmpBuffer::range(&self, core::ops::range::Range<u32>) -> syrp_midi::UmpEvents<'_>
+pub fn syrp_midi::UmpBuffer::reserve(&mut self, usize, usize)
+pub fn syrp_midi::UmpBuffer::try_add(&mut self, syrp_midi::UmpPacket, u32) -> core::result::Result<(), syrp_midi::MidiError>
+pub fn syrp_midi::UmpBuffer::with_capacity(usize, usize) -> Self
+pub fn syrp_midi::UmpBuffer::word_capacity(&self) -> usize
+impl syrp_rt::RtSafe for syrp_midi::UmpBuffer
+impl<'a> core::iter::traits::collect::IntoIterator for &'a syrp_midi::UmpBuffer
+pub type &'a syrp_midi::UmpBuffer::IntoIter = syrp_midi::UmpEvents<'a>
+pub type &'a syrp_midi::UmpBuffer::Item = syrp_midi::UmpEvent
+pub fn &'a syrp_midi::UmpBuffer::into_iter(self) -> syrp_midi::UmpEvents<'a>
+pub struct syrp_midi::UmpEvent
+impl syrp_midi::UmpEvent
+pub fn syrp_midi::UmpEvent::packet(self) -> syrp_midi::UmpPacket
+pub fn syrp_midi::UmpEvent::sample_offset(self) -> u32
+impl syrp_rt::RtSafe for syrp_midi::UmpEvent
+pub struct syrp_midi::UmpEvents<'a>
+impl core::iter::traits::double_ended::DoubleEndedIterator for syrp_midi::UmpEvents<'_>
+pub fn syrp_midi::UmpEvents<'_>::next_back(&mut self) -> core::option::Option<syrp_midi::UmpEvent>
+impl core::iter::traits::exact_size::ExactSizeIterator for syrp_midi::UmpEvents<'_>
+impl core::iter::traits::iterator::Iterator for syrp_midi::UmpEvents<'_>
+pub type syrp_midi::UmpEvents<'_>::Item = syrp_midi::UmpEvent
+pub fn syrp_midi::UmpEvents<'_>::next(&mut self) -> core::option::Option<syrp_midi::UmpEvent>
+pub fn syrp_midi::UmpEvents<'_>::size_hint(&self) -> (usize, core::option::Option<usize>)
+pub struct syrp_midi::UmpPacket
+impl syrp_midi::UmpPacket
+pub fn syrp_midi::UmpPacket::channel(&self) -> core::option::Option<u8>
+pub fn syrp_midi::UmpPacket::flex_data(u8, u8, u8, u8, u8, u8, [u32; 3]) -> core::result::Result<Self, syrp_midi::MidiError>
+pub fn syrp_midi::UmpPacket::group(&self) -> core::option::Option<u8>
+pub fn syrp_midi::UmpPacket::index(&self) -> core::option::Option<u16>
+pub fn syrp_midi::UmpPacket::message_type(&self) -> syrp_midi::UmpMessageType
+pub fn syrp_midi::UmpPacket::midi1_channel_voice(u8, u8, u8, u8) -> core::result::Result<Self, syrp_midi::MidiError>
+pub fn syrp_midi::UmpPacket::midi2_channel_voice(u8, u8, u8, u16, u32) -> core::result::Result<Self, syrp_midi::MidiError>
+pub fn syrp_midi::UmpPacket::midi2_note_off(u8, u8, u8, u16, u8, u16) -> core::result::Result<Self, syrp_midi::MidiError>
+pub fn syrp_midi::UmpPacket::midi2_note_on(u8, u8, u8, u16, u8, u16) -> core::result::Result<Self, syrp_midi::MidiError>
+pub fn syrp_midi::UmpPacket::noop() -> Self
+pub fn syrp_midi::UmpPacket::opcode(&self) -> core::option::Option<u8>
+pub fn syrp_midi::UmpPacket::read(&[u32]) -> core::result::Result<(Self, &[u32]), syrp_midi::MidiError>
+pub fn syrp_midi::UmpPacket::status(&self) -> u16
+pub fn syrp_midi::UmpPacket::stream(u8, u16, u16, [u32; 3]) -> core::result::Result<Self, syrp_midi::MidiError>
+pub fn syrp_midi::UmpPacket::stream_id(&self) -> core::option::Option<u8>
+pub fn syrp_midi::UmpPacket::sysex7(u8, syrp_midi::SysExStatus, &[u8]) -> core::result::Result<Self, syrp_midi::MidiError>
+pub fn syrp_midi::UmpPacket::sysex8(u8, syrp_midi::SysExStatus, u8, &[u8]) -> core::result::Result<Self, syrp_midi::MidiError>
+pub fn syrp_midi::UmpPacket::sysex_bytes(self) -> core::option::Option<impl core::iter::traits::exact_size::ExactSizeIterator<Item = u8> + use<>>
+pub fn syrp_midi::UmpPacket::sysex_status(&self) -> core::option::Option<syrp_midi::SysExStatus>
+pub fn syrp_midi::UmpPacket::system(u8, u8, u8, u8) -> core::result::Result<Self, syrp_midi::MidiError>
+pub fn syrp_midi::UmpPacket::utility(u8, u32) -> core::result::Result<Self, syrp_midi::MidiError>
+pub fn syrp_midi::UmpPacket::value(&self) -> core::option::Option<u32>
+pub fn syrp_midi::UmpPacket::words(&self) -> &[u32]
+impl syrp_midi::UmpPacket
+pub fn syrp_midi::UmpPacket::midi1_bytes(self) -> core::option::Option<impl core::iter::traits::exact_size::ExactSizeIterator<Item = u8> + use<>>
+impl syrp_rt::RtSafe for syrp_midi::UmpPacket
+pub trait syrp_midi::MidiData: syrp_midi::sealed::Sealed
+pub fn syrp_midi::MidiData::bytes(&self) -> &[u8]
+pub fn syrp_midi::MidiData::channel(&self) -> core::option::Option<u8>
+pub fn syrp_midi::MidiData::channel_pressure_value(&self) -> core::option::Option<u8>
+pub fn syrp_midi::MidiData::controller_number(&self) -> core::option::Option<u8>
+pub fn syrp_midi::MidiData::controller_value(&self) -> core::option::Option<u8>
+pub fn syrp_midi::MidiData::is_note_off(&self) -> bool
+pub fn syrp_midi::MidiData::is_note_on(&self) -> bool
+pub fn syrp_midi::MidiData::kind(&self) -> syrp_midi::MidiMessageKind
+pub fn syrp_midi::MidiData::meta_data(&self) -> core::option::Option<&[u8]>
+pub fn syrp_midi::MidiData::meta_type(&self) -> core::option::Option<u8>
+pub fn syrp_midi::MidiData::note_number(&self) -> core::option::Option<u8>
+pub fn syrp_midi::MidiData::pitch_bend_value(&self) -> core::option::Option<u16>
+pub fn syrp_midi::MidiData::poly_pressure_value(&self) -> core::option::Option<u8>
+pub fn syrp_midi::MidiData::program_number(&self) -> core::option::Option<u8>
+pub fn syrp_midi::MidiData::sysex_data(&self) -> core::option::Option<&[u8]>
+pub fn syrp_midi::MidiData::velocity(&self) -> core::option::Option<u8>
+impl syrp_midi::MidiData for syrp_midi::MidiMessage
+pub fn syrp_midi::MidiMessage::bytes(&self) -> &[u8]
+pub fn syrp_midi::MidiMessage::channel(&self) -> core::option::Option<u8>
+pub fn syrp_midi::MidiMessage::channel_pressure_value(&self) -> core::option::Option<u8>
+pub fn syrp_midi::MidiMessage::controller_number(&self) -> core::option::Option<u8>
+pub fn syrp_midi::MidiMessage::controller_value(&self) -> core::option::Option<u8>
+pub fn syrp_midi::MidiMessage::is_note_off(&self) -> bool
+pub fn syrp_midi::MidiMessage::is_note_on(&self) -> bool
+pub fn syrp_midi::MidiMessage::kind(&self) -> syrp_midi::MidiMessageKind
+pub fn syrp_midi::MidiMessage::meta_data(&self) -> core::option::Option<&[u8]>
+pub fn syrp_midi::MidiMessage::meta_type(&self) -> core::option::Option<u8>
+pub fn syrp_midi::MidiMessage::note_number(&self) -> core::option::Option<u8>
+pub fn syrp_midi::MidiMessage::pitch_bend_value(&self) -> core::option::Option<u16>
+pub fn syrp_midi::MidiMessage::poly_pressure_value(&self) -> core::option::Option<u8>
+pub fn syrp_midi::MidiMessage::program_number(&self) -> core::option::Option<u8>
+pub fn syrp_midi::MidiMessage::sysex_data(&self) -> core::option::Option<&[u8]>
+pub fn syrp_midi::MidiMessage::velocity(&self) -> core::option::Option<u8>
+impl syrp_midi::MidiData for syrp_midi::MidiMessageRef<'_>
+pub fn syrp_midi::MidiMessageRef<'_>::bytes(&self) -> &[u8]
+pub fn syrp_midi::MidiMessageRef<'_>::channel(&self) -> core::option::Option<u8>
+pub fn syrp_midi::MidiMessageRef<'_>::channel_pressure_value(&self) -> core::option::Option<u8>
+pub fn syrp_midi::MidiMessageRef<'_>::controller_number(&self) -> core::option::Option<u8>
+pub fn syrp_midi::MidiMessageRef<'_>::controller_value(&self) -> core::option::Option<u8>
+pub fn syrp_midi::MidiMessageRef<'_>::is_note_off(&self) -> bool
+pub fn syrp_midi::MidiMessageRef<'_>::is_note_on(&self) -> bool
+pub fn syrp_midi::MidiMessageRef<'_>::kind(&self) -> syrp_midi::MidiMessageKind
+pub fn syrp_midi::MidiMessageRef<'_>::meta_data(&self) -> core::option::Option<&[u8]>
+pub fn syrp_midi::MidiMessageRef<'_>::meta_type(&self) -> core::option::Option<u8>
+pub fn syrp_midi::MidiMessageRef<'_>::note_number(&self) -> core::option::Option<u8>
+pub fn syrp_midi::MidiMessageRef<'_>::pitch_bend_value(&self) -> core::option::Option<u16>
+pub fn syrp_midi::MidiMessageRef<'_>::poly_pressure_value(&self) -> core::option::Option<u8>
+pub fn syrp_midi::MidiMessageRef<'_>::program_number(&self) -> core::option::Option<u8>
+pub fn syrp_midi::MidiMessageRef<'_>::sysex_data(&self) -> core::option::Option<&[u8]>
+pub fn syrp_midi::MidiMessageRef<'_>::velocity(&self) -> core::option::Option<u8>
