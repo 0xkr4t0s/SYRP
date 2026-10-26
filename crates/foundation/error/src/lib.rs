@@ -7,7 +7,7 @@
 //!
 //! Default features have no dependencies. Optional features:
 //! - `serde`: [`Report`] serialises to the CLI envelope's diagnostic object.
-//! - `catalogue`: [`catalogue`] parses `errors/*.toml` and renders the docs pages.
+//! - `catalogue`: the `catalogue` module parses `errors/*.toml` and renders the docs pages.
 //!
 //! ```
 //! use syrp_error::{Diagnostic, ErrorCode, Report, Severity};
