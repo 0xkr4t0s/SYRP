@@ -1,0 +1,1 @@
+{"wp": "WP-0.2-12", "kind": "added", "summary": "syrp-docgen v2: per-crate agent briefs from AGENTS.md plus top API items within 1,500 tokens; errors.json and one Markdown page per error domain; migration-map.json compiled from docs/migration/*.md front matter; check_refs fails on cited Syrp paths missing from the API index (SYRP-DOC-0004..0007)."}

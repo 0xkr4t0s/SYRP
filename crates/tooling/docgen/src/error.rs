@@ -39,6 +39,32 @@ pub enum DocError {
         /// The underlying error message.
         detail: String,
     },
+    /// SYRP-DOC-0004: an `errors/<domain>.toml` file could not be read or is not a valid catalogue.
+    Catalogue {
+        /// The catalogue file.
+        path: PathBuf,
+        /// The read or parse error, with its own `SYRP-ERROR-*` code when it is a parse error.
+        detail: String,
+    },
+    /// SYRP-DOC-0005: a `docs/migration/*.md` page could not be read or has invalid front matter.
+    Migration {
+        /// The page.
+        path: PathBuf,
+        /// What is wrong, with its 1-based line when known.
+        detail: String,
+    },
+    /// SYRP-DOC-0006: docs or specs cite Rust paths that are not in the API index.
+    UnresolvedRefs {
+        /// Every unresolved citation, in file then line order.
+        refs: Vec<crate::UnresolvedRef>,
+    },
+    /// SYRP-DOC-0007: a doc or spec handed to `check_refs` could not be read.
+    SourceRead {
+        /// The file.
+        path: PathBuf,
+        /// The underlying I/O error.
+        detail: String,
+    },
 }
 
 impl Diagnostic for DocError {
@@ -47,6 +73,10 @@ impl Diagnostic for DocError {
             Self::NightlyMissing { .. } => ErrorCode::new("SYRP-DOC-0001"),
             Self::FormatVersion { .. } => ErrorCode::new("SYRP-DOC-0002"),
             Self::Read { .. } => ErrorCode::new("SYRP-DOC-0003"),
+            Self::Catalogue { .. } => ErrorCode::new("SYRP-DOC-0004"),
+            Self::Migration { .. } => ErrorCode::new("SYRP-DOC-0005"),
+            Self::UnresolvedRefs { .. } => ErrorCode::new("SYRP-DOC-0006"),
+            Self::SourceRead { .. } => ErrorCode::new("SYRP-DOC-0007"),
         }
     }
 
@@ -59,6 +89,15 @@ impl Diagnostic for DocError {
                 format!("use a nightly that matches rustdoc-types, or bump it to 0.{found}").into()
             }
             Self::Read { .. } => "run the `cargo +nightly rustdoc` command by hand".into(),
+            Self::Catalogue { .. } => "fix the [[error]] entry named in the message".into(),
+            Self::Migration { .. } => {
+                "front matter is `---`, then `key: value` lines (juce, syrp, notes, status), then `---`"
+                    .into()
+            }
+            Self::UnresolvedRefs { .. } => {
+                "cite a path from api-index.json (`cargo syrp docs search`), or fix the typo".into()
+            }
+            Self::SourceRead { .. } => "check the path and that the file is UTF-8 text".into(),
         })
     }
 }
@@ -83,6 +122,21 @@ impl fmt::Display for DocError {
                 )
             }
             Self::Read { path, detail } => format!("rustdoc JSON {}: {detail}", path.display()),
+            Self::Catalogue { path, detail } => {
+                format!("error catalogue {}: {detail}", path.display())
+            }
+            Self::Migration { path, detail } => {
+                format!("migration page {}: {detail}", path.display())
+            }
+            Self::UnresolvedRefs { refs } => {
+                let list: Vec<String> = refs.iter().map(ToString::to_string).collect();
+                format!(
+                    "{} unresolved Rust path(s): {}",
+                    refs.len(),
+                    list.join("; ")
+                )
+            }
+            Self::SourceRead { path, detail } => format!("{}: {detail}", path.display()),
         };
         write!(f, "{}: {msg}", self.code())
     }

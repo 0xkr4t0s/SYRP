@@ -21,3 +21,31 @@ title = "rustdoc JSON could not be produced or read"
 severity = "error"
 cause = "`cargo rustdoc` failed, or the JSON file is missing, unreadable or not valid rustdoc JSON."
 fix = "Run the printed `cargo +nightly rustdoc` command by hand to see the compiler error, then check the path."
+
+[[error]]
+code = "SYRP-DOC-0004"
+title = "Error catalogue file invalid"
+severity = "error"
+cause = "An `errors/<domain>.toml` file could not be read, or it is not a list of `[[error]]` tables with string keys code, title, severity, cause and fix (the detail carries the `SYRP-ERROR-*` parse code)."
+fix = "Fix the entry the message names; `cargo syrp explain` on the inner `SYRP-ERROR-*` code says what each check expects."
+
+[[error]]
+code = "SYRP-DOC-0005"
+title = "Migration page front matter invalid"
+severity = "error"
+cause = "A `docs/migration/*.md` page could not be read, its front matter is not closed by a `---` line, a line is not `key: value`, a key other than juce, syrp, notes or status is used, a key repeats, or two pages map the same JUCE symbol."
+fix = "Open the page at the reported line. Values are single-line strings, optionally quoted; leave a value empty to scaffold an entry."
+
+[[error]]
+code = "SYRP-DOC-0006"
+title = "Docs cite a Rust path that does not exist"
+severity = "error"
+cause = "`check-refs` found a path rooted at a Syrp crate (`syrp`, `syrp_*` or any crate in the API index) that is not an item in `api-index.json`. Cross-crate `pub use` re-exports are not indexed yet, so citing one also fails."
+fix = "Look the item up with `cargo syrp docs search` and cite its real path, or cite it at its defining crate."
+
+[[error]]
+code = "SYRP-DOC-0007"
+title = "Doc or spec file unreadable for check-refs"
+severity = "error"
+cause = "A file passed to `check-refs` is missing, unreadable or not UTF-8 text."
+fix = "Check the path; pass only Markdown and other text files."
