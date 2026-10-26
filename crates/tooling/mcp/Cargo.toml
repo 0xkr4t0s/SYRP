@@ -1,0 +1,37 @@
+[package]
+name = "syrp-mcp"
+description = "MCP server exposing the `cargo syrp` closed loop, built on the syrp-cli library."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[package.metadata.syrp]
+layer = "L6"
+wp = "WP-0.2-10"
+
+[[bin]]
+name = "syrp-mcp"
+path = "src/main.rs"
+
+[features]
+default = ["internal"]
+## Project-internal tools (`wp_*`, `review_*`) for agents working on this repository.
+internal = []
+
+[dependencies]
+syrp-cli = { path = "../cli", version = "0.0.1" }
+serde.workspace = true
+serde_json.workspace = true
+rmcp = { version = "3.7.0", default-features = false, features = ["server", "macros", "transport-io"] }
+tokio = { version = "1.47", features = ["rt-multi-thread", "macros", "io-std"] }
+
+[dev-dependencies]
+rmcp = { version = "3.7.0", default-features = false, features = ["client", "server", "macros", "transport-io"] }
+tokio = { version = "1.47", features = ["rt-multi-thread", "macros", "io-std", "io-util"] }
+
+[lints]
+workspace = true

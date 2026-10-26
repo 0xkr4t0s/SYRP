@@ -36,6 +36,9 @@ pub trait Coord:
     /// The additive identity.
     const ZERO: Self;
 
+    /// `true` for integer coordinate types, whose conversions from `f64` round.
+    const INTEGER: bool;
+
     /// Widens the value to `f64` (exact for every supported type except very large `f64`s, which pass through).
     fn to_f64(self) -> f64;
 
@@ -68,6 +71,7 @@ pub trait Coord:
 
 impl Coord for i32 {
     const ZERO: Self = 0;
+    const INTEGER: bool = true;
     fn to_f64(self) -> f64 {
         f64::from(self)
     }
@@ -82,6 +86,7 @@ impl Coord for i32 {
 
 impl Coord for f32 {
     const ZERO: Self = 0.0;
+    const INTEGER: bool = false;
     fn to_f64(self) -> f64 {
         f64::from(self)
     }
@@ -101,6 +106,7 @@ impl Coord for f32 {
 
 impl Coord for f64 {
     const ZERO: Self = 0.0;
+    const INTEGER: bool = false;
     fn to_f64(self) -> f64 {
         self
     }
