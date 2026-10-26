@@ -11,6 +11,7 @@ use std::fmt;
 
 use syrp_audio_api::{AudioBlock, AudioBlockMut, AudioSample, SIMD_ALIGN};
 use syrp_error::{Diagnostic, ErrorCode};
+use syrp_rt::RtSafe;
 use syrp_simd::{AlignedBuf, Zeroable, kernels};
 
 use crate::sealed;
@@ -423,6 +424,14 @@ impl<T: BufferSample> Clone for AudioBuffer<T> {
         }
     }
 }
+
+// SAFETY: moving an `AudioBuffer` moves a pointer and four plain fields. The methods documented
+// as RT-safe (the accessors, views, the B3/B4 operations, and `set_size`/`make_copy_of` with
+// `avoid_reallocating` when the shape fits the capacity) never allocate, free, lock, block or do
+// I/O; `syrp_rt::no_alloc` tests prove it. The destructor frees the allocation, so the type
+// documents (struct docs and crate `AGENTS.md`) that buffers are dropped off the audio thread,
+// as `RtSafe` rule 2 requires for types with a destructor.
+unsafe impl<T: BufferSample> RtSafe for AudioBuffer<T> {}
 
 impl<T: BufferSample> fmt::Debug for AudioBuffer<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
