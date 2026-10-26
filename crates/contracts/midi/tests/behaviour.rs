@@ -100,6 +100,7 @@ fn b1_timestamps_and_views() -> R {
     assert_eq!(m.timestamp(), 1.5);
     m.set_timestamp(48.0);
     assert_eq!(m.timestamp(), 48.0);
+    assert_eq!(m.as_view(), m.view(0));
     let v = m.view(12);
     assert_eq!(
         (v.bytes(), v.sample_offset(), v.as_slice()),
@@ -193,6 +194,7 @@ fn b6_contract_types_have_no_public_fields() {
         include_str!("../src/lib.rs"),
         include_str!("../src/message.rs"),
         include_str!("../src/buffer.rs"),
+        include_str!("../src/convert.rs"),
         include_str!("../src/ump.rs"),
         include_str!("../src/ump_buffer.rs"),
     ];

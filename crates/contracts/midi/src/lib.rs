@@ -5,6 +5,7 @@
 //! [`MidiData`] accessors. [`MidiBuffer`] is a packed, sample-ordered event list whose
 //! [`try_add_event`](MidiBuffer::try_add_event) never allocates. [`UmpPacket`] is a MIDI 2.0
 //! Universal MIDI Packet and [`UmpBuffer`] stores packets in the same packed layout.
+//! [`BytesToUmp`] and [`UmpPacket::midi1_bytes`] convert between MIDI 1.0 byte streams and UMP.
 //!
 //! Messages are stored as their MIDI 1.0 bytes: channel messages as status plus data bytes,
 //! SysEx framed by `0xF0` and `0xF7`, and Standard MIDI File meta events as `0xFF`, type,
@@ -21,11 +22,13 @@ use std::fmt;
 use syrp_error::{Diagnostic, ErrorCode};
 
 mod buffer;
+mod convert;
 mod message;
 mod ump;
 mod ump_buffer;
 
 pub use buffer::{Events, MidiBuffer};
+pub use convert::BytesToUmp;
 pub use message::{MidiMessage, MidiMessageRef};
 pub use ump::{SysExStatus, UmpMessageType, UmpPacket};
 pub use ump_buffer::{UmpBuffer, UmpEvent, UmpEvents};
@@ -343,7 +346,7 @@ fn classify(bytes: &[u8]) -> MidiMessageKind {
 
 /// The total length of a message from its status byte, or `None` when it is variable
 /// (SysEx, meta) or the byte is not a status byte.
-fn fixed_len(status: u8) -> Option<usize> {
+pub(crate) fn fixed_len(status: u8) -> Option<usize> {
     match status {
         0x80..=0xBF | 0xE0..=0xEF | 0xF2 => Some(3),
         0xC0..=0xDF | 0xF1 | 0xF3 => Some(2),
