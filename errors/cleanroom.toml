@@ -1,8 +1,19 @@
 # Error catalogue: clean-room provenance and contamination scanning (master plan §10.9).
 # Codes are permanent: never reuse or renumber one.
 
-# SYRP-CR-0001 (similarity above threshold) and SYRP-CR-0002 (fingerprint database
-# invalid) are reserved for the scanner, which arrives in the next PR for WP-0.1-12.
+[[error]]
+code = "SYRP-CR-0001"
+title = "Similarity above the contamination threshold"
+severity = "error"
+cause = "A scanned file shares more winnowed fingerprints with the quarantined fingerprint database than the threshold allows."
+fix = "Do not edit the code to dodge the scanner. The reviewer has the affected code re-implemented from the spec by a different agent (master plan §10.9)."
+
+[[error]]
+code = "SYRP-CR-0002"
+title = "Fingerprint database unreadable or incompatible"
+severity = "error"
+cause = "The database file is missing, is not valid JSON, has the wrong schema, uses another normaliser, has k or w of 0, or holds a hash that is not 16 lowercase hex digits."
+fix = "Regenerate it with the quarantined job using the same syrp-provenance normaliser. The format is documented in crates/tooling/provenance/src/database.rs."
 
 [[error]]
 code = "SYRP-CR-0003"
@@ -36,5 +47,5 @@ fix = "Set `license.workspace = true` or an explicit SPDX expression in the crat
 code = "SYRP-CR-0007"
 title = "File unreadable"
 severity = "error"
-cause = "A file to check could not be read as UTF-8 text."
+cause = "A file to check or scan could not be read as UTF-8 text."
 fix = "Check the path exists in the checked-out head commit and is UTF-8."
