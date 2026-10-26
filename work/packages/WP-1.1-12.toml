@@ -1,0 +1,12 @@
+id = "WP-1.1-12"
+title = "syrp-sys: Time, RelativeTime, Uuid, high-resolution counters, SystemStats and Logger"
+crate = "crates/core/sys"
+depends_on = ["WP-0.1-03"]
+ledger_rows = ["juce_core/Time", "juce_core/RelativeTime", "juce_core/Uuid", "juce_core/SystemStats", "juce_core/Logger"]
+spec = "work/specs/WP-1.1-12.md"
+risk = ["public-api", "unsafe", "ffi", "supply-chain"]
+acceptance = "cargo syrp wp check WP-1.1-12 --json"
+platforms = ["linux", "macos", "windows"]
+role = "implementer"
+status = "planned"
+budget = { agent_hours = 32, max_review_rounds = 3, max_restarts = 2 }

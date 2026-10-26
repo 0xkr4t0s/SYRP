@@ -1,0 +1,29 @@
+# Error catalogue: agent-eval harness domain (syrp-agent-eval). Codes are permanent: never reuse or renumber one.
+
+[[error]]
+code = "SYRP-EVAL-0001"
+title = "Eval task file invalid"
+severity = "error"
+cause = "A file in evals/tasks/ is unreadable, is not valid TOML, has an unknown key, misses one of id, title, prompt, setup, verify or reference, leaves one empty, or its id differs from its file name."
+fix = "Fix the file the message names; copy the shape of an existing task."
+
+[[error]]
+code = "SYRP-EVAL-0002"
+title = "Eval directory unreadable or unwritable"
+severity = "error"
+cause = "The tasks directory could not be listed, or the work directory (workspaces, prompts, logs, report) could not be created or written."
+fix = "Check the --tasks, --work-dir and --out paths and their permissions."
+
+[[error]]
+code = "SYRP-EVAL-0003"
+title = "Eval shell could not start"
+severity = "error"
+cause = "Setup, agent and verifier scripts run with a POSIX `sh -c`, and that program could not be started."
+fix = "Put a POSIX `sh` on PATH (on Windows, Git Bash provides one)."
+
+[[error]]
+code = "SYRP-EVAL-0004"
+title = "Eval run misconfigured"
+severity = "error"
+cause = "The run names a task id that does not exist, or another option is unusable."
+fix = "List the ids in evals/tasks/ and pass existing ones to --only."

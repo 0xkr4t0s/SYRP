@@ -1,0 +1,37 @@
+# Error catalogue: progress page domain (syrp-progress). `cargo syrp explain <code>` renders these entries.
+# Codes are permanent: never reuse or renumber one.
+
+[[error]]
+code = "SYRP-PROG-0001"
+title = "Work-package board file missing or invalid"
+severity = "error"
+cause = "A file under `work/waves/` or `work/packages/` could not be read or parsed, or a wave lists a package that has no file."
+fix = "Run `cargo syrp wp validate`, fix the file it names, and run syrp-progress again."
+
+[[error]]
+code = "SYRP-PROG-0002"
+title = "Parity inventory or ledger missing or invalid"
+severity = "error"
+cause = "`parity/inventory/juce-9.0.4-classes.json`, `parity/ledger.json` or the ledger seed could not be read or is not the expected JSON shape."
+fix = "Run `python3 parity/inventory/validate.py` and fix what it reports."
+
+[[error]]
+code = "SYRP-PROG-0003"
+title = "Git history unavailable"
+severity = "error"
+cause = "`git` is not installed, the root is not a git checkout, or `git log` failed."
+fix = "Run inside a full clone. In GitHub Actions, check out with `fetch-depth: 0` so the merge history is present."
+
+[[error]]
+code = "SYRP-PROG-0004"
+title = "Open-PR file invalid"
+severity = "error"
+cause = "The file passed to `--open-prs` could not be read or is not a JSON list of objects with `number` and `title`."
+fix = "Produce it with `gh pr list --state open --json number,title > open-prs.json`, or leave the flag out."
+
+[[error]]
+code = "SYRP-PROG-0005"
+title = "Output could not be written"
+severity = "error"
+cause = "The output directory could not be created, or `progress.json` or `index.html` could not be written in it."
+fix = "Check the `--out` path and its permissions."

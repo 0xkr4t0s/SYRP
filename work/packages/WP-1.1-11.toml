@@ -1,0 +1,12 @@
+id = "WP-1.1-11"
+title = "syrp-maths: Range, NormalisableRange, Random, StatisticsAccumulator and numeric helpers"
+crate = "crates/core/maths"
+depends_on = ["WP-0.1-03"]
+ledger_rows = ["juce_core/Range", "juce_core/NormalisableRange", "juce_core/Random", "juce_core/StatisticsAccumulator"]
+spec = "work/specs/WP-1.1-11.md"
+risk = ["public-api"]
+acceptance = "cargo syrp wp check WP-1.1-11 --json"
+platforms = ["linux", "macos", "windows"]
+role = "implementer"
+status = "planned"
+budget = { agent_hours = 24, max_review_rounds = 3, max_restarts = 2 }

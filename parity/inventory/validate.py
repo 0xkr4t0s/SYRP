@@ -8,7 +8,7 @@ Standard library only. Run either way, from anywhere:
 
 Checks (named after the WP-0.1-06 behaviours):
   b1  inventory groups classes by module and records a docs.juce.com source URL per module;
-      every module listed in master plan §3 appears.
+      every module listed in master plan §3 appears; a module marked complete lists classes.
   b2  the seed validates against parity/ledger.schema.json; rows are `todo` unless a gap;
       owner_wp names an existing work package; every seed row is in the inventory.
   b3  the deliberate gaps of master plan §1 are present with status `gap` and a reason.
@@ -137,6 +137,8 @@ class InventoryTests(unittest.TestCase):
         for m in self.inv["modules"]:
             self.assertTrue(m["source_url"].startswith("https://docs.juce.com/"), m["module"])
             self.assertIsInstance(m["complete"], bool)
+            if m["complete"]:
+                self.assertTrue(m["classes"], "complete module lists no classes: " + m["module"])
             if not m["complete"]:
                 self.assertTrue(m.get("note"), "incomplete module needs a note: " + m["module"])
             seen = set()

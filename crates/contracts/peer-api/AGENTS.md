@@ -3,20 +3,28 @@
 ## Purpose
 The L1 native window contract (master plan §5.6) between `syrp-ui` and the
 `syrp-peer-{win32,appkit,x11,wayland,...}` platform crates. Covers JUCE's ComponentPeer and
-Desktop roles and the event side of KeyPress and TextInputTarget (MouseInputSource next):
-`Desktop::create_peer` (top-level, or child embedded in a host `RawWindowHandle`), `Peer`
-(bounds, visibility, `WindowState`, title, scale factor, `render_target`, repaint, focus, IME
-caret), `Event` (`keyboard-types` keys, focus, `ImeEvent`, window changes) delivered to an
-`EventSink`, `PeerError` (`errors/peer.toml`) and the `headless` desktop for tests. No platform code lives here.
+Desktop roles, MouseCursor, and the event side of MouseInputSource, KeyPress,
+TextInputTarget and external drag-and-drop: `Desktop::create_peer` (top-level, or child
+embedded in a host `RawWindowHandle`; the desktop lends a `DisplayHandle`), `Peer` (bounds,
+visibility, `WindowState`, title, scale factor, `render_target`, repaint, focus, IME caret,
+`CursorIcon`, drop acceptance; lends a `WindowHandle`), `Event` (pointer, wheel, magnify,
+`keyboard-types` keys, focus, `ImeEvent`, `DragEvent`, window changes) delivered to an
+`EventSink`, `PeerError` (`errors/peer.toml`) and the `headless` desktop for tests. The
+desktop also owns clipboard text, `Display`s (bounds, work area, scale) and async
+`FileDialog`/`AlertDialog` requests (JUCE's SystemClipboard, Displays, FileChooser,
+NativeMessageBox); peers take `accesskit` `TreeUpdate`s and report activation and
+`ActionRequest`s as events. No platform code lives here.
 
 ## Ledger rows
 juce_gui_basics/ComponentPeer, juce_gui_basics/Desktop, juce_gui_basics/MouseInputSource,
-juce_gui_basics/TextInputTarget (event side; shared with `syrp-ui`)
+juce_gui_basics/TextInputTarget (event side; shared with `syrp-ui`),
+juce_gui_basics/MouseCursor, juce_gui_basics/SystemClipboard, juce_gui_basics/Displays,
+juce_gui_basics/FileChooser (native dialog), juce_gui_basics/NativeMessageBox
 
 ## Invariants
 - Contract types have no public fields (ADR 0003 D3); the `b7_` test scans the sources.
-  Event payload structs (from increment 2) get constructors and `with_` builders so platform
-  crates can build them; `Event` is `#[non_exhaustive]` so variants can be added.
+  Event payload structs have constructors and `with_` builders so platform crates can
+  build them; `Event` is `#[non_exhaustive]` so variants can be added.
 - Units: `f64` logical units, y down. Top-level bounds are desktop coordinates; child bounds
   and event positions are relative to the parent / the peer. Scale factor = physical pixels
   per logical unit, as `syrp_gfx_api::RenderTarget`; `Peer::render_target` uses
@@ -27,6 +35,19 @@ juce_gui_basics/TextInputTarget (event side; shared with `syrp-ui`)
 - `PeerOptions::child` is `unsafe`: platforms hand the raw parent handle to the OS.
   A child peer accepts only `WindowState::Normal` (`PeerError::Unsupported` otherwise).
 - Dropping a peer destroys its window; a dropped peer's sink never runs again.
+- Pressure is clamped to `[0, 1]`, tilt per axis to `[-1, 1]`; NaN becomes 0; `None` means
+  the device does not report it. `PointerSource` ids stay fixed from `Down` to `Up`.
+- Pointer and wheel `time()` is the platform's input time on the loop's monotonic clock;
+  `None` means the GUI layer stamps on receipt.
+- Drag data is present from `Enter`: XDND and Wayland backends fetch it eagerly.
+- Drags: each starts unaccepted; `Drop` is delivered only if the last `accept_drop` was true.
+- `Desktop: HasDisplayHandle`, `Peer: HasWindowHandle`; headless returns `NotSupported`.
+- `Desktop::displays` is never empty, primary first; a display's scale is finite and
+  positive (bad values become 1.0).
+- Dialog callbacks run exactly once, later, on the message thread, never inside the
+  request; on `Err` they are dropped unrun. An empty path list means cancelled.
+- Accessibility: send a full tree after `AccessibilityActivated`, then incremental updates.
+  `accesskit` types are re-exported as-is (third-party, so their public fields are theirs).
 - IME: `Preedit` ranges are byte ranges into the preedit string. `set_ime_caret(None)`
   turns IME input off.
 
@@ -44,8 +65,5 @@ cargo syrp test --crate syrp-peer-api
 ```
 
 ## Known gaps
-Increment 1 of WP-0.2-08. Still to come in this WP: pointer events (mouse, touch, pen with
-pressure, tilt and source ids), wheel, magnify and drag-and-drop of files and text (B2),
-clipboard, cursors (`cursor-icon`), display enumeration with work areas and scale, async
-native file and alert dialogs (B4), and `accesskit` tree updates (B5), each with headless
-support.
+None for the contract: WP-0.2-08 is complete after increment 3. Custom image cursors and
+rich clipboard formats (images, files) are left to later WPs if the ledger asks for them.

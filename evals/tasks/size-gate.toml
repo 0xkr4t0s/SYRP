@@ -1,0 +1,26 @@
+id = "size-gate"
+title = "Count lines the PR size gate sees"
+prompt = """
+The current directory is a git repository. Branch `topic` is a PR against `main`. How many
+changed lines (additions plus deletions) does the Syrp PR size gate count for it? Write only the
+number to answer.txt (an untracked file).
+"""
+setup = """
+git init -q -b main .
+printf 'a\\nb\\nc\\n' > notes.txt
+printf 'x\\n' > Cargo.lock
+git add . && git commit -q -m base
+git checkout -q -b topic
+printf 'a\\nB\\nc\\nd\\ne\\n' > notes.txt
+printf 'y\\nz\\nw\\n' > Cargo.lock
+printf 'new\\n' > extra.txt
+git add . && git commit -q -m change
+"""
+verify = """
+want=$(git diff --numstat main...topic -- . ':!Cargo.lock' | awk '{s += $1 + $2} END {print s}')
+test "$(cat answer.txt)" = "$want"
+"""
+reference = """
+git diff --shortstat main...topic -- . ':!Cargo.lock' \\
+  | awk '{for (i = 1; i < NF; i++) if ($(i+1) ~ /^(insertion|deletion)/) s += $i} END {print s}' > answer.txt
+"""

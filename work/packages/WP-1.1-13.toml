@@ -1,0 +1,12 @@
+id = "WP-1.1-13"
+title = "syrp-strings: Base64, StringPool, TextDiff and LocalisedStrings"
+crate = "crates/core/strings"
+depends_on = ["WP-0.1-03"]
+ledger_rows = ["juce_core/Base64", "juce_core/StringPool", "juce_core/TextDiff", "juce_core/LocalisedStrings"]
+spec = "work/specs/WP-1.1-13.md"
+risk = ["public-api"]
+acceptance = "cargo syrp wp check WP-1.1-13 --json"
+platforms = ["linux", "macos", "windows"]
+role = "implementer"
+status = "planned"
+budget = { agent_hours = 24, max_review_rounds = 3, max_restarts = 2 }

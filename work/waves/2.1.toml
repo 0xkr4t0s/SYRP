@@ -1,0 +1,9 @@
+id = "2.1"
+phase = 2
+title = "Audio basics: AudioBuffer, vector ops, control-rate DSP and VoicePool"
+# Brought forward from phase 2: syrp-audio-basics needs only merged contracts (audio-api, rt,
+# simd), and WP-1.9-02 is parked on it. Numbers follow the master plan's Wave 2.1 list (§7.2).
+# WP-2.1-03 and WP-2.1-05 own disjoint modules of the crate WP-2.1-01 creates, so they run in
+# parallel once it merges.
+enabled = true
+packages = ["WP-2.1-01", "WP-2.1-03", "WP-2.1-05"]

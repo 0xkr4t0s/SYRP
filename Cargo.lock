@@ -3,6 +3,15 @@
 version = 4
 
 [[package]]
+name = "accesskit"
+version = "0.25.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4e883d1d28c5fd5568c79ed2d2bd48d9f2fd3945c8974ed0f53690ceddb051be"
+dependencies = [
+ "uuid",
+]
+
+[[package]]
 name = "adler2"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -220,6 +229,12 @@ checksum = "0ba106e844045ddc02c20768ac4b0b7cb45f2cc2ecbd833ac9f5dacb183c2055"
 dependencies = [
  "cfg-if",
 ]
+
+[[package]]
+name = "cursor-icon"
+version = "1.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f27ae1dd37df86211c42e150270f82743308803d90a6f6e6651cd730d5e1732f"
 
 [[package]]
 name = "darling"
@@ -1000,6 +1015,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "syrp-agent-eval"
+version = "0.0.1"
+dependencies = [
+ "clap",
+ "serde",
+ "serde_json",
+ "syrp-cli",
+ "syrp-error",
+ "toml",
+]
+
+[[package]]
 name = "syrp-audio-api"
 version = "0.0.1"
 dependencies = [
@@ -1015,6 +1042,17 @@ dependencies = [
  "serde",
  "serde_json",
  "toml",
+]
+
+[[package]]
+name = "syrp-device-api"
+version = "0.0.1"
+dependencies = [
+ "syrp-audio-api",
+ "syrp-error",
+ "syrp-loop-api",
+ "syrp-midi",
+ "syrp-rt",
 ]
 
 [[package]]
@@ -1097,12 +1135,34 @@ dependencies = [
 name = "syrp-peer-api"
 version = "0.0.1"
 dependencies = [
+ "accesskit",
+ "cursor-icon",
  "keyboard-types",
  "raw-window-handle",
  "syrp-error",
  "syrp-geom",
  "syrp-gfx-api",
  "syrp-loop-api",
+]
+
+[[package]]
+name = "syrp-plugin-api"
+version = "0.0.1"
+dependencies = [
+ "proptest",
+ "syrp-error",
+ "syrp-rt",
+]
+
+[[package]]
+name = "syrp-progress"
+version = "0.0.1"
+dependencies = [
+ "clap",
+ "serde",
+ "serde_json",
+ "syrp-error",
+ "toml",
 ]
 
 [[package]]

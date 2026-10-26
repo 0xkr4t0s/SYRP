@@ -418,8 +418,9 @@ syrp-plugin-api -> audio-api, midi, rt
 syrp-gfx-api    -> error, geom [peniko]
 syrp-peer-api   -> geom, gfx-api, loop-api [raw-window-handle, accesskit, keyboard-types, cursor-icon]
 // L2
-syrp-strings, syrp-maths, syrp-sys -> error
-syrp-var        -> error, strings [serde, serde_json, quick-xml]
+syrp-strings, syrp-sys -> error
+syrp-maths      -> error, rt
+syrp-var        -> error [serde, serde_json, quick-xml]
 syrp-io         -> error, sys [flate2, zip]
 syrp-thread     -> error, rt, sys
 syrp-process    -> thread, io
@@ -427,7 +428,7 @@ syrp-net        -> io, thread [ureq, rustls]
 syrp-core       -> var, io, thread, process, net, maths, sys, strings      (umbrella)
 syrp-events     -> loop-api, thread
 syrp-ipc        -> events, net, process [interprocess]
-syrp-state      -> var, events, io [rpds]
+syrp-state      -> var, loop-api, events, io [slotmap]   (store: var, loop-api; persistence adds events, io)
 syrp-crypto     -> maths, io [md-5, sha2, blowfish, whirlpool, num-bigint]
 syrp-osc        -> net, events [rosc]
 syrp-analytics  -> net, events

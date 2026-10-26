@@ -3,7 +3,7 @@
 ## Purpose
 The optional compatibility front-end from ADR 0003 D1/D5 and master plan §5.10: JUCE-style one-object-per-voice synthesis and per-channel processor duplication, implemented over the lane-packed `VoicePool` in `syrp-audio-basics`. It owns no storage.
 
-**Status: parked.** Blocked until the `syrp-audio-basics` WP (which defines `VoicePool`) and the `syrp-dsp` / `syrp-processors` WPs exist and merge; the spec room writes those in phase 2. `depends_on` gains them then, and wave 1.9 is enabled.
+**Status: parked.** Blocked until WP-2.1-01 (the `syrp-audio-basics` crate) and WP-2.1-05 (`VoicePool`) merge, and until the `syrp-dsp` and `syrp-processors` WPs exist and merge; the spec room writes those later in phase 2, and `depends_on` gains them then. `VoicePool` takes plain voice events, so this crate translates MIDI into them.
 
 ## Behaviour
 - B1. `SynthesiserVoice` trait with the documented hooks (`can_play_sound`, `start_note`, `stop_note`, `pitch_wheel_moved`, `controller_moved`, `render_next_block`) and `Synthesiser` with note stealing and sound selection as documented.

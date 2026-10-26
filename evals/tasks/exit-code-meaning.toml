@@ -1,0 +1,15 @@
+id = "exit-code-meaning"
+title = "Name the clean-room exit code"
+prompt = """
+Which exit code does `cargo syrp` use for a clean-room violation? The Syrp repository is at
+$SYRP_ROOT. Write only the number to answer.txt in the current directory.
+"""
+setup = "rm -f answer.txt"
+verify = """
+n=$(cat answer.txt)
+printf '%s\\n' "$n" | grep -Eq '^[0-9]+$'
+grep -q "[ ,]$n clean room" "$SYRP_ROOT/AGENTS.md"
+"""
+reference = """
+sed -n 's/.* \\([0-9][0-9]*\\) clean room.*/\\1/p' "$SYRP_ROOT/AGENTS.md" | head -n 1 > answer.txt
+"""

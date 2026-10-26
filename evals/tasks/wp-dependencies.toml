@@ -1,0 +1,17 @@
+id = "wp-dependencies"
+title = "List a WP's dependencies"
+prompt = """
+List the work packages that WP-0.2-13 depends on, one id per line, sorted, in answer.txt in the
+current directory. The Syrp repository is at $SYRP_ROOT.
+"""
+setup = "rm -f answer.txt"
+verify = """
+syrp --root "$SYRP_ROOT" wp show WP-0.2-13 --json > show.json
+want=$(sed -n '/"dependencies"/,/\\]/s/^ *"id": "\\(WP-[^"]*\\)".*/\\1/p' show.json | sort)
+test -n "$want"
+test "$(cat answer.txt)" = "$want"
+"""
+reference = """
+sed -n 's/^depends_on = \\[\\(.*\\)\\]/\\1/p' "$SYRP_ROOT/work/packages/WP-0.2-13.toml" \\
+  | tr -d '" ' | tr ',' '\\n' | sed '/^$/d' | sort > answer.txt
+"""

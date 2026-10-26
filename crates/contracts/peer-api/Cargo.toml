@@ -18,6 +18,8 @@ syrp-error = { version = "0.0.1", path = "../../foundation/error" }
 syrp-geom = { version = "0.0.1", path = "../../foundation/geom" }
 syrp-gfx-api = { version = "0.0.1", path = "../gfx-api" }
 syrp-loop-api = { version = "0.0.1", path = "../loop-api" }
+accesskit = { version = "0.25.2", default-features = false }
+cursor-icon = { version = "1.2.0", default-features = false, features = ["std"] }
 keyboard-types = { version = "0.8.3", default-features = false, features = ["std"] }
 raw-window-handle = { version = "0.6.2", default-features = false }
 

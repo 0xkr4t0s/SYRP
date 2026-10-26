@@ -1,0 +1,1 @@
+{"wp": "WP-0.2-13", "kind": "added", "summary": "Agent-eval harness v0: syrp-agent-eval runs 10 tasks in evals/tasks (setup, pluggable agent command, deterministic verifier) and reports pass/fail, timing and a success-rate KPI as JSON."}
