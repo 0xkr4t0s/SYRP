@@ -1,6 +1,6 @@
 [package]
 name = "syrp-docgen"
-description = "Docs pipeline: rustdoc JSON to api-index.json for agents (master plan 13.1)."
+description = "Docs pipeline: api-index.json, llms slices, briefs, errors.json, migration map, check-refs (master plan 13.1)."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -19,7 +19,7 @@ rustdoc-types = "0.61.0"
 schemars = "1.2.2"
 serde.workspace = true
 serde_json.workspace = true
-syrp-error = { version = "0.0.1", path = "../../foundation/error" }
+syrp-error = { version = "0.0.1", path = "../../foundation/error", features = ["catalogue"] }
 
 [lints]
 workspace = true
