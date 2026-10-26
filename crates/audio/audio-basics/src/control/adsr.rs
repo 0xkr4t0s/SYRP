@@ -99,6 +99,10 @@ impl<S: ControlSample> AdsrParams<S> {
 /// segment jumps on the next sample. A `note_on` during the release (or any stage) restarts
 /// the attack from the current level.
 ///
+/// With `f32` lanes, keep segments under 2^25 samples (about 11.6 minutes at 48 kHz): beyond
+/// that, subtracting one from the remaining sample count no longer changes it and the segment
+/// stalls. `f64` lanes have no practical limit.
+///
 /// ```
 /// use syrp_audio_basics::control::{Adsr, AdsrParams};
 /// let mut env = Adsr::new(1000.0, AdsrParams::new(0.004_f32, 0.002, 0.5, 0.004));
@@ -118,6 +122,9 @@ pub struct Adsr<S: ControlSample> {
     level: S,
     attack_step: S,
     decay_step: S,
+    /// Full attack and decay lengths in samples (at least 1), which cap a stage's length.
+    attack_len: S,
+    decay_len: S,
     /// Release length in samples (at least 1); the step is set at `note_off`.
     release_len: S,
     release_step: S,
@@ -152,6 +159,8 @@ impl<S: ControlSample> Adsr<S> {
             level: S::zero(),
             attack_step: S::zero(),
             decay_step: S::zero(),
+            attack_len: S::one(),
+            decay_len: S::one(),
             release_len: S::one(),
             release_step: S::zero(),
             slope: S::zero(),
@@ -185,8 +194,9 @@ impl<S: ControlSample> Adsr<S> {
         // Segment lengths in samples, at least one; `aim` rounds them to whole samples.
         let len = |seconds: S| (seconds * rate).max(S::one());
         let p = self.params;
-        self.attack_step = S::one() / len(p.attack);
-        self.decay_step = (S::one() - p.sustain) / len(p.decay);
+        (self.attack_len, self.decay_len) = (len(p.attack), len(p.decay));
+        self.attack_step = S::one() / self.attack_len;
+        self.decay_step = (S::one() - p.sustain) / self.decay_len;
         self.release_len = len(p.release);
         self.aim(S::Mask::splat(true));
     }
@@ -327,7 +337,12 @@ impl<S: ControlSample> Adsr<S> {
         let decay_or_release = S::select(self.decay, self.decay_step, self.release_step);
         let nominal = S::select(self.attack, self.attack_step, decay_or_release);
         let distance = (goal - self.level).abs() / nominal.max(S::from_f64(1e-30));
-        let left = S::select(moving, distance.round().max(one), zero);
+        // A zero nominal step gives a huge distance (at sustain 1 the decay step is 0, so a
+        // lane that `set_params` moves there mid-decay is still away from its goal). Cap every
+        // stage at its full length so it always ends.
+        let full_len = S::select(self.decay, self.decay_len, self.release_len);
+        let full = S::select(self.attack, self.attack_len, full_len).round();
+        let left = S::select(moving, distance.round().min(full).max(one), zero);
         let slope = (goal - self.level) / S::select(moving, left, one);
         self.goal = S::select(lanes, goal, self.goal);
         self.left = S::select(lanes, left, self.left);

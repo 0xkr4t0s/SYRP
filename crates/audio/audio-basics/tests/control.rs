@@ -359,6 +359,27 @@ fn b4_settings_sample_rate_reset_and_idle_lanes() {
     assert_eq!(env.is_active().to_array(), [true, false, true, false]);
 }
 
+#[test]
+fn b4_sustain_change_mid_decay_still_finishes_the_stage() {
+    // Decay from 1.0 toward 0.5 over 10 samples; after 3 samples the level is 0.85.
+    for (sustain, len) in [(1.0_f32, 10), (0.9, 5)] {
+        let mut env = Adsr::new(1000.0, AdsrParams::new(0.0_f32, 0.01, 0.5, 0.0));
+        env.note_on(true);
+        run(&mut env, 4);
+        assert!((env.level() - 0.85).abs() < 1e-6);
+        // Sustain 1 has a zero decay step: the stage takes its full length (10 samples).
+        // Sustain 0.9 is above the level, 0.05 away at the new decay step of 0.01: 5 samples.
+        env.set_params(AdsrParams::new(0.0, 0.01, sustain, 0.0));
+        let out = run(&mut env, len + 2);
+        assert!(out.windows(2).all(|w| w[0] <= w[1]), "{sustain}: {out:?}");
+        assert_eq!(out[len - 1..], [sustain; 3], "{sustain}: {out:?}");
+        assert!(env.is_active());
+        env.note_off(true);
+        run(&mut env, 1);
+        assert!(!env.is_active());
+    }
+}
+
 /// The B5 matrix: `f32`, `f64`, `F32x4` and `F32x8`, each compared lane by lane with runs of
 /// its scalar element type.
 trait Lanes: ControlSample {
