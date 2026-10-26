@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/0xkr4t0s/auricle/docs/agents/envelope.schema.json",
+  "title": "cargo auricle result envelope",
+  "description": "Every cargo auricle command prints exactly one of these on stdout when output is JSON.",
+  "type": "object",
+  "required": ["schema", "command", "ok", "exit_code", "duration_ms", "results", "diagnostics", "artifacts"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "auricle.envelope/v1" },
+    "command": { "type": "string", "description": "For example \"wp show\"." },
+    "ok": { "type": "boolean", "description": "True exactly when exit_code is 0." },
+    "exit_code": {
+      "type": "integer",
+      "enum": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+      "description": "0 ok, 1 checks or tests failed, 2 usage, 3 environment, 4 parity regression, 5 validator, 6 golden mismatch, 7 contract or API, 8 RT safety, 9 clean room or licence, 10 internal."
+    },
+    "duration_ms": { "type": "integer", "minimum": 0 },
+    "results": { "type": "array", "description": "Command-specific objects." },
+    "diagnostics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["code", "severity", "message", "docs"],
+        "additionalProperties": false,
+        "properties": {
+          "code": { "type": "string", "pattern": "^AUR-[A-Z]+-[0-9]{4}$" },
+          "severity": { "enum": ["error", "warning", "info"] },
+          "message": { "type": "string" },
+          "location": { "type": "string" },
+          "hint": { "type": "string" },
+          "docs": { "type": "string" }
+        }
+      }
+    },
+    "artifacts": { "type": "array", "items": { "type": "string" } }
+  }
+}

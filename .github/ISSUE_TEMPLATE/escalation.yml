@@ -1,0 +1,25 @@
+name: Escalation
+description: Something only a person can decide (legal, accounts, budgets, deadlocks).
+title: "[ESCALATION] "
+labels: ["needs-human"]
+body:
+  - type: dropdown
+    id: trigger
+    attributes:
+      label: Trigger (master plan §12.9)
+      options:
+        - E1 review deadlock
+        - E2 main red for more than 4 h
+        - E3 legal or licensing
+        - E4 credentials or external accounts
+        - E5 budget overrun or repeated WP failure
+        - E6 security incident
+        - E7 large contract change or product decision
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary, options and recommended default
+    validations:
+      required: true

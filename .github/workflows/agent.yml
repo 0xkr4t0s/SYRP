@@ -1,0 +1,87 @@
+# SHARED FILE (PR manager). One implementer or spec-room agent working on one WP.
+# Dispatched only by conductor.yml.
+name: agent
+
+on:
+  workflow_dispatch:
+    inputs:
+      wp: { description: "Work package id", required: true }
+      issue: { description: "Tracking issue number", required: true }
+      role: { description: "implementer | spec-room | pr-manager", required: true, default: implementer }
+      mode: { description: "implement | revise", required: true, default: implement }
+      pr: { description: "PR number (revise only)", required: false, default: "" }
+
+concurrency:
+  group: agent-${{ inputs.wp }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  id-token: write
+
+jobs:
+  run:
+    runs-on: ubuntu-24.04
+    # Below the conductor's 4 h lease TTL, so the finish step always releases the lease first.
+    timeout-minutes: 230
+    env:
+      GH_TOKEN: ${{ secrets.AURICLE_BOT_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+      MODEL: ${{ vars.AURICLE_IMPLEMENTER_MODEL || 'claude-opus-5-5' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.AURICLE_BOT_TOKEN }}
+
+      - name: Clean room - block JUCE hosts
+        run: |
+          for h in juce.com www.juce.com docs.juce.com forum.juce.com; do
+            echo "0.0.0.0 $h" | sudo tee -a /etc/hosts >/dev/null
+          done
+
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo build --quiet -p auricle-cli
+
+      - name: Git identity
+        run: |
+          git config user.name "auricle-bot"
+          git config user.email "auricle-bot@users.noreply.github.com"
+
+      - name: Render prompt
+        id: prompt
+        run: |
+          role="${{ inputs.role }}"
+          [ "$role" = "spec-room" ] || role="implementer"
+          {
+            echo 'text<<PROMPT_EOF'
+            agents/render.sh "roles/$role.md" WP="${{ inputs.wp }}" ISSUE="${{ inputs.issue }}" \
+              MODE="${{ inputs.mode }}" PR="${{ inputs.pr }}" MODEL="$MODEL"
+            echo 'PROMPT_EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.AURICLE_BOT_TOKEN }}
+          prompt: ${{ steps.prompt.outputs.text }}
+          claude_args: >-
+            --model ${{ env.MODEL }}
+            --max-turns 300
+            --allowedTools "Bash,Read,Write,Edit,Glob,Grep,TodoWrite"
+
+      - name: Finish - release the lease
+        if: always()
+        run: |
+          wp="${{ inputs.wp }}"; issue="${{ inputs.issue }}"
+          open="$(gh pr list --state open --json headRefName \
+            --jq "map(select(.headRefName | startswith(\"wp/$wp\"))) | length")"
+          gh issue view "$issue" --json number,title,state,labels,body > issue.json
+          flag=""; [ "$open" -gt 0 ] && flag="--has-pr"
+          cargo auricle conductor finish --issue issue.json $flag --json > finish.json
+          jq -r '.results[0].body' finish.json > body.md
+          status="$(jq -r '.results[0].status' finish.json)"
+          gh issue edit "$issue" --body-file body.md --add-label "$status"
+          gh issue edit "$issue" --remove-label status:in-progress || true

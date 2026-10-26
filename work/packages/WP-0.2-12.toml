@@ -1,0 +1,11 @@
+id = "WP-0.2-12"
+title = "Docs generator v2: crate briefs, migration-map scaffold, error catalogue pages"
+crate = "crates/tooling/docgen"
+depends_on = ["WP-0.1-10"]
+spec = "work/specs/WP-0.2-12.md"
+risk = []
+acceptance = "cargo auricle wp check WP-0.2-12 --json"
+platforms = ["linux", "macos", "windows"]
+role = "implementer"
+status = "planned"
+budget = { agent_hours = 24, max_review_rounds = 3, max_restarts = 2 }

@@ -1,0 +1,5 @@
+/target
+/book
+**/*.rs.bk
+.DS_Store
+/.auricle/

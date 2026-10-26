@@ -1,0 +1,168 @@
+# SHARED FILE (PR manager). Independent review of every ready pipeline PR (master plan §12.5).
+# The agent only writes review.json; the publish job validates it and sets the status, so an
+# agent can never approve anything directly.
+name: reviewer
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+concurrency:
+  group: review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  route:
+    if: >-
+      vars.AURICLE_PIPELINE_ENABLED == 'true' && !github.event.pull_request.draft &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pull-requests: write
+      statuses: write
+    outputs:
+      wp: ${{ steps.r.outputs.wp }}
+      risks: ${{ steps.r.outputs.risks }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      PR: ${{ github.event.pull_request.number }}
+      SHA: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo build --quiet -p auricle-cli
+      - id: r
+        name: Work out WP and risk categories (from main's gate code, not the PR's)
+        run: |
+          gh pr view "$PR" --json number,body,labels,files,commits,statusCheckRollup,mergeable,isDraft > pr.json
+          cargo auricle pr gates --pr pr.json --json > gates.json || true
+          echo "risks=$(jq -c '.results[0].risks // []' gates.json)" >> "$GITHUB_OUTPUT"
+          echo "wp=$(jq -r '.results[0].gates[] | select(.gate=="front-matter") | .detail' gates.json | sed -n 's/^WP //p')" >> "$GITHUB_OUTPUT"
+      - name: Reset review state for the new head
+        run: |
+          gh pr edit "$PR" --remove-label review:approved --remove-label review:changes-requested --remove-label ci-triaged || true
+          for ctx in auricle/review auricle/adversarial; do
+            gh api "repos/$GH_REPO/statuses/$SHA" -f state=pending -f context="$ctx" -f description="queued" >/dev/null
+          done
+
+  review:
+    needs: route
+    strategy:
+      fail-fast: false
+      matrix:
+        kind: [primary, adversarial]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      pull-requests: read
+      id-token: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      PR: ${{ github.event.pull_request.number }}
+    steps:
+      - name: Skip adversarial review when no risk applies
+        id: skip
+        run: |
+          if [ "${{ matrix.kind }}" = adversarial ] && [ '${{ needs.route.outputs.risks }}' = '[]' ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.skip.outputs.skip != 'true'
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: Swatinem/rust-cache@v2
+        if: steps.skip.outputs.skip != 'true'
+      - name: Render prompt
+        if: steps.skip.outputs.skip != 'true'
+        id: prompt
+        run: |
+          if [ "${{ matrix.kind }}" = adversarial ]; then
+            role=adversarial; model="${{ vars.AURICLE_ADVERSARIAL_MODEL || 'claude-sonnet-5-5' }}"
+          else
+            role=reviewer; model="${{ vars.AURICLE_REVIEWER_MODEL || 'claude-opus-5-5' }}"
+          fi
+          echo "model=$model" >> "$GITHUB_OUTPUT"
+          {
+            echo 'text<<PROMPT_EOF'
+            agents/render.sh "roles/$role.md" PR="$PR" WP="${{ needs.route.outputs.wp }}" \
+              KIND="${{ matrix.kind }}" MODEL="$model" RISKS='${{ needs.route.outputs.risks }}'
+            echo 'PROMPT_EOF'
+          } >> "$GITHUB_OUTPUT"
+      - uses: anthropics/claude-code-action@v1
+        if: steps.skip.outputs.skip != 'true'
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ github.token }}
+          prompt: ${{ steps.prompt.outputs.text }}
+          claude_args: >-
+            --model ${{ steps.prompt.outputs.model }}
+            --max-turns 150
+            --allowedTools "Bash,Read,Write,Glob,Grep"
+      - uses: actions/upload-artifact@v4
+        if: steps.skip.outputs.skip != 'true'
+        with:
+          name: review-${{ matrix.kind }}
+          path: review.json
+          if-no-files-found: warn
+
+  publish:
+    needs: [route, review]
+    if: always() && needs.route.result == 'success'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pull-requests: write
+      statuses: write
+    env:
+      # Statuses are set with the bot token so they trigger the PR manager.
+      GH_TOKEN: ${{ secrets.AURICLE_BOT_TOKEN || github.token }}
+      GH_REPO: ${{ github.repository }}
+      PR: ${{ github.event.pull_request.number }}
+      SHA: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo build --quiet -p auricle-cli
+      - uses: actions/download-artifact@v4
+        with:
+          path: reviews
+      - name: Validate and publish
+        run: |
+          set -euo pipefail
+          gh label create review:approved --force --color 0e8a16 >/dev/null
+          gh label create review:changes-requested --force --color d93f0b >/dev/null
+          primary_ok=false
+          for kind in primary adversarial; do
+            ctx="auricle/review"; [ "$kind" = adversarial ] && ctx="auricle/adversarial"
+            f="reviews/review-$kind/review.json"
+            if [ "$kind" = adversarial ] && [ '${{ needs.route.outputs.risks }}' = '[]' ]; then
+              gh api "repos/$GH_REPO/statuses/$SHA" -f state=success -f context="$ctx" -f description="not required" >/dev/null
+              continue
+            fi
+            if [ ! -f "$f" ] || ! cargo auricle review validate "$f" --json > out.json; then
+              gh api "repos/$GH_REPO/statuses/$SHA" -f state=error -f context="$ctx" -f description="no valid review produced" >/dev/null
+              continue
+            fi
+            state="$(jq -r '.results[0].state' out.json)"
+            jq -r '.results[0].body' out.json > body.md
+            printf '\n---\n_Generated by [Claude Code](https://claude.ai/code)_\n' >> body.md
+            gh pr comment "$PR" --body-file body.md
+            gh api "repos/$GH_REPO/statuses/$SHA" -f state="$state" -f context="$ctx" -f description="$kind review: $state" >/dev/null
+            if [ "$kind" = primary ] && [ "$state" = success ]; then primary_ok=true; fi
+            if [ "$state" = failure ]; then gh pr edit "$PR" --add-label review:changes-requested; fi
+          done
+          if $primary_ok && ! gh pr view "$PR" --json labels --jq '.labels[].name' | grep -qx review:changes-requested; then
+            gh pr edit "$PR" --add-label review:approved
+          fi

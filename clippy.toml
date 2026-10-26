@@ -1,0 +1,2 @@
+# Real-time lints for `#![rt]` modules are added by WP-0.1-04 (auricle-rt).
+too-many-arguments-threshold = 8

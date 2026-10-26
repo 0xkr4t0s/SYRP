@@ -1,0 +1,3 @@
+# Lets agents run `cargo auricle ...` inside this repo without installing the binary.
+[alias]
+auricle = "run --quiet --package auricle-cli --bin cargo-auricle -- auricle"

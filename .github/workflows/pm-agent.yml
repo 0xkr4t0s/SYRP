@@ -1,0 +1,57 @@
+# SHARED FILE (PR manager). The PR-manager agent: rebases conflicts and triages red CI.
+# Dispatched only by pr-manager.yml.
+name: pm-agent
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr: { description: "PR number", required: true }
+      task: { description: "conflict | ci-triage", required: true }
+
+concurrency:
+  group: pm-agent-${{ inputs.pr }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  actions: write
+  id-token: write
+
+jobs:
+  run:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ secrets.AURICLE_BOT_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+      MODEL: ${{ vars.AURICLE_PR_MANAGER_MODEL || 'claude-opus-5-5' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.AURICLE_BOT_TOKEN }}
+      - uses: Swatinem/rust-cache@v2
+      - run: |
+          git config user.name "auricle-bot"
+          git config user.email "auricle-bot@users.noreply.github.com"
+      - id: prompt
+        run: |
+          {
+            echo 'text<<PROMPT_EOF'
+            agents/render.sh roles/pr-manager.md PR="${{ inputs.pr }}" TASK="${{ inputs.task }}" MODEL="$MODEL"
+            echo 'PROMPT_EOF'
+          } >> "$GITHUB_OUTPUT"
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.AURICLE_BOT_TOKEN }}
+          prompt: ${{ steps.prompt.outputs.text }}
+          claude_args: >-
+            --model ${{ env.MODEL }}
+            --max-turns 120
+            --allowedTools "Bash,Read,Write,Edit,Glob,Grep"
+      - name: Clear the in-flight label
+        if: always() && inputs.task == 'conflict'
+        run: gh pr edit "${{ inputs.pr }}" --remove-label pm:rebasing || true

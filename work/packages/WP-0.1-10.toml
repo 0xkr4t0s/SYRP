@@ -1,0 +1,11 @@
+id = "WP-0.1-10"
+title = "Docs pipeline v1: rustdoc JSON to api-index.json, docs search over the index"
+crate = "crates/tooling/docgen"
+depends_on = ["WP-0.1-08"]
+spec = "work/specs/WP-0.1-10.md"
+risk = []
+acceptance = "cargo auricle wp check WP-0.1-10 --json"
+platforms = ["linux", "macos", "windows"]
+role = "implementer"
+status = "planned"
+budget = { agent_hours = 24, max_review_rounds = 3, max_restarts = 2 }

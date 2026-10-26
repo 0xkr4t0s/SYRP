@@ -1,0 +1,11 @@
+id = "WP-0.1-05"
+title = "auricle-geom: Point, Rect, RectList, AffineTransform, BorderSize, Line, Justification, RectanglePlacement"
+crate = "crates/foundation/geom"
+depends_on = ["WP-0.1-01"]
+spec = "work/specs/WP-0.1-05.md"
+risk = ["public-api"]
+acceptance = "cargo auricle wp check WP-0.1-05 --json"
+platforms = ["linux", "macos", "windows"]
+role = "implementer"
+status = "planned"
+budget = { agent_hours = 24, max_review_rounds = 3, max_restarts = 2 }

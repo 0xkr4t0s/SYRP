@@ -1,0 +1,10 @@
+id = "WP-0.1-01"
+title = "Repo scaffolding: workspace, toolchain, lints, deny.toml, AGENTS.md, templates, ownership.toml"
+depends_on = []
+spec = "work/specs/WP-0.1-01.md"
+risk = ["ci-infra"]
+acceptance = "cargo auricle wp check WP-0.1-01 --json"
+platforms = ["linux", "macos", "windows"]
+role = "pr-manager"
+status = "done"
+budget = { agent_hours = 24, max_review_rounds = 3, max_restarts = 2 }

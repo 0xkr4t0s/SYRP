@@ -1,1 +1,56 @@
-# SYRP
+# Auricle
+
+A Rust reimplementation of the [JUCE](https://juce.com) framework, built and used agent-first.
+
+> **Status: Phase 0 (foundations).** The workspace, the `cargo auricle` CLI, the documentation
+> pipeline and the multi-agent pipeline exist. Framework crates are being built now, one work
+> package at a time. Nothing here is usable for audio software yet.
+>
+> Auricle is a working name. Not affiliated with or endorsed by Raw Material Software / JUCE.
+
+## What is here
+
+| | |
+|---|---|
+| `cargo auricle` | The closed-loop CLI: JSON envelope, stable exit codes, error catalogue, work board, merge gates, scheduler. Runs in-repo via a cargo alias. |
+| `work/` | 25 work packages for Phase 0 (waves 0.1 and 0.2) with behaviour specs |
+| `docs/` | The documentation site: a human side and an agent side (`cargo auricle docs build`) |
+| `.github/workflows/` | CI plus the pipeline: conductor, agents, reviewer, PR manager |
+| `docs/design/master-plan.md` | The full plan: architecture, roadmap, testing, licensing, pipeline |
+| `docs/design/0002-open-decisions.md` | Decisions taken by default, open for the owner to override |
+
+## Quick start
+
+```sh
+cargo auricle doctor
+cargo auricle wp ready
+cargo auricle check
+cargo auricle docs build --skip-book
+```
+
+## Turning on the pipeline
+
+The pipeline is off until a person sets it up. It needs:
+
+1. **Secrets** (Settings > Secrets and variables > Actions):
+   - `ANTHROPIC_API_KEY`: used by the implementer, reviewer and PR-manager agents.
+   - `AURICLE_BOT_TOKEN`: a fine-grained personal access token (or GitHub App token) for this
+     repository with Contents, Pull requests, Issues, Commit statuses and Actions set to
+     read and write. Pushes, statuses and merges made with the default `GITHUB_TOKEN` do not
+     trigger other workflows, so the pipeline needs this token to chain its steps.
+2. **Variables**: `AURICLE_PIPELINE_ENABLED=true` (the master switch), and optionally
+   `AURICLE_SLOTS` (default 12), `AURICLE_IMPLEMENTER_MODEL`, `AURICLE_REVIEWER_MODEL`,
+   `AURICLE_ADVERSARIAL_MODEL`, `AURICLE_PR_MANAGER_MODEL`, `AURICLE_PAGES_ENABLED`.
+3. **Branch protection on `main`**: require the `ci` checks plus the `auricle/review` and
+   `auricle/adversarial` statuses, and squash merging. Do not require human approvals, or the
+   pipeline cannot merge.
+4. **Actions settings**: allow GitHub Actions to create pull requests, and Pages source
+   "GitHub Actions" if you want the docs site.
+
+Then run the `conductor` workflow once by hand. It opens issues for every work package and
+starts agents on the ones that are ready. See `docs/agents/pipeline.md` for how it works.
+
+## Licence
+
+Draft: interface crates are `MIT OR Apache-2.0`; everything else is `AGPL-3.0-only OR BUSL-1.1`,
+free for organisations under USD 100k a year. See [LICENSE.md](LICENSE.md).

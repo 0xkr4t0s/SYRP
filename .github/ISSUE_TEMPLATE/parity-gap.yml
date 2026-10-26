@@ -1,0 +1,18 @@
+name: Parity gap
+description: Auricle differs from documented or observed JUCE behaviour.
+labels: ["parity-gap"]
+body:
+  - type: input
+    id: ledger
+    attributes:
+      label: Ledger row
+      placeholder: juce_gui_basics/Slider
+    validations:
+      required: true
+  - type: textarea
+    id: observed
+    attributes:
+      label: Observed difference
+      description: Scenario, Auricle output, reference output. Public docs or harness output only.
+    validations:
+      required: true

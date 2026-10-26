@@ -1,0 +1,12 @@
+id = "WP-0.2-13"
+title = "Agent-eval harness v0: 10 tasks scored end to end"
+crate = "crates/tooling/agent-eval"
+paths = ["evals/"]
+depends_on = ["WP-0.1-08", "WP-0.2-11"]
+spec = "work/specs/WP-0.2-13.md"
+risk = []
+acceptance = "cargo auricle wp check WP-0.2-13 --json"
+platforms = ["linux", "macos", "windows"]
+role = "implementer"
+status = "planned"
+budget = { agent_hours = 24, max_review_rounds = 3, max_restarts = 2 }

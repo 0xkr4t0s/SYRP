@@ -1,0 +1,94 @@
+# SHARED FILE (PR manager). The conductor: deterministic scheduling (master plan §12.3).
+# It never writes code. It opens WP issues, takes and releases leases, escalates, and
+# dispatches agent.yml once per WP to start.
+name: conductor
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  push:
+    branches: [main]
+  issues:
+    types: [closed, unlabeled]
+  workflow_dispatch:
+
+concurrency:
+  group: conductor
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+  actions: write
+
+jobs:
+  tick:
+    # Safety switch: nothing runs until the repository variable is set to "true".
+    # Issue events only matter when a WP closes or a person hands one back.
+    if: >-
+      vars.AURICLE_PIPELINE_ENABLED == 'true' && (github.event_name != 'issues' ||
+      github.event.action == 'closed' || github.event.label.name == 'needs-human')
+    runs-on: ubuntu-24.04
+    env:
+      GH_TOKEN: ${{ secrets.AURICLE_BOT_TOKEN || github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo build --quiet -p auricle-cli
+
+      - name: Snapshot GitHub state
+        run: |
+          gh issue list --state all --limit 2000 --json number,title,state,labels,body > issues.json
+          gh pr list --state open --limit 500 --json number,isDraft,labels,headRefName > prs.json
+
+      - name: Tick
+        run: |
+          cargo auricle conductor tick --issues issues.json --prs prs.json \
+            --slots "${{ vars.AURICLE_SLOTS || 12 }}" --json > tick.json || {
+            cat tick.json; exit 1; }
+          jq -c '.results[]' tick.json | tee actions.jsonl
+
+      - name: Apply actions
+        env:
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          set -euo pipefail
+          label() { gh label create "$1" --force --color "${2:-ededed}" >/dev/null; }
+          for l in status:ready status:in-progress status:in-review needs-human; do label "$l"; done
+          while IFS= read -r a; do
+            kind="$(jq -r .action <<<"$a")"; wp="$(jq -r .wp <<<"$a")"
+            case "$kind" in
+              open-issue)
+                args=()
+                while IFS= read -r l; do label "$l"; args+=(--label "$l"); done < <(jq -r '.labels[]' <<<"$a")
+                jq -r .body <<<"$a" > body.md
+                gh issue create --title "$(jq -r .title <<<"$a")" --body-file body.md "${args[@]}"
+                ;;
+              spawn)
+                issue="$(jq -r .issue <<<"$a")"
+                jq -r .body <<<"$a" > body.md
+                gh issue edit "$issue" --body-file body.md --add-label status:in-progress
+                gh issue edit "$issue" --remove-label status:ready --remove-label status:in-review || true
+                gh workflow run agent.yml \
+                  -f wp="$wp" -f issue="$issue" -f role="$(jq -r .role <<<"$a")" \
+                  -f mode="$(jq -r .mode <<<"$a")" -f pr="$(jq -r '.pr // ""' <<<"$a")"
+                ;;
+              release)
+                issue="$(jq -r .issue <<<"$a")"
+                jq -r .body <<<"$a" > body.md
+                gh issue edit "$issue" --body-file body.md --add-label status:ready
+                gh issue edit "$issue" --remove-label status:in-progress || true
+                gh issue comment "$issue" --body "Lease released: $(jq -r .reason <<<"$a"). The WP will be retried by a fresh agent."
+                ;;
+              escalate)
+                issue="$(jq -r .issue <<<"$a")"
+                gh issue edit "$issue" --add-label needs-human
+                gh issue edit "$issue" --remove-label status:in-progress || true
+                gh issue edit "$issue" --add-assignee "$OWNER" || true
+                gh issue comment "$issue" --body "$(printf '**Needs a person** (`%s`): %s\n\nRun `cargo auricle explain %s` for what to do. Remove the `needs-human` label to hand it back to the pipeline.' \
+                  "$(jq -r .code <<<"$a")" "$(jq -r .reason <<<"$a")" "$(jq -r .code <<<"$a")")"
+                ;;
+            esac
+          done < actions.jsonl

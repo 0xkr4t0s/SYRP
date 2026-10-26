@@ -1,0 +1,22 @@
+name: Bug
+description: Something behaves wrongly.
+labels: ["bug"]
+body:
+  - type: input
+    id: crate
+    attributes:
+      label: Crate
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction
+      description: Minimal code or the `cargo auricle` command and its JSON output.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+      description: Cite the spec behaviour or JUCE documentation page if relevant (no JUCE source).
+    validations:
+      required: true
