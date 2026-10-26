@@ -204,6 +204,12 @@ fn b8_contract_types_have_no_public_fields() {
         include_str!("../src/range.rs"),
         include_str!("../src/param.rs"),
         include_str!("../src/layout.rs"),
+        include_str!("../src/changes.rs"),
+        include_str!("../src/io.rs"),
+        include_str!("../src/processor.rs"),
+        include_str!("../src/editor.rs"),
+        include_str!("../src/descriptor.rs"),
+        include_str!("../src/state.rs"),
     ];
     let mut in_struct = false;
     for line in src.iter().flat_map(|s| s.lines()) {

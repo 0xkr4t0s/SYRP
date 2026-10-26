@@ -8,7 +8,9 @@
 //!   one a dense [`ParamIndex`]. Values live in one atomic array, [`Params`]; each block
 //!   carries one sorted [`ParamChanges`] stream and `syrp-midi` MIDI 1.0 and UMP buffers.
 //!
-//! The editor contract, `PluginDescriptor` and the state traits arrive in a later increment.
+//! - Editor: [`Editor`] builds its UI through an opaque [`EditorHost`] and returns a
+//!   [`NodeHandle`]; it sees parameters only through [`ParamHandles`].
+//! - [`PluginDescriptor`] and [`PluginState`], saved in a versioned [`StateEnvelope`].
 //!
 //! ```
 //! use syrp_plugin_api::{ParamLayout, ParamRange, ParamSpec, Params};
@@ -23,18 +25,27 @@ use std::fmt;
 use syrp_error::{Diagnostic, ErrorCode};
 
 mod changes;
+mod descriptor;
+mod editor;
 mod io;
 mod layout;
 mod param;
 mod processor;
 mod range;
+mod state;
 
 pub use changes::{ParamChange, ParamChanges};
+pub use descriptor::{PluginCategory, PluginDescriptor, PluginFormat};
+pub use editor::{
+    Editor, EditorError, EditorHost, GesturePhase, NodeHandle, ParamGestures, ParamHandles,
+    SizeConstraints,
+};
 pub use io::ProcessIo;
 pub use layout::{ParamLayout, Params};
 pub use param::{ParamIndex, ParamSpec, Smoothing};
 pub use processor::{PrepareCtx, Prepared, Processor, RtCtx, Tail, prepare_processor};
 pub use range::ParamRange;
+pub use state::{PluginState, StateEnvelope, load_state, save_state};
 
 /// Errors from the processor and parameter contract.
 /// ```
@@ -57,6 +68,14 @@ pub enum PluginError {
     PrecisionUnsupported,
     /// The processor could not prepare for the configuration (`SYRP-PLUGIN-0006`).
     PrepareFailed,
+    /// A plugin descriptor is missing a name, vendor or id, or an id is malformed
+    /// (`SYRP-PLUGIN-0009`).
+    InvalidDescriptor,
+    /// A state blob is not a well-formed envelope, or its payload is invalid
+    /// (`SYRP-PLUGIN-0010`).
+    StateMalformed,
+    /// A state blob was written by a newer state or envelope version (`SYRP-PLUGIN-0011`).
+    StateTooNew,
 }
 
 impl fmt::Display for PluginError {
@@ -68,6 +87,9 @@ impl fmt::Display for PluginError {
             PluginError::ParamChangesFull => "parameter change stream is full",
             PluginError::PrecisionUnsupported => "processor does not support double precision",
             PluginError::PrepareFailed => "processor could not prepare",
+            PluginError::InvalidDescriptor => "invalid plugin descriptor",
+            PluginError::StateMalformed => "malformed plugin state",
+            PluginError::StateTooNew => "plugin state is from a newer version",
         })
     }
 }
@@ -83,6 +105,9 @@ impl Diagnostic for PluginError {
             PluginError::ParamChangesFull => "SYRP-PLUGIN-0004",
             PluginError::PrecisionUnsupported => "SYRP-PLUGIN-0005",
             PluginError::PrepareFailed => "SYRP-PLUGIN-0006",
+            PluginError::InvalidDescriptor => "SYRP-PLUGIN-0009",
+            PluginError::StateMalformed => "SYRP-PLUGIN-0010",
+            PluginError::StateTooNew => "SYRP-PLUGIN-0011",
         })
     }
 }

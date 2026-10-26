@@ -41,3 +41,38 @@ title = "Processor could not prepare"
 severity = "error"
 cause = "Processor::prepare reported that it cannot run at the given configuration, for example because a parameter it needs is not registered or the sample rate is out of its range."
 fix = "Check the processor's documented sample rates and block sizes, and that register_params registered every id prepare resolves."
+
+[[error]]
+code = "SYRP-PLUGIN-0007"
+title = "Editor could not be created"
+severity = "error"
+cause = "Editor::create could not build its UI, for example because a parameter it attaches to is not registered or a resource failed to load."
+fix = "Check that every id the editor resolves through ParamHandles::index_of is registered, and that its resources ship with the plugin."
+
+[[error]]
+code = "SYRP-PLUGIN-0008"
+title = "Editor unsupported by host"
+severity = "error"
+cause = "Editor::create was given an EditorHost it cannot build into, for example a headless host or a runtime whose UI type the editor does not recognise."
+fix = "Run the plugin headless without an editor, or open it in a host that provides the syrp-plugin UI runtime."
+
+[[error]]
+code = "SYRP-PLUGIN-0009"
+title = "Invalid plugin descriptor"
+severity = "error"
+cause = "PluginDescriptor::validate found an empty name or vendor, no format id, or an id with the wrong shape (VST3 needs 32 hex digits, Audio Unit four printable ASCII characters, others no whitespace)."
+fix = "Set the name, vendor and an id for every format the plugin ships in, in that format's shape."
+
+[[error]]
+code = "SYRP-PLUGIN-0010"
+title = "Malformed plugin state"
+severity = "error"
+cause = "A state blob is not a StateEnvelope (wrong magic, truncated, extra bytes, nonzero reserved field), or PluginState::load_state rejected its payload."
+fix = "Load only blobs that save_state produced. If a host stored a foreign chunk, convert it before loading."
+
+[[error]]
+code = "SYRP-PLUGIN-0011"
+title = "Plugin state from a newer version"
+severity = "error"
+cause = "The blob's state version is above the plugin's PluginState::state_version, or its envelope format is newer than this build reads. The plugin was not called."
+fix = "Update the plugin to a version that understands the saved state."
