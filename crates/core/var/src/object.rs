@@ -163,7 +163,7 @@ impl fmt::Debug for NamedValueSet {
 /// ```
 #[derive(Clone, Debug)]
 pub struct NamedValueIter<'a> {
-    inner: std::slice::NamedValueIter<'a, (Identifier, Var)>,
+    inner: std::slice::Iter<'a, (Identifier, Var)>,
 }
 
 impl<'a> Iterator for NamedValueIter<'a> {
