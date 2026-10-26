@@ -20,3 +20,24 @@ title = "Audio-path allocation failed"
 severity = "error"
 cause = "Reserving memory for audio-path storage (such as the Params value array) failed, because the size overflows or the allocator refused."
 fix = "Check the requested size; an overflow usually comes from a corrupt count. Allocate on the message thread or at prepare time, never on the audio thread."
+
+[[error]]
+code = "SYRP-PLUGIN-0004"
+title = "Parameter change stream full"
+severity = "error"
+cause = "ParamChanges::try_push was called on a stream already holding as many changes as the capacity fixed at prepare time. try_push never allocates, so it refuses instead."
+fix = "Ask for more room with PrepareCtx::reserve_param_changes, or thin out changes per block (keep the last change per parameter and offset)."
+
+[[error]]
+code = "SYRP-PLUGIN-0005"
+title = "Double precision unsupported"
+severity = "error"
+cause = "prepare_processor was given a ProcessConfig with Precision::Double for a processor whose supports_double_precision returns false."
+fix = "Prepare with Precision::Single, or implement f64 processing and return true from supports_double_precision."
+
+[[error]]
+code = "SYRP-PLUGIN-0006"
+title = "Processor could not prepare"
+severity = "error"
+cause = "Processor::prepare reported that it cannot run at the given configuration, for example because a parameter it needs is not registered or the sample rate is out of its range."
+fix = "Check the processor's documented sample rates and block sizes, and that register_params registered every id prepare resolves."

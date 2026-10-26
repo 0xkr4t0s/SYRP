@@ -1,0 +1,19 @@
+error: lifetime may not live long enough
+  --> tests/ui/keep_prepare_ctx.rs:11:9
+   |
+10 |     fn prepare(&mut self, _: &ProcessConfig, cx: &mut PrepareCtx<'_>) -> Result<(), PluginError> {
+   |                                                  - let's call the lifetime of this reference `'1`
+11 |         self.0 = Some(cx);
+   |         ^^^^^^^^^^^^^^^^^ assignment requires that `'1` must outlive `'static`
+
+error: lifetime may not live long enough
+  --> tests/ui/keep_prepare_ctx.rs:11:9
+   |
+10 |     fn prepare(&mut self, _: &ProcessConfig, cx: &mut PrepareCtx<'_>) -> Result<(), PluginError> {
+   |                                              -- has type `&mut PrepareCtx<'2>`
+11 |         self.0 = Some(cx);
+   |         ^^^^^^^^^^^^^^^^^ assignment requires that `'2` must outlive `'static`
+   |
+   = note: requirement occurs because of a mutable reference to `PrepareCtx<'_>`
+   = note: mutable references are invariant over their type parameter
+   = help: see <https://doc.rust-lang.org/nomicon/subtyping.html> for more information about variance
