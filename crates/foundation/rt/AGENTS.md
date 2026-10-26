@@ -3,7 +3,7 @@
 ## Purpose
 Real-time primitives for audio threads (master plan §5.4): the `RtSafe` marker, `AtomicF32`
 and `AtomicF64`, a bounded SPSC queue (`spsc::channel`), deferred drop (`Collector` and
-`DeferredDrop`) and the test allocation guard
+`DeferredDrop`), `RtHandoff<T>` for configuration swaps, and the test allocation guard
 (`GuardedAllocator` plus `no_alloc`, code `SYRP-RT-0001` in `errors/rt.toml`). No direct JUCE
 class; it replaces the ad-hoc lock-free FIFOs and atomics JUCE code builds by hand
 (AbstractFifo, `std::atomic<float>`).
@@ -12,9 +12,12 @@ class; it replaces the ad-hoc lock-free FIFOs and atomics JUCE code builds by ha
 None yet.
 
 ## Invariants
-- Nothing allocates, frees, locks or blocks after construction: `spsc::channel` and
-  `Collector::handle` allocate; every other method on the RT-side types is RT-safe, and the
-  `b2`/`b3`/`b4` tests prove it under `no_alloc`.
+- Nothing allocates, frees, locks or blocks after construction: `spsc::channel`,
+  `Collector::handle` and `RtHandoff::new` allocate; every other method on the RT-side types
+  is RT-safe, and the `b2`-`b5` tests prove it under `no_alloc`.
+- `HandoffReader::latest` never frees: it switches only when its `DeferredDrop` has room, so
+  the replaced value always goes to the collector. Unread published values are freed by the
+  writer. Publish is an AcqRel swap; the reader's take is an AcqRel swap.
 - SPSC positions run in `0..2 * capacity`; producer writes only `tail`, consumer only `head`;
   slot writes are published by a Release store and read after an Acquire load.
 - `DeferredDrop::defer` takes `Box<T>` so only a pointer moves; it gives the box back when full.
@@ -24,9 +27,10 @@ None yet.
 
 ## Thread affinity
 - Audio thread (RT-safe): `AtomicF32`/`AtomicF64` methods, `Producer`/`Consumer` methods,
-  `DeferredDrop::{defer, is_full, capacity}`.
+  `DeferredDrop::{defer, is_full, capacity}`, `HandoffReader::{latest, current}`.
 - Any non-RT thread: `spsc::channel`, `Collector::{new, handle, collect}`,
-  and dropping any handle (the last handle alive frees the shared ring and queued values).
+  `RtHandoff::{new, publish}`, and dropping any handle (the last handle alive frees the
+  shared ring and queued values; dropping `HandoffReader` frees its value).
 - `no_alloc` guards only the calling thread.
 
 ## Stability
@@ -37,15 +41,13 @@ experimental
 cargo syrp test --crate syrp-rt
 # Miri (unit, integration and doc tests; the abort test is skipped because it spawns a process):
 cargo +nightly miri test -p syrp-rt
-# loom model of the SPSC queue (B3):
+# loom models of the SPSC queue (B3) and RtHandoff (B5):
 RUSTFLAGS="--cfg loom" CARGO_TARGET_DIR=target/loom cargo test -p syrp-rt --release --test loom
 ```
 `tests/rt.rs` installs `GuardedAllocator`, so an allocation inside `no_alloc` aborts the test
 binary with `SYRP-RT-0001`. CI wiring for Miri and loom is a separate change request.
 
 ## Known gaps
-- B5 `RtHandoff<T>` (single-slot publisher reclaiming through `DeferredDrop`, with its loom
-  model) is the second increment of WP-0.1-04; it was split out to keep PRs under 1,200 lines.
 - RT tokens (`RtCtx`, `PrepareCtx`) from the WP title are not specified as behaviours here;
   they belong with `syrp-plugin-api` (WP-0.2-06) unless the spec room moves them.
 - SPSC has no cached indices or cache-line padding yet (correct, not tuned).
