@@ -31,7 +31,8 @@
 //!   continuous pedal sends, changes nothing; events at or past the block end are applied
 //!   after it, whatever the minimum subdivision; `AllNotesOff` stops held lanes with
 //!   tail-off regardless of the pedals; `AllSoundOff` stops every lane without tail-off and
-//!   frees it at once.
+//!   frees it at once; when stealing, "oldest released" means the released lane whose note
+//!   started first (start order), not the one released first.
 //!
 //! # Cost
 //! `benches/voice_pool.rs` (Callgrind, spec B8) renders 16 sounding saw voices for 512 stereo
