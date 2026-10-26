@@ -80,3 +80,22 @@ fn b4_transforms_rects_to_their_bounding_box() {
     let ir = T::scale(1.5, 1.5).transform_rect(Rect::new(1, 1, 1, 1));
     assert_eq!(ir, Rect::from_ltrb(1, 1, 3, 3));
 }
+
+#[test]
+fn b4_inversion_returns_none_when_the_inverse_overflows() {
+    // Not singular (determinant 1e-300), but the inverse translation overflows.
+    let t = T::new(1e-300, 0.0, 1e10, 0.0, 1.0, 0.0);
+    assert!(!t.is_singular());
+    assert!(t.inverted().is_none());
+}
+
+#[test]
+fn b4_float_rects_are_not_snapped_to_integers() {
+    let r = T::translation(1e-10, 0.0).transform_rect(Rect::new(0.0, 0.0, 1.0, 1.0));
+    assert_eq!(r.x(), 1e-10);
+    let r32 = T::translation(1e-6, 0.0).transform_rect(Rect::new(0.0_f32, 0.0, 1.0, 1.0));
+    assert_eq!(r32.x(), 1e-6_f32);
+    // Integer rects still absorb rounding noise.
+    let ir = T::translation(1e-10, 0.0).transform_rect(Rect::new(0, 0, 1, 1));
+    assert_eq!(ir, Rect::new(0, 0, 1, 1));
+}

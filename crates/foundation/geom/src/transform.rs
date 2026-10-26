@@ -165,7 +165,8 @@ impl AffineTransform {
         d == 0.0 || !d.is_finite()
     }
 
-    /// The inverse transform, or `None` if this one [is singular](Self::is_singular).
+    /// The inverse transform, or `None` if this one [is singular](Self::is_singular) or the
+    /// inverse would not be finite (a determinant so small that dividing by it overflows).
     /// ```
     /// use syrp_geom::{AffineTransform, Point};
     /// let t = AffineTransform::scale(2.0, 4.0).translated(1.0, 1.0);
@@ -180,14 +181,18 @@ impl AffineTransform {
         let d = self.determinant();
         let (i00, i01) = (self.m11 / d, -self.m01 / d);
         let (i10, i11) = (-self.m10 / d, self.m00 / d);
-        Some(Self::new(
+        let inv = Self::new(
             i00,
             i01,
             -(i00 * self.m02 + i01 * self.m12),
             i10,
             i11,
             -(i10 * self.m02 + i11 * self.m12),
-        ))
+        );
+        [inv.m00, inv.m01, inv.m02, inv.m10, inv.m11, inv.m12]
+            .iter()
+            .all(|v| v.is_finite())
+            .then_some(inv)
     }
 
     /// True if this is exactly the identity.
@@ -207,7 +212,8 @@ impl AffineTransform {
         )
     }
 
-    /// Transforms a point. The maths is done in `f64`; integer results round to nearest.
+    /// Transforms a point. The maths is done in `f64`; integer results round to nearest, with
+    /// halves rounded away from zero (2.5 becomes 3, -2.5 becomes -3).
     /// ```
     /// use syrp_geom::{AffineTransform, Point};
     /// assert_eq!(AffineTransform::scale(1.5, 1.5).transform_point(Point::new(1, 1)), Point::new(2, 2));
@@ -243,10 +249,11 @@ impl AffineTransform {
             x1 = x1.max(x);
             y1 = y1.max(y);
         }
-        // Snap values within rounding noise of an integer before taking floor/ceil, so that
-        // an exact 90-degree rotation of an integer rectangle does not grow by a pixel.
+        // For integer rects, snap values within rounding noise of an integer before taking
+        // floor/ceil, so that an exact 90-degree rotation does not grow the rect by a pixel.
+        // Float rects keep the exact bounds.
         let snap = |v: f64| {
-            if (v - v.round()).abs() < 1e-9 {
+            if T::INTEGER && (v - v.round()).abs() < 1e-9 {
                 v.round()
             } else {
                 v
