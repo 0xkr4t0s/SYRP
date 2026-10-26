@@ -5,8 +5,10 @@ The L2 string utilities that have no `std` equivalent (master plan §5.2, Wave 1
 `String`/`&str` replace JUCE's `String`, `StringArray` and `StringRef` (ledger: mapped). This
 crate covers JUCE's `Base64` (module `base64`: `encode`, `encode_to`, `decode`), `StringPool`
 (`get`, `len`, `garbage_collect`, `global`) and `TextDiff` (`TextDiff`, `Change`). Errors are
-`StringsError` (opaque: `kind()` + `position()`) with codes from `errors/strings.toml`.
-`LocalisedStrings` and the process-wide `translate` follow in the second increment.
+`StringsError` (opaque: `kind()`, `position()`, `line()`) with codes from `errors/strings.toml`.
+It also covers `LocalisedStrings` (`parse`, `translate`, `get`, `language_name`, `country_codes`,
+`with_fallback`, `merge`) and the process-wide `set_current_mappings`, `current_mappings` and
+`translate` free function (JUCE's `TRANS`).
 
 ## Ledger rows
 juce_core/Base64, juce_core/StringPool, juce_core/TextDiff, juce_core/LocalisedStrings
@@ -22,10 +24,19 @@ juce_core/Base64, juce_core/StringPool, juce_core/TextDiff, juce_core/LocalisedS
   `Change` is either a removal (`removed_len > 0`, empty text) or an insertion. `apply(original)`
   equals the target for every pair. Myers' algorithm on the trimmed middle, capped at edit
   distance 1024 (then one removal plus one insertion), so memory stays bounded.
+- `LocalisedStrings::parse` never panics; a bad line is `SYRP-STRINGS-0004` with a 1-based
+  line and a byte offset in that line. Later duplicates win. With `ignore_case`, keys are
+  stored lower-cased (Unicode). `translate` returns the input when neither the set nor its
+  fallback chain maps it. `merge` refuses a different language (`SYRP-STRINGS-0005`) and
+  leaves the set unchanged.
+- The current mappings are one `RwLock<Option<Arc<LocalisedStrings>>>`; readers never see a
+  partially replaced set. Doc examples that touch it are `standalone_crate`, and
+  `tests/current.rs` keeps every global-state check in one test.
 - Error types bind every field explicitly in `Display` (no `..`).
 
 ## Thread affinity
-Any thread, not RT-safe: everything allocates, and `StringPool` locks a mutex.
+Any thread, not RT-safe: everything allocates, `StringPool` locks a mutex, and the current
+mappings functions take a reader-writer lock. Never translate on the audio thread.
 
 ## Stability
 experimental
@@ -37,6 +48,6 @@ cargo syrp test --crate syrp-strings
 B1 and B3 use proptest (round trip over random bytes; diff over random Unicode text).
 
 ## Known gaps
-Increment 2 of WP-1.1-13 adds B4 (`LocalisedStrings`: translation-file parser, `translate`,
-`ignore_case`, fallback, merge, line-numbered errors), B5 (process-wide current mappings and
-the `translate` free function) and their error codes.
+WP-1.1-13 is complete (B1 to B6). Not planned yet: loading a translation file from disk
+(callers read it with `std::fs::read_to_string` and call `parse`), and a translate variant taking an explicit
+not-found result (`get` plus `unwrap_or` covers it).

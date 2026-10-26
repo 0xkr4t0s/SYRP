@@ -20,3 +20,17 @@ title = "Out of memory for a string operation"
 severity = "error"
 cause = "A buffer sized by the input (for example the decoded bytes of a Base64 string) could not be allocated."
 fix = "Process the input in smaller pieces, or free memory before retrying."
+
+[[error]]
+code = "SYRP-STRINGS-0004"
+title = "Malformed translation-file line"
+severity = "error"
+cause = "LocalisedStrings::parse met a line that is not blank, a `//` or `#` comment, a `language:` or `countries:` header, or a `\"original\" = \"translated\"` mapping. Unterminated strings, unknown escapes (only \\\", \\\\, \\n, \\r and \\t are allowed), a missing `=` and text after the translated string all cause it."
+fix = "Fix the line named by the error's line() (1-based) at byte position(). Write a quote inside a string as \\\" and a backslash as \\\\."
+
+[[error]]
+code = "SYRP-STRINGS-0005"
+title = "Merging translations for different languages"
+severity = "error"
+cause = "LocalisedStrings::merge was given a set whose language name differs (ignoring case) from this one's. Both names were non-empty."
+fix = "Merge only translation files for the same language, or keep separate sets and chain them with with_fallback."
