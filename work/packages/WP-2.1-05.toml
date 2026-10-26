@@ -1,0 +1,11 @@
+id = "WP-2.1-05"
+title = "syrp-audio-basics: VoicePool, lane-packed voices with note assignment, stealing and sleep"
+paths = ["crates/audio/audio-basics/src/voice/", "crates/audio/audio-basics/tests/voice_pool.rs", "crates/audio/audio-basics/benches/voice_pool.rs"]
+depends_on = ["WP-2.1-01"]
+spec = "work/specs/WP-2.1-05.md"
+risk = ["public-api", "rt-safety"]
+acceptance = "cargo syrp wp check WP-2.1-05 --json"
+platforms = ["linux", "macos", "windows"]
+role = "implementer"
+status = "planned"
+budget = { agent_hours = 32, max_review_rounds = 3, max_restarts = 2 }

@@ -1,0 +1,12 @@
+id = "WP-2.1-01"
+title = "syrp-audio-basics: crate skeleton, AudioBuffer and vector operations"
+crate = "crates/audio/audio-basics"
+depends_on = ["WP-0.2-02", "WP-0.2-14", "WP-0.1-04"]
+ledger_rows = ["juce_audio_basics/AudioBuffer", "juce_audio_basics/FloatVectorOperations"]
+spec = "work/specs/WP-2.1-01.md"
+risk = ["public-api", "rt-safety"]
+acceptance = "cargo syrp wp check WP-2.1-01 --json"
+platforms = ["linux", "macos", "windows"]
+role = "implementer"
+status = "planned"
+budget = { agent_hours = 32, max_review_rounds = 3, max_restarts = 2 }
