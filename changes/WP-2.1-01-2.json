@@ -1,0 +1,1 @@
+{"wp": "WP-2.1-01", "kind": "added", "summary": "syrp-audio-basics: AudioBuffer cleared flag (is_clear, set_not_clear), buffer operations (clear, gains and ramps, add/copy with gain and ramp, magnitude, rms_level, find_min_max, reverse) and vector_ops (the FloatVectorOperations set, SIMD-dispatched with a scalar reference) (increment 2: B3-B5)."}

@@ -30,12 +30,14 @@ juce_audio_basics/AudioBuffer, juce_audio_basics/FloatVectorOperations (WP-2.1-0
 - `set_size(.., avoid_reallocating = true)` never allocates when the shape fits the capacity.
   Content outside the kept region is unspecified unless `clear_extra`; it is never
   uninitialised memory. A new allocation is always zeroed.
-- Vector operations (later increment) follow ADR 0003 D5: generic over `Sample`,
-  `#[inline(always)]` from the `dispatch!` body down, with a scalar reference.
+- `vector_ops` follows ADR 0003 D5: `syrp_simd::kernels` where they exist, otherwise `Sample`
+  packs (`F32x8`, `F64x4`) with `#[inline(always)]` from the `dispatch!` body down.
+- Cleared flag (B3): set by `new`/`clear`, reset by any mutable access. Kernels see `frames`.
 
 ## Thread affinity
 Any thread. RT-safe: `channels`, `frames`, `channel`, `channel_mut`, `as_block`,
-`as_block_mut`, and `set_size`/`make_copy_of` with `avoid_reallocating` when the new shape
+`as_block_mut`, B3/B4 operations and `vector_ops` (after one `Level::detect()`), and
+`set_size`/`make_copy_of` with `avoid_reallocating` when the new shape
 fits. Not RT-safe: `new`, `clone`, dropping a buffer, and resizes that reallocate.
 
 ## Stability
@@ -50,7 +52,7 @@ cargo syrp wp check WP-2.1-01
 Tests install `syrp_rt::GuardedAllocator` so `no_alloc` proves allocation-free paths.
 
 ## Known gaps
-WP-2.1-01 is delivered in increments. Landed: B1 (skeleton) and B2 (`AudioBuffer`). Still to
-come: B3 (cleared flag, `is_clear`), B4 (buffer operations), B5 (`vector_ops`), B6 (layout
-proptest over clear/write sequences, `benches/buffer.rs` Callgrind bench, `RtSafe`).
+WP-2.1-01 is delivered in increments. Landed: B1-B5. Still to come: B6 (layout proptest
+over set_size/write/clear sequences, `benches/buffer.rs` Callgrind bench, `RtSafe`).
+`add_from`/`copy_from` cannot take a channel of the same buffer (borrow rules).
 `AlignedBuf::zeroed` aborts on allocation failure (no fallible allocation in `syrp-simd` yet).
