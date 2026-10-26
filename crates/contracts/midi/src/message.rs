@@ -286,6 +286,34 @@ impl<'a> MidiMessageRef<'a> {
         self.bytes
     }
 
+    /// The SysEx payload, borrowed for the view's whole lifetime (unlike
+    /// [`MidiData::sysex_data`], which borrows the view), so it can escape a `filter_map`.
+    /// ```
+    /// use syrp_midi::MidiMessageRef;
+    /// let bytes = [0xF0, 0x7E, 0x01, 0xF7];
+    /// let data = MidiMessageRef::new(&bytes, 0).ok().and_then(|r| r.sysex_data());
+    /// assert_eq!(data, Some(&[0x7E, 0x01][..]));
+    /// ```
+    #[doc(alias = "getSysExData")]
+    #[must_use]
+    pub fn sysex_data(self) -> Option<&'a [u8]> {
+        crate::sysex_payload(self.bytes)
+    }
+
+    /// The meta event data, borrowed for the view's whole lifetime (unlike
+    /// [`MidiData::meta_data`]).
+    /// ```
+    /// use syrp_midi::MidiMessageRef;
+    /// let bytes = [0xFF, 0x51, 0x03, 0x07, 0xA1, 0x20];
+    /// let data = MidiMessageRef::new(&bytes, 0).ok().and_then(|r| r.meta_data());
+    /// assert_eq!(data, Some(&[0x07, 0xA1, 0x20][..]));
+    /// ```
+    #[doc(alias = "getMetaEventData")]
+    #[must_use]
+    pub fn meta_data(self) -> Option<&'a [u8]> {
+        crate::meta_payload(self.bytes)
+    }
+
     /// Copies the view into an owned message whose timestamp is the sample offset.
     /// Allocates: message thread only.
     /// ```

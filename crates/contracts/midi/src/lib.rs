@@ -249,10 +249,7 @@ pub trait MidiData: sealed::Sealed {
     /// ```
     #[doc(alias = "getSysExData")]
     fn sysex_data(&self) -> Option<&[u8]> {
-        match self.bytes() {
-            [0xF0, rest @ .., 0xF7] => Some(rest),
-            _ => None,
-        }
+        sysex_payload(self.bytes())
     }
 
     /// The type byte of a meta event (for example `0x51` for a tempo change).
@@ -276,10 +273,23 @@ pub trait MidiData: sealed::Sealed {
     /// ```
     #[doc(alias = "getMetaEventData")]
     fn meta_data(&self) -> Option<&[u8]> {
-        match self.bytes() {
-            [0xFF, _, rest @ ..] if !rest.is_empty() => read_var_len(rest).map(|(_, n)| &rest[n..]),
-            _ => None,
-        }
+        meta_payload(self.bytes())
+    }
+}
+
+/// The SysEx payload of `bytes`, without the `0xF0` and `0xF7` framing.
+pub(crate) fn sysex_payload(bytes: &[u8]) -> Option<&[u8]> {
+    match bytes {
+        [0xF0, rest @ .., 0xF7] => Some(rest),
+        _ => None,
+    }
+}
+
+/// The meta event data of `bytes`, after its variable-length size field.
+pub(crate) fn meta_payload(bytes: &[u8]) -> Option<&[u8]> {
+    match bytes {
+        [0xFF, _, rest @ ..] if !rest.is_empty() => read_var_len(rest).map(|(_, n)| &rest[n..]),
+        _ => None,
     }
 }
 

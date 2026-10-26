@@ -112,6 +112,25 @@ fn b1_timestamps_and_views() -> R {
 }
 
 #[test]
+fn b1_view_payloads_outlive_the_view() -> R {
+    let sysex = [0xF0, 0x7E, 0x01, 0xF7];
+    let tempo = [0xFF, 0x51, 0x03, 0x07, 0xA1, 0x20];
+    let views = [
+        MidiMessageRef::new(&sysex, 0)?,
+        MidiMessageRef::new(&tempo, 1)?,
+    ];
+    let sysex_data: Vec<&[u8]> = views
+        .iter()
+        .copied()
+        .filter_map(|e| e.sysex_data())
+        .collect();
+    let meta_data: Vec<&[u8]> = views.into_iter().filter_map(|e| e.meta_data()).collect();
+    assert_eq!(sysex_data, [&[0x7E, 0x01][..]]);
+    assert_eq!(meta_data, [&[0x07, 0xA1, 0x20][..]]);
+    Ok(())
+}
+
+#[test]
 fn b1_from_bytes_rejects_malformed_messages() {
     let bad: &[&[u8]] = &[
         &[],
