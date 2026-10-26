@@ -26,6 +26,18 @@ impl<'a> Depth<'a> {
         Self { value, depth: 0 }
     }
 
+    /// Fails when this value, an array or object, would be the container past [`MAX_DEPTH`].
+    /// Containers are counted exactly as [`Seed::nested`] counts them when reading, so
+    /// everything that is written can be read back.
+    fn container<E: ser::Error>(&self) -> Result<(), E> {
+        if self.depth >= MAX_DEPTH {
+            return Err(E::custom(format_args!(
+                "value nests more than {MAX_DEPTH} levels deep or contains a cycle"
+            )));
+        }
+        Ok(())
+    }
+
     /// Wraps a value nested one level below this one.
     fn child(&self, value: &'a Var) -> Depth<'a> {
         Depth {
@@ -37,11 +49,6 @@ impl<'a> Depth<'a> {
 
 impl Serialize for Depth<'_> {
     fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
-        if self.depth > MAX_DEPTH {
-            return Err(ser::Error::custom(format_args!(
-                "value nests more than {MAX_DEPTH} levels deep or contains a cycle"
-            )));
-        }
         match self.value.as_view() {
             VarView::Void | VarView::Undefined => s.serialize_unit(),
             VarView::Bool(b) => s.serialize_bool(b),
@@ -51,6 +58,7 @@ impl Serialize for Depth<'_> {
             VarView::Str(text) => s.serialize_str(text),
             VarView::Binary(bytes) => s.serialize_bytes(bytes),
             VarView::Array(items) => {
+                self.container::<S::Error>()?;
                 let mut seq = s.serialize_seq(Some(items.len()))?;
                 for item in items {
                     seq.serialize_element(&self.child(item))?;
@@ -58,6 +66,7 @@ impl Serialize for Depth<'_> {
                 seq.end()
             }
             VarView::Object(object) => {
+                self.container::<S::Error>()?;
                 let properties = object.properties();
                 let mut map = s.serialize_map(Some(properties.len()))?;
                 for (name, value) in &properties {

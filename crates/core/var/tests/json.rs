@@ -137,6 +137,41 @@ fn b6_writing_deep_or_cyclic_values_fails_with_a_coded_error() {
     cyclic.as_object().unwrap().remove_property(name);
 }
 
+/// `levels` empty arrays nested inside each other.
+fn nested_arrays(levels: usize) -> Var {
+    let mut value = Var::from(Vec::new());
+    for _ in 1..levels {
+        value = Var::from(vec![value]);
+    }
+    value
+}
+
+#[test]
+fn b6_write_and_parse_agree_at_the_depth_limit() {
+    let at_limit = nested_arrays(MAX_DEPTH);
+    for format in [Format::Compact, Format::Pretty] {
+        let text = json::to_string(&at_limit, format).unwrap();
+        assert!(same(&json::parse(&text).unwrap(), &at_limit));
+        // Same rule for objects: MAX_DEPTH nested objects round-trip.
+        let objects = "{\"k\":".repeat(MAX_DEPTH - 1) + "{}" + &"}".repeat(MAX_DEPTH - 1);
+        let parsed = json::parse(&objects).unwrap();
+        assert_eq!(json::to_string(&parsed, Format::Compact).unwrap(), objects);
+    }
+    let past_limit = nested_arrays(MAX_DEPTH + 1);
+    let error = json::to_string(&past_limit, Format::Compact).unwrap_err();
+    assert_eq!(error.code().as_str(), "SYRP-VAR-0003");
+    let text = format!("{}{}", "[".repeat(MAX_DEPTH + 1), "]".repeat(MAX_DEPTH + 1));
+    assert_eq!(
+        json::parse(&text).unwrap_err().code().as_str(),
+        "SYRP-VAR-0002"
+    );
+    #[cfg(feature = "serde")]
+    {
+        assert!(serde_json::to_string(&at_limit).is_ok());
+        assert!(serde_json::to_string(&past_limit).is_err());
+    }
+}
+
 /// Any `Var` without binary, undefined or non-finite numbers, nested a few levels.
 fn json_var() -> impl Strategy<Value = Var> {
     let leaf = prop_oneof![
