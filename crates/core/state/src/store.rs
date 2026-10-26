@@ -228,6 +228,10 @@ impl Store {
 
     /// A handle to the node `key` names, or [`StateErrorKind::DeadKey`] if it has been freed.
     ///
+    /// A [`NodeKey`] carries no store identity, so this cannot detect a key issued by another
+    /// store: such a key gives `DeadKey` or, if it happens to match a live slot here, a handle
+    /// to an unrelated node. Upgrade keys only on the store that issued them.
+    ///
     /// ```
     /// # use syrp_var::{Identifier, Var}; use syrp_state::StateErrorKind; syrp_loop_api::ManualLoop::new().with_token(|mt| { let store = syrp_state::Store::new();
     /// let key = store.create(mt, Identifier::new("A")).key(); // handle dropped at once

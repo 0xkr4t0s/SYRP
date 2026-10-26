@@ -103,6 +103,8 @@ impl Store {
             store: rc,
             current: None,
         };
+        // No handle or listener is cloned or dropped while `rc` is borrowed: listeners run, and
+        // snapshots drop, outside any borrow (`b5_listeners_may_clone_and_drop_handles`).
         loop {
             let mut targets: Vec<(NodeKey, u64, Listener)> = Vec::new();
             let change = {

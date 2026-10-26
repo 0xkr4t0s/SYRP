@@ -31,6 +31,9 @@ None. `syrp-compat-state` owns the `juce_data_structures/ValueTree` rows.
 - `NodeRef` equality is identity (same store `Rc`, same key). `NodeKey` holds no count and no
   store identity.
 - No public fields (ADR 0003 D3). No compat layer here (ADR 0003 D1).
+- No `as_view()` (ADR 0003 exception): nodes sit behind a `RefCell`, so a view would keep the
+  store borrowed and block mutations and handle drops. Reads return owned values instead.
+- `NodeKey` has no store identity; every API that takes one (`Store::upgrade`) says so.
 
 ## Thread affinity
 `Store`, `NodeRef` and `Properties` are `!Send` and `!Sync` (they hold `Rc<RefCell<_>>`).

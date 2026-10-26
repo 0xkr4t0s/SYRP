@@ -11,7 +11,8 @@ use crate::node::NodeKey;
 use crate::store::Inner;
 
 /// One change to a store, with what is needed to reverse it. Nodes are named by [`NodeKey`];
-/// [`Store::upgrade`](crate::Store::upgrade) builds a handle when one is needed.
+/// [`Store::upgrade`](crate::Store::upgrade) builds a handle when one is needed. Keys carry no
+/// store identity: upgrade them only on the store whose log or listener produced them.
 ///
 /// ```
 /// use syrp_state::{Change, Store};
@@ -91,13 +92,10 @@ pub enum Change {
 
 impl Change {
     /// The node the change happened in: the node, or the parent for child changes. Delivery
-    /// starts its walk up the tree here.
+    /// starts its walk up the tree here. The key is only meaningful to the store that logged it.
     ///
     /// ```
-    /// # use syrp_state::{Change, Store};
-    /// # use syrp_var::Identifier;
-    /// # syrp_loop_api::ManualLoop::new().with_token(|mt| {
-    /// let store = Store::new();
+    /// # use syrp_var::Identifier; use syrp_state::Change; syrp_loop_api::ManualLoop::new().with_token(|mt| { let store = syrp_state::Store::new();
     /// let mut cursor = store.cursor();
     /// let (p, c) = (store.create(mt, Identifier::new("P")), store.create(mt, Identifier::new("C")));
     /// store.add_child(mt, &p, &c, None).unwrap();
@@ -129,10 +127,7 @@ impl Change {
 /// A [`Change`] with its sequence number, which rises by one per record and never repeats.
 ///
 /// ```
-/// # use syrp_state::Store;
-/// # use syrp_var::Identifier;
-/// # syrp_loop_api::ManualLoop::new().with_token(|mt| {
-/// let store = Store::new();
+/// # use syrp_var::Identifier; syrp_loop_api::ManualLoop::new().with_token(|mt| { let store = syrp_state::Store::new();
 /// let mut cursor = store.cursor();
 /// let node = store.create(mt, Identifier::new("A"));
 /// store.set_property(mt, &node, Identifier::new("x"), 1).unwrap();
@@ -155,10 +150,7 @@ impl LogRecord {
     /// The sequence number.
     ///
     /// ```
-    /// # use syrp_state::Store;
-    /// # use syrp_var::Identifier;
-    /// # syrp_loop_api::ManualLoop::new().with_token(|mt| {
-    /// let store = Store::new();
+    /// # use syrp_var::Identifier; syrp_loop_api::ManualLoop::new().with_token(|mt| { let store = syrp_state::Store::new();
     /// let mut cursor = store.cursor();
     /// let node = store.create(mt, Identifier::new("A"));
     /// store.set_property(mt, &node, Identifier::new("x"), 1).unwrap();
@@ -173,10 +165,7 @@ impl LogRecord {
     /// What happened.
     ///
     /// ```
-    /// # use syrp_state::{Change, Store};
-    /// # use syrp_var::Identifier;
-    /// # syrp_loop_api::ManualLoop::new().with_token(|mt| {
-    /// let store = Store::new();
+    /// # use syrp_var::Identifier; use syrp_state::Change; syrp_loop_api::ManualLoop::new().with_token(|mt| { let store = syrp_state::Store::new();
     /// let mut cursor = store.cursor();
     /// let node = store.create(mt, Identifier::new("A"));
     /// store.set_property(mt, &node, Identifier::new("x"), 1).unwrap();
@@ -196,10 +185,7 @@ impl LogRecord {
 /// records are dropped once delivered.
 ///
 /// ```
-/// # use syrp_state::Store;
-/// # use syrp_var::Identifier;
-/// # syrp_loop_api::ManualLoop::new().with_token(|mt| {
-/// let store = Store::new();
+/// # use syrp_var::Identifier; syrp_loop_api::ManualLoop::new().with_token(|mt| { let store = syrp_state::Store::new();
 /// let cursor = store.cursor();
 /// let node = store.create(mt, Identifier::new("A"));
 /// store.set_property(mt, &node, Identifier::new("x"), 1).unwrap();

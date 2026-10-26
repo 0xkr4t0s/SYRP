@@ -292,3 +292,39 @@ fn b5_a_panicking_listener_does_not_wedge_the_store() {
         assert_eq!(store.reference_count(&c).unwrap(), 3); // handle, parent link, subscription
     });
 }
+
+#[test]
+fn b5_listeners_may_clone_and_drop_handles() {
+    with_mt(|mt| {
+        let store = Store::new();
+        let watched = store.create(mt, id("W"));
+        let loose = store.create(mt, id("Loose"));
+        let loose_key = loose.key();
+        // The listener drops the last handle to `loose` and a handle-owning subscription.
+        let slot = Rc::new(RefCell::new(Some(loose)));
+        let other = store.create(mt, id("Other"));
+        let owned = other.clone();
+        let inner_sub = store
+            .subscribe(mt, &other, move |_, _, _| drop(owned.clone()))
+            .unwrap();
+        let subs = Rc::new(RefCell::new(Some(inner_sub)));
+        let (s2, subs2, w) = (Rc::clone(&slot), Rc::clone(&subs), watched.clone());
+        let _sub = store
+            .subscribe(mt, &watched, move |s, mt, _| {
+                drop(s2.borrow().clone()); // clone and drop inside delivery
+                drop(s2.borrow_mut().take()); // drop the last handle: frees the node
+                drop(subs2.borrow_mut().take()); // drops a closure that owns a handle
+                s.set_property(mt, &w.clone(), id("seen"), true).unwrap();
+            })
+            .unwrap();
+        store.set_property(mt, &other, id("x"), 1).unwrap();
+        store.set_property(mt, &watched, id("x"), 1).unwrap();
+        assert!(store.upgrade(loose_key).is_err() && subs.borrow().is_none());
+        assert_eq!(
+            store.property(&watched, id("seen")).unwrap(),
+            Some(Var::from(true))
+        );
+        drop(other);
+        assert_eq!(store.live_nodes(), 1);
+    });
+}
