@@ -1,0 +1,1 @@
+{"wp": "WP-2.1-05", "kind": "added", "summary": "syrp-audio-basics: VoicePool scalar/pack equivalence and no-lost-or-doubled-note proptests, and the Callgrind voice_pool bench (16 voices: F32x8 at 0.34 of f32) (increment 4, final: B7-B8)."}
