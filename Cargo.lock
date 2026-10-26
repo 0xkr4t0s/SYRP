@@ -910,6 +910,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "syrp-agent-eval"
+version = "0.0.1"
+dependencies = [
+ "clap",
+ "serde",
+ "serde_json",
+ "syrp-cli",
+ "syrp-error",
+ "toml",
+]
+
+[[package]]
 name = "syrp-audio-api"
 version = "0.0.1"
 dependencies = [

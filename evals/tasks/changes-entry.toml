@@ -1,0 +1,21 @@
+id = "changes-entry"
+title = "Write a changes/ entry"
+prompt = """
+Add the first changes/ entry for work package WP-0.2-13 in the current directory, in the shape
+the Syrp AGENTS.md (at $SYRP_ROOT) defines, saying the agent-eval harness was added.
+"""
+setup = "rm -rf changes"
+verify = """
+f=changes/WP-0.2-13-1.json
+test "$(ls changes)" = WP-0.2-13-1.json
+tr -d '\\n' < "$f" > flat.txt
+grep -Eq '^ *\\{.*\\} *$' flat.txt
+grep -Eq '"wp": *"WP-0\\.2-13"' flat.txt
+grep -Eq '"kind": *"added"' flat.txt
+grep -Eq '"summary": *"[^"]+"' flat.txt
+test "$(grep -o '"[a-z]*": *"' flat.txt | wc -l)" -eq 3
+"""
+reference = """
+mkdir -p changes
+printf '{"wp": "WP-0.2-13", "kind": "added", "summary": "Agent-eval harness."}\\n' > changes/WP-0.2-13-1.json
+"""

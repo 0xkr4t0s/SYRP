@@ -1,0 +1,35 @@
+id = "add-error-code"
+title = "Add an error code to a catalogue"
+prompt = """
+errors/wp.toml in the current directory is a copy of the Syrp WP error catalogue. Add one new
+code for "Work package spec file missing" with the next free number, following the Syrp skill
+recipe add-error-code.md. Never renumber or edit existing entries.
+"""
+setup = """
+mkdir -p errors .orig
+cp "$SYRP_ROOT/errors/wp.toml" errors/wp.toml
+cp errors/wp.toml .orig/wp.toml
+"""
+verify = """
+last=$(sed -n 's/^code = "SYRP-WP-\\([0-9]*\\)"/\\1/p' .orig/wp.toml | sort -n | tail -n 1)
+next=$(printf 'SYRP-WP-%04d' "$(expr "$last" + 1)")
+lines=$(wc -l < .orig/wp.toml)
+head -n "$lines" errors/wp.toml | cmp -s - .orig/wp.toml
+tail -n +$((lines + 1)) errors/wp.toml > new.toml
+test "$(grep -c '^\\[\\[error\\]\\]' new.toml)" = 1
+grep -q "^code = \\"$next\\"$" new.toml
+for k in title severity cause fix; do grep -Eq "^$k = \\".+\\"$" new.toml; done
+"""
+reference = """
+last=$(sed -n 's/^code = "SYRP-WP-\\([0-9]*\\)"/\\1/p' errors/wp.toml | sort -n | tail -n 1)
+next=$(printf 'SYRP-WP-%04d' "$(expr "$last" + 1)")
+cat >> errors/wp.toml <<TOML
+
+[[error]]
+code = "$next"
+title = "Work package spec file missing"
+severity = "error"
+cause = "The package names a spec file that does not exist."
+fix = "Create the spec under work/specs/ or fix the path."
+TOML
+"""

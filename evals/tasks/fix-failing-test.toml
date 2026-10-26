@@ -1,0 +1,20 @@
+id = "fix-failing-test"
+title = "Fix code so a failing test passes"
+prompt = """
+The crate in the current directory has a failing test. Fix the library so
+`cargo test --offline` passes. Do not edit anything under tests/.
+"""
+timeout_secs = 300
+setup = """
+mkdir -p src tests .orig
+printf '[package]\\nname = "evalfix"\\nversion = "0.1.0"\\nedition = "2024"\\n\\n[workspace]\\n' > Cargo.toml
+printf '/// Adds two numbers.\\npub fn add(a: i32, b: i32) -> i32 {\\n    a - b\\n}\\n' > src/lib.rs
+printf '#[test]\\nfn b1_add_sums() {\\n    assert_eq!(evalfix::add(2, 3), 5);\\n}\\n' > tests/add.rs
+cp tests/add.rs .orig/add.rs
+"""
+verify = """
+cmp -s tests/add.rs .orig/add.rs
+test "$(ls tests)" = add.rs
+CARGO_TARGET_DIR=target cargo test --offline --quiet
+"""
+reference = "sed 's/a - b/a + b/' src/lib.rs > src/lib.rs.new && mv src/lib.rs.new src/lib.rs"
