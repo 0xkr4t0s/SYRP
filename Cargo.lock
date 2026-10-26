@@ -1036,6 +1036,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "syrp-testkit"
+version = "0.0.1"
+dependencies = [
+ "syrp-audio-api",
+ "syrp-error",
+ "syrp-rt",
+ "toml",
+]
+
+[[package]]
 name = "thiserror"
 version = "2.0.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
