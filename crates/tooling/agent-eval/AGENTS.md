@@ -24,7 +24,8 @@ Tooling rows only (no JUCE class).
   Exit: 0 ok, 1 below `--min-success-rate`, 2 usage, 3 environment.
 
 ## Thread affinity
-Build-time tooling, any thread. Each phase is a child process killed at the time limit.
+Build-time tooling, any thread. Each phase runs in its own process group (Unix), killed
+whole at the time limit; on Windows only the `sh` is killed (a job object is v1 work).
 
 ## Stability
 experimental (0.x). Report shape `syrp.agent-eval/v1`.
@@ -35,5 +36,4 @@ opt-in and never in CI: `cargo run -p syrp-agent-eval -- run --agent 'my-agent {
 
 ## Known gaps
 - 10 of A20's ~60 tasks; no turn-count or first-error KPIs; no nightly job (CI change request).
-- `SYRP-EVAL-*` are not in `cargo syrp explain` (CLI change request). Untested on Windows.
-- A timed-out phase's grandchildren may outlive it.
+- `SYRP-EVAL-*` are not in `cargo syrp explain` (CLI change request).

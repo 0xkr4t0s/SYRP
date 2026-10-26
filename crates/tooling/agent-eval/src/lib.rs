@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only OR BUSL-1.1
 //! Agent-eval harness v0 (master plan §2, A20): a fixed task set scored automatically.
 //!
 //! Each task is a TOML file in `evals/tasks/` with a prompt, a setup script, a deterministic

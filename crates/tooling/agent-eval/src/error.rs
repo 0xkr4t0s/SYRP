@@ -1,6 +1,6 @@
+// SPDX-License-Identifier: AGPL-3.0-only OR BUSL-1.1
 //! The harness's error type and its `SYRP-EVAL-*` codes (catalogued in `errors/eval.toml`).
 
-use std::borrow::Cow;
 use std::fmt;
 use std::path::PathBuf;
 
@@ -53,17 +53,6 @@ impl Diagnostic for EvalError {
             Self::Spawn { .. } => ErrorCode::new("SYRP-EVAL-0003"),
             Self::Config { .. } => ErrorCode::new("SYRP-EVAL-0004"),
         }
-    }
-
-    fn hint(&self) -> Option<Cow<'static, str>> {
-        Some(match self {
-            Self::TaskFile { .. } => {
-                "a task needs id, title, prompt, setup, verify and reference strings".into()
-            }
-            Self::Io { .. } => "check the path exists and is writable".into(),
-            Self::Spawn { .. } => "put a POSIX `sh` on PATH (Git Bash on Windows)".into(),
-            Self::Config { .. } => "run `syrp-agent-eval run --help`".into(),
-        })
     }
 }
 

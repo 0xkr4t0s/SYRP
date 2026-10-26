@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only OR BUSL-1.1
 //! Running tasks: workspaces, the three phases, timing and the report.
 
 use std::fs::{self, File, OpenOptions};
@@ -306,7 +307,11 @@ fn exec(
     let err = out.try_clone().map_err(|e| io(log, &e))?;
     let body = format!("set -e\nsyrp() {{ {} \"$@\"; }}\n{script}", cfg.syrp);
     let start = Instant::now();
-    let mut child = Command::new("sh")
+    let mut cmd = Command::new("sh");
+    // Own process group, so a timeout kills everything the script started (Windows: not yet).
+    #[cfg(unix)]
+    std::os::unix::process::CommandExt::process_group(&mut cmd, 0);
+    let mut child = cmd
         .arg("-c")
         .arg(body)
         .current_dir(ws)
@@ -325,7 +330,10 @@ fn exec(
             Ok(Some(status)) => break Some(status),
             Ok(None) if start.elapsed() >= timeout => {
                 timed_out = true;
-                let _ = child.kill();
+                let group = format!("-{}", child.id());
+                #[cfg(unix)]
+                let _ = Command::new("kill").args(["-KILL", "--", &group]).status();
+                let _ = (group, child.kill());
                 break child.wait().ok();
             }
             Ok(None) => std::thread::sleep(Duration::from_millis(10)),

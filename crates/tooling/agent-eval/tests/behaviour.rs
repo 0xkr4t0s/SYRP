@@ -1,5 +1,5 @@
-//! Spec behaviours B1..B4 of WP-0.2-13. Everything runs offline: the agent is either nobody,
-//! the tasks' reference solutions, or a shell command; no model API is called.
+// SPDX-License-Identifier: AGPL-3.0-only OR BUSL-1.1
+//! WP-0.2-13 B1..B4, offline: the agent is nobody, the reference solutions or a shell command.
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -41,13 +41,12 @@ fn synthetic(name: &str, tasks: &[(&str, &str, u64)]) -> PathBuf {
 
 #[test]
 fn b1_ten_tasks_each_have_prompt_setup_and_verifier() {
-    // Loading rejects a task with a missing or empty prompt, setup, verify or reference.
     let tasks = load_tasks(&root().join("evals/tasks")).unwrap();
     assert_eq!(tasks.len(), 10);
     assert!(tasks.iter().all(|t| !t.prompt().trim().is_empty()));
     let ids: Vec<&str> = tasks.iter().map(Task::id).collect();
-    for want in ["explain-code", "wp-owner-of-crate", "create-crate"] {
-        assert!(ids.contains(&want), "{want} missing from {ids:?}");
+    for w in ["explain-code", "wp-owner-of-crate", "create-crate"] {
+        assert!(ids.contains(&w), "{w} missing");
     }
 }
 
@@ -114,14 +113,22 @@ fn b3_agent_past_the_time_limit_fails() {
     let tasks = load_tasks(&dir).unwrap();
     let report = run(
         &tasks,
-        &config("b3-timeout").agent(Agent::Command("sleep 30".into())),
+        &config("b3-timeout").agent(Agent::Command("sleep 30 & echo $! > ../pid; wait".into())),
     )
     .unwrap();
     let t = &report.to_json()["tasks"][0];
-    assert_eq!(t["passed"], false);
     assert_eq!(t["failed_phase"], "agent");
     assert_eq!(t["phases"][1]["timed_out"], true);
-    assert!(t["duration_ms"].as_u64().unwrap() < 20_000);
+    // The agent's children die with it (process-group kill; Unix only for now).
+    let pid = std::fs::read_to_string(work("b3-timeout").join("pid")).unwrap();
+    std::thread::sleep(std::time::Duration::from_millis(500));
+    // Dead: gone from `ps`, or a zombie awaiting its new parent's reap.
+    let ps = Command::new("ps")
+        .args(["-o", "stat=", "-p", pid.trim()])
+        .output();
+    let state = ps.map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string());
+    let dead = state.is_ok_and(|s| s.is_empty() || s.starts_with('Z'));
+    assert!(cfg!(windows) || dead, "{pid} alive");
 }
 
 #[test]

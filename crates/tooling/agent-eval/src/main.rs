@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-only OR BUSL-1.1
 //! `syrp-agent-eval`: run the eval task set and print the JSON report.
 //!
 //! Exit codes follow the CLI: 0 ok, 1 the success rate is below `--min-success-rate`,
@@ -60,7 +61,7 @@ fn main() {
             Ok(rate) if rate >= args.min_success_rate => 0,
             Ok(_) => 1,
             Err(e) => {
-                eprintln!("{}: {e} (hint: {})", e.code(), e.hint().unwrap_or_default());
+                eprintln!("{}: {e} (see errors/eval.toml)", e.code());
                 if matches!(e, EvalError::Config { .. }) {
                     2
                 } else {
