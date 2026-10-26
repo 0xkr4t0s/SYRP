@@ -1070,6 +1070,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "syrp-plugin-api"
+version = "0.0.1"
+dependencies = [
+ "proptest",
+ "syrp-error",
+ "syrp-rt",
+]
+
+[[package]]
 name = "syrp-progress"
 version = "0.0.1"
 dependencies = [
