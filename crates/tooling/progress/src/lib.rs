@@ -136,6 +136,20 @@ fn yes() -> bool {
     true
 }
 
+/// Sort key for a wave id: `1.10` is after `1.9`, which sorting the text would get wrong.
+///
+/// ```
+/// assert!(syrp_progress::wave_key("1.9") < syrp_progress::wave_key("1.10"));
+/// assert!(syrp_progress::wave_key("0.2") < syrp_progress::wave_key("1.9"));
+/// ```
+pub fn wave_key(id: &str) -> (u32, u32) {
+    let (major, minor) = id.split_once('.').unwrap_or((id, "0"));
+    (
+        major.parse().unwrap_or(u32::MAX),
+        minor.parse().unwrap_or(u32::MAX),
+    )
+}
+
 #[derive(Deserialize)]
 struct PackageFile {
     id: String,
@@ -197,13 +211,15 @@ pub fn load_board(
             .into_iter()
             .map(|p| (p.id.clone(), p))
             .collect();
-    let waves: Vec<WaveFile> = read_tomls(&root.join("work/waves"))?;
+    let mut waves: Vec<WaveFile> = read_tomls(&root.join("work/waves"))?;
+    // File names sort as strings, so 1.10 would come before 1.9: order by the id's numbers.
+    waves.sort_by_key(|w| wave_key(&w.id));
     let mut out = Vec::new();
     for w in waves {
         let mut wps = Vec::new();
         for id in &w.packages {
             let p = packages.get(id).ok_or_else(|| ProgressError::Board {
-                path: root.join("work/waves"),
+                path: root.join(format!("work/waves/{}.toml", w.id)),
                 detail: format!("wave {} lists unknown package {id}", w.id),
             })?;
             let prs: Vec<u32> = merged

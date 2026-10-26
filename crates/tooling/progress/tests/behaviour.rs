@@ -16,6 +16,7 @@ fn git(root: &Path, args: &[&str], date: &str) {
     let ok = Command::new("git")
         .arg("-C")
         .arg(root)
+        .args(["-c", "commit.gpgsign=false"])
         .args(args)
         .env("GIT_AUTHOR_NAME", "t")
         .env("GIT_AUTHOR_EMAIL", "t@example.com")
@@ -43,6 +44,12 @@ fn fixture(name: &str) -> PathBuf {
         "work/waves/1.9.toml",
         "id = \"1.9\"\nphase = 1\ntitle = \"Later\"\nenabled = false\npackages = [\"WP-1.9-01\"]\n",
     );
+    // 1.10 sorts before 1.9 as text, so it also proves the wave order is numeric.
+    write(
+        &root,
+        "work/waves/1.10.toml",
+        "id = \"1.10\"\nphase = 1\ntitle = \"Last\"\nenabled = false\npackages = [\"WP-1.10-01\"]\n",
+    );
     write(
         &root,
         "work/packages/WP-0.1-01.toml",
@@ -62,6 +69,11 @@ fn fixture(name: &str) -> PathBuf {
         &root,
         "work/packages/WP-1.9-01.toml",
         "id = \"WP-1.9-01\"\ntitle = \"Parked\"\n",
+    );
+    write(
+        &root,
+        "work/packages/WP-1.10-01.toml",
+        "id = \"WP-1.10-01\"\ntitle = \"Parked too\"\n",
     );
     write(
         &root,
@@ -141,13 +153,15 @@ fn b1_wp_status_from_board_merges_open_prs_and_disabled_waves() {
     let p = syrp_progress::load(&root, &[]).unwrap();
     assert_eq!(
         p.waves.iter().map(|w| w.id.as_str()).collect::<Vec<_>>(),
-        ["0.1", "1.9"]
+        ["0.1", "1.9", "1.10"],
+        "waves are ordered by their numbers, not by file name"
     );
     assert_eq!(wp(&p, "WP-0.1-01").status, WpStatus::Done);
     assert_eq!(wp(&p, "WP-0.1-02").status, WpStatus::Active);
     assert_eq!(wp(&p, "WP-0.1-02").prs, [2]);
     assert_eq!(wp(&p, "WP-0.1-03").status, WpStatus::Planned);
     assert_eq!(wp(&p, "WP-1.9-01").status, WpStatus::Parked);
+    assert_eq!(wp(&p, "WP-1.10-01").status, WpStatus::Parked);
     let p = syrp_progress::load(&root, &open).unwrap();
     assert_eq!(wp(&p, "WP-0.1-03").status, WpStatus::Active);
     assert_eq!(wp(&p, "WP-0.1-03").open, [9]);
