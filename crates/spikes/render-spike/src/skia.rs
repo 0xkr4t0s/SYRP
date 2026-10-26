@@ -94,6 +94,13 @@ fn path(view: PathView<'_>) -> Option<ts::Path> {
     b.finish()
 }
 
+/// tiny-skia needs an even number of dash lengths; an odd list is repeated once, so the
+/// lengths keep alternating on, off, on... (the SVG rule).
+fn dash_list(dashes: &[f32]) -> Vec<f32> {
+    let times = if dashes.len() % 2 == 1 { 2 } else { 1 };
+    dashes.repeat(times)
+}
+
 fn shape_path(shape: Shape<'_>) -> Option<(ts::Path, ts::FillRule)> {
     match shape {
         Shape::Rect(r) => {
@@ -190,6 +197,9 @@ impl Sink for SkiaSink<'_> {
         b: BrushRef<'_>,
         xf: &AffineTransform,
     ) {
+        if paints_nothing(b) {
+            return;
+        }
         let (Some(shader), Some(p)) = (shader(b), path(path_view)) else {
             return;
         };
@@ -206,7 +216,7 @@ impl Sink for SkiaSink<'_> {
                 Join::Bevel => ts::LineJoin::Bevel,
                 _ => ts::LineJoin::Miter,
             },
-            dash: ts::StrokeDash::new(s.dashes().to_vec(), s.dash_offset()),
+            dash: ts::StrokeDash::new(dash_list(s.dashes()), s.dash_offset()),
         };
         let paint = ts::Paint {
             shader,

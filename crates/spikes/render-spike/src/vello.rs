@@ -11,8 +11,8 @@ use syrp_gfx_api::{
 use vello_cpu::kurbo::{self, Affine, BezPath, Point};
 use vello_cpu::peniko::{self, ImageQuality, ImageSampler, Mix};
 use vello_cpu::{
-    Image, ImageSource, Level, PaintType, PixelMetadata, Pixmap, PixmapMut, RenderContext,
-    RenderSettings, Resources, color::AlphaColor, color::Srgb,
+    Image, ImageSource, Level, PaintType, PixelMetadata, Pixmap, PixmapMut, RasterizerSettings,
+    RenderContext, RenderSettings, Resources, TargetInit, color::AlphaColor, color::Srgb,
 };
 
 use crate::assets::{Assets, RgbaImage};
@@ -85,7 +85,12 @@ impl Renderer for VelloCpuRenderer {
         let pixels = target.pixels_mut().ok_or(RenderError::InvalidTarget)?;
         let out = PixmapMut::new(w, h, pixels).ok_or(RenderError::InvalidTarget)?;
         sink.ctx.flush();
-        sink.ctx.render(out, &mut self.resources);
+        // Draw over the target's current contents, as `Renderer::render` requires.
+        let raster = RasterizerSettings {
+            target_init: TargetInit::SrcOver,
+            ..RasterizerSettings::default()
+        };
+        sink.ctx.render_with(out, &mut self.resources, raster);
         Ok(())
     }
 }
