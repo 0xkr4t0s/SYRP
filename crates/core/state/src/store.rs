@@ -607,6 +607,10 @@ impl Store {
     /// each ancestor's, upwards. A listener added during a delivery hears the next change; one
     /// removed during a delivery is not called again.
     ///
+    /// If a listener panics, the panic propagates out of the mutating call. The record being
+    /// delivered is finished, but the records after it stay undelivered, and keep their counts
+    /// on the nodes they name, until the next mutation on this store delivers them.
+    ///
     /// ```
     /// # use syrp_var::{Identifier, Var}; syrp_loop_api::ManualLoop::new().with_token(|mt| { let store = syrp_state::Store::new();
     /// let (p, c) = (store.create(mt, Identifier::new("P")), store.create(mt, Identifier::new("C")));
@@ -757,7 +761,9 @@ impl Store {
         })
     }
 
-    /// The first child whose property `id` equals `value` (by `Var`'s `==`).
+    /// The first child whose property `id` equals `value` by `Var`'s strict `==`: the same
+    /// variant and value, except that `i32`, `i64` and `f64` compare by exact numeric value and
+    /// objects by identity. It is not `loose_eq` (`"1"` does not match `1`).
     ///
     /// ```
     /// # use syrp_var::{Identifier, Var}; syrp_loop_api::ManualLoop::new().with_token(|mt| { let store = syrp_state::Store::new();

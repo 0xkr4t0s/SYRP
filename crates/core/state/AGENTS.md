@@ -29,7 +29,9 @@ None. `syrp-compat-state` owns the `juce_data_structures/ValueTree` rows.
   `Var`'s `==`.
 - Delivery (`delivery.rs`): non-reentrant; listener mutations queue behind the current record.
   Targets are the node then ancestors at delivery time (`ParentChanged`: own listeners only),
-  snapshotted per record. A drop guard unpins the current record and clears the flag on panic.
+  snapshotted per record. A drop guard unpins the current record and clears the flag on panic;
+  later records keep their pins until the next mutation's `flush` delivers them. Records a
+  `LogCursor` reads after delivery hold no pins, so their keys may be dead.
   Listener order is the spike's and is not yet parity-checked.
 - The log keeps records until delivered and passed by every `LogCursor`. No-op sets and
   removing an absent property log nothing (Syrp choice, spike open questions 7 and 9).
