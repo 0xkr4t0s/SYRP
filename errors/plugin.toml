@@ -1,0 +1,22 @@
+# Error catalogue: processor and plugin contract (syrp-plugin-api) and its users. Never renumber.
+
+[[error]]
+code = "SYRP-PLUGIN-0001"
+title = "Duplicate parameter id"
+severity = "error"
+cause = "ParamLayout::register was given a ParamSpec whose string id is already registered in that layout. Ids must be unique within a processor because hosts store automation and state by them."
+fix = "Give every parameter its own id. Keep ids stable across plugin versions; change the display name instead."
+
+[[error]]
+code = "SYRP-PLUGIN-0002"
+title = "Invalid parameter spec"
+severity = "error"
+cause = "ParamLayout::register was given a ParamSpec with an empty id, a range that is not finite with start < end, a negative or non-finite step, a skew that is not finite and above zero (for example from with_centre outside the range), or a default value outside the range."
+fix = "Check the range bounds, step and skew (ParamRange::is_valid reports them) and pass a default between the range start and end."
+
+[[error]]
+code = "SYRP-PLUGIN-0003"
+title = "Audio-path allocation failed"
+severity = "error"
+cause = "Reserving memory for audio-path storage (such as the Params value array) failed, because the size overflows or the allocator refused."
+fix = "Check the requested size; an overflow usually comes from a corrupt count. Allocate on the message thread or at prepare time, never on the audio thread."
