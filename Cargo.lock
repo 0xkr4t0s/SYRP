@@ -1223,6 +1223,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "syrp-dsp-core"
+version = "0.0.1"
+dependencies = [
+ "syrp-audio-api",
+ "syrp-error",
+ "syrp-rt",
+ "syrp-simd",
+ "syrp-testkit",
+]
+
+[[package]]
 name = "syrp-error"
 version = "0.0.1"
 dependencies = [

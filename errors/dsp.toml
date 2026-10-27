@@ -1,0 +1,8 @@
+# Error catalogue: DSP core and DSP processors (syrp-dsp-*). Never renumber.
+
+[[error]]
+code = "SYRP-DSP-0001"
+title = "DSP buffer cannot be allocated"
+severity = "error"
+cause = "A DSP processor's prepare step asked for a buffer sized from the DspSpec (for example one processor per channel, or a scratch of max_block_size samples) and the allocation failed or its size overflowed."
+fix = "Check the channel count and maximum block size in the DspSpec: they usually come from a host or device and may be corrupt. Real specs have a few channels and at most a few thousand frames per block."
