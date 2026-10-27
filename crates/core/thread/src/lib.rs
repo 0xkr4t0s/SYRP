@@ -5,11 +5,14 @@
 //!   [`ThreadContext::thread_should_exit`] and to [`wait`](ThreadContext::wait) for
 //!   [`ThreadHandle::notify`]. [`ThreadHandle::stop`] signals and waits with a timeout; a
 //!   thread that does not exit in time is detached, never killed (`SYRP-THREAD-0001`).
+//! - [`Priority`] and [`RealtimeOptions`] map onto each OS's scheduler; see [`priority`] for
+//!   the table. Refusals are reported through [`SchedulingStatus`] and never stop the thread.
 //!
 //! ```
 //! use std::time::Duration;
-//! use syrp_thread::{Stopped, Thread};
+//! use syrp_thread::{Priority, Stopped, Thread};
 //! let worker = Thread::builder("worker")
+//!     .priority(Priority::Low)
 //!     .spawn(|ctx| {
 //!         while !ctx.thread_should_exit() {
 //!             ctx.wait(Some(Duration::from_millis(50)));
@@ -20,9 +23,15 @@
 //! ```
 
 mod error;
+mod os;
+pub mod priority;
 mod thread;
 
 pub use error::ThreadError;
+pub use priority::{
+    MAX_REALTIME_PRIORITY, Priority, RealtimeOptions, SchedulingStatus,
+    set_current_thread_affinity_mask, set_current_thread_priority,
+};
 pub use syrp_error::Diagnostic;
 pub use thread::{
     DEFAULT_DROP_TIMEOUT, Stopped, Thread, ThreadBuilder, ThreadContext, ThreadHandle,

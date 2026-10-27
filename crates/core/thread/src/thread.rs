@@ -2,11 +2,11 @@
 //! Named threads with cooperative exit signalling, notification and timed stop.
 
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Condvar, Mutex, MutexGuard, PoisonError};
+use std::sync::{Arc, Condvar, Mutex, MutexGuard, PoisonError, mpsc};
 use std::thread::{JoinHandle, ThreadId};
 use std::time::{Duration, Instant};
 
-use crate::ThreadError;
+use crate::{Priority, RealtimeOptions, SchedulingStatus, ThreadError, os};
 
 /// How long dropping a [`ThreadHandle`] waits for the thread to exit before detaching it,
 /// unless [`ThreadBuilder::drop_timeout`] chose another value.
@@ -106,7 +106,9 @@ impl Thread {
     pub fn builder(name: impl Into<String>) -> ThreadBuilder {
         ThreadBuilder {
             name: name.into(),
+            priority: None,
             stack_size: None,
+            realtime: None,
             drop_timeout: DEFAULT_DROP_TIMEOUT,
         }
     }
@@ -135,8 +137,9 @@ impl Thread {
 /// Configures a thread before [`spawn`](Self::spawn). Made by [`Thread::builder`].
 ///
 /// ```
-/// use syrp_thread::Thread;
-/// let t = Thread::builder("small")
+/// use syrp_thread::{Priority, Thread};
+/// let t = Thread::builder("low")
+///     .priority(Priority::Low)
 ///     .stack_size(256 * 1024)
 ///     .spawn(|_| {})
 ///     .unwrap();
@@ -146,11 +149,26 @@ impl Thread {
 #[must_use]
 pub struct ThreadBuilder {
     name: String,
+    priority: Option<Priority>,
     stack_size: Option<usize>,
+    realtime: Option<RealtimeOptions>,
     drop_timeout: Duration,
 }
 
 impl ThreadBuilder {
+    /// Applies `priority` when the thread starts. The outcome is
+    /// [`ThreadHandle::priority_status`].
+    ///
+    /// ```
+    /// # use syrp_thread::{Priority, Thread};
+    /// let t = Thread::builder("p").priority(Priority::Lowest).spawn(|_| {}).unwrap();
+    /// # drop(t);
+    /// ```
+    pub fn priority(mut self, priority: Priority) -> Self {
+        self.priority = Some(priority);
+        self
+    }
+
     /// Sets the stack size in bytes (the OS may round it up).
     ///
     /// ```
@@ -160,6 +178,19 @@ impl ThreadBuilder {
     /// ```
     pub fn stack_size(mut self, bytes: usize) -> Self {
         self.stack_size = Some(bytes);
+        self
+    }
+
+    /// Asks for realtime scheduling when the thread starts. A refusal does not fail the
+    /// spawn; it shows in [`ThreadHandle::realtime_status`].
+    ///
+    /// ```
+    /// # use syrp_thread::{RealtimeOptions, Thread};
+    /// let t = Thread::builder("rt").realtime(RealtimeOptions::new()).spawn(|_| {}).unwrap();
+    /// # drop(t);
+    /// ```
+    pub fn realtime(mut self, options: RealtimeOptions) -> Self {
+        self.realtime = Some(options);
         self
     }
 
@@ -177,8 +208,10 @@ impl ThreadBuilder {
         self
     }
 
-    /// Starts the thread running `f`. Fails with `SYRP-THREAD-0002` if the OS cannot create
-    /// the thread.
+    /// Starts the thread running `f`. Priority and realtime requests are applied on the new
+    /// thread before `f` runs, and this call waits for their outcome. Fails with
+    /// `SYRP-THREAD-0006` for inconsistent realtime options, and `SYRP-THREAD-0002` if the
+    /// OS cannot create the thread.
     ///
     /// ```
     /// # use syrp_thread::Thread;
@@ -190,6 +223,9 @@ impl ThreadBuilder {
     where
         F: FnOnce(&ThreadContext) + Send + 'static,
     {
+        if let Some(rt) = &self.realtime {
+            rt.check()?;
+        }
         let shared = Arc::new(Shared {
             should_exit: AtomicBool::new(false),
             flags: Mutex::new(Flags {
@@ -201,6 +237,8 @@ impl ThreadBuilder {
         let ctx = ThreadContext {
             shared: Arc::clone(&shared),
         };
+        let (priority, realtime) = (self.priority, self.realtime);
+        let (tx, rx) = mpsc::sync_channel(1);
         let mut builder = std::thread::Builder::new().name(self.name);
         if let Some(bytes) = self.stack_size {
             builder = builder.stack_size(bytes);
@@ -208,15 +246,28 @@ impl ThreadBuilder {
         let join = builder
             .spawn(move || {
                 let _finish = FinishGuard(Arc::clone(&ctx.shared));
+                let p = priority.map_or(SchedulingStatus::NotRequested, |p| {
+                    SchedulingStatus::from_result(os::set_priority(p))
+                });
+                // Held until the body returns; on Windows dropping it leaves MMCSS.
+                let token = realtime.map(|o| os::enter_realtime(&o));
+                let r = token.as_ref().map_or(SchedulingStatus::NotRequested, |t| {
+                    SchedulingStatus::from_result(t.as_ref().map_err(|e| *e))
+                });
+                let _ = tx.send((p, r));
                 f(&ctx);
             })
             .map_err(|e| ThreadError::SpawnFailed {
                 os_error: e.raw_os_error(),
             })?;
+        let none = SchedulingStatus::NotRequested;
+        let (priority, realtime) = rx.recv().unwrap_or((none, none));
         Ok(ThreadHandle {
             id: join.thread().id(),
             join: Some(join),
             shared,
+            priority,
+            realtime,
             drop_timeout: self.drop_timeout,
         })
     }
@@ -313,6 +364,8 @@ pub struct ThreadHandle {
     shared: Arc<Shared>,
     join: Option<JoinHandle<()>>,
     id: ThreadId,
+    priority: SchedulingStatus,
+    realtime: SchedulingStatus,
     drop_timeout: Duration,
 }
 
@@ -397,6 +450,31 @@ impl ThreadHandle {
     #[must_use]
     pub fn name(&self) -> Option<&str> {
         self.join.as_ref().and_then(|j| j.thread().name())
+    }
+
+    /// Whether the [`ThreadBuilder::priority`] request was applied.
+    ///
+    /// ```
+    /// # use syrp_thread::{SchedulingStatus, Thread};
+    /// let t = Thread::builder("ps").spawn(|_| {}).unwrap();
+    /// assert_eq!(t.priority_status(), SchedulingStatus::NotRequested);
+    /// ```
+    #[must_use]
+    pub fn priority_status(&self) -> SchedulingStatus {
+        self.priority
+    }
+
+    /// Whether the [`ThreadBuilder::realtime`] request was applied. When refused, the thread
+    /// runs at its ordinary priority.
+    ///
+    /// ```
+    /// # use syrp_thread::{RealtimeOptions, SchedulingStatus, Thread};
+    /// let t = Thread::builder("rs").realtime(RealtimeOptions::new()).spawn(|_| {}).unwrap();
+    /// assert_ne!(t.realtime_status(), SchedulingStatus::NotRequested);
+    /// ```
+    #[must_use]
+    pub fn realtime_status(&self) -> SchedulingStatus {
+        self.realtime
     }
 
     /// Signals exit and waits up to `timeout` for the body to return, then joins it. On
