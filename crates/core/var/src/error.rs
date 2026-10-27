@@ -11,8 +11,11 @@ const INVALID_JSON: ErrorCode = ErrorCode::new("SYRP-VAR-0001");
 const TOO_DEEP: ErrorCode = ErrorCode::new("SYRP-VAR-0002");
 /// Code for a value that cannot be written because it is too deep or cyclic.
 const UNWRITABLE: ErrorCode = ErrorCode::new("SYRP-VAR-0003");
+/// Code for a tag or attribute name that is not an XML `Name`.
+const INVALID_XML_NAME: ErrorCode = ErrorCode::new("SYRP-VAR-0004");
 
-/// An error from reading or writing a [`Var`](crate::Var) as JSON.
+/// An error from reading or writing a [`Var`](crate::Var) as JSON, or from building or
+/// parsing XML ([`xml`](crate::xml)).
 ///
 /// It carries a catalogued code (see [`Diagnostic`]) and, for parse errors, the 1-based line
 /// and column where the problem was found.
@@ -49,6 +52,17 @@ impl VarError {
         Self {
             code: UNWRITABLE,
             message: error.to_string(),
+            line: 0,
+            column: 0,
+        }
+    }
+
+    /// A tag or attribute name that [`is_valid_xml_name`](crate::xml::is_valid_xml_name)
+    /// refuses.
+    pub(crate) fn invalid_xml_name(name: &str) -> Self {
+        Self {
+            code: INVALID_XML_NAME,
+            message: format!("{name:?} is not a valid XML name"),
             line: 0,
             column: 0,
         }
@@ -95,6 +109,9 @@ impl Diagnostic for VarError {
             match self.code.as_str() {
                 "SYRP-VAR-0002" => "flatten the input: at most 100 levels of nesting",
                 "SYRP-VAR-0003" => "remove the property that refers back to an enclosing object",
+                "SYRP-VAR-0004" => {
+                    "start names with a letter, `_` or `:`; then letters, digits, `-`, `.`, `_` or `:`"
+                }
                 _ => "fix the JSON at the reported line and column",
             }
             .into(),

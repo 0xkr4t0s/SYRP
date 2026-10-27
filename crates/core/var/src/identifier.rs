@@ -188,6 +188,20 @@ impl From<&str> for Identifier {
     }
 }
 
+impl AsRef<str> for Identifier {
+    /// The interned text, so an identifier can be passed wherever a name is taken as
+    /// `impl AsRef<str>` (for example XML attribute names).
+    ///
+    /// ```
+    /// use syrp_var::Identifier;
+    /// let id = Identifier::new("gain");
+    /// assert_eq!(AsRef::<str>::as_ref(&id), "gain");
+    /// ```
+    fn as_ref(&self) -> &str {
+        self.as_str()
+    }
+}
+
 impl fmt::Debug for Identifier {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_tuple("Identifier").field(&self.as_str()).finish()

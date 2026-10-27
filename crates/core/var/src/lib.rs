@@ -6,7 +6,8 @@
 //! `NamedValueSet` and `DynamicObject`; where that documentation leaves a case open, the choice
 //! made here is stated below and listed in the crate's `AGENTS.md` for the differential harness.
 //! [`json`] reads and writes JSON; with the default `serde` feature, `Var` also implements
-//! `serde::Serialize` and `serde::Deserialize` with the same mapping.
+//! `serde::Serialize` and `serde::Deserialize` with the same mapping. [`xml`] holds the XML
+//! element tree ([`XmlElement`], [`XmlNode`]).
 //!
 //! # Sharing
 //! Cloning a [`Var`] is O(1). Strings and binary data are immutable and shared. Arrays have
@@ -98,9 +99,11 @@ mod object;
 mod serde_impl;
 mod share;
 mod var;
+pub mod xml;
 
 pub use error::VarError;
 pub use identifier::Identifier;
 pub use object::{DynamicObject, NamedValueIter, NamedValueSet};
 pub use syrp_error::Diagnostic;
 pub use var::{Var, VarView};
+pub use xml::{XmlAttribute, XmlElement, XmlNode, XmlNodeView};
