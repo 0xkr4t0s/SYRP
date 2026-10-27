@@ -16,6 +16,10 @@ pub trait Sealed: Copy {
     fn to_f64(self) -> f64;
     /// Rounds to nearest when narrowing.
     fn from_f64(value: f64) -> Self;
+    /// Narrows to `f32`, rounding to nearest; the identity (bits included) for `f32`.
+    fn to_f32(self) -> f32;
+    /// Widens from `f32`; the identity (bits included) for `f32`.
+    fn from_f32(value: f32) -> Self;
     /// Loads up to `PACK_LANES` elements, filling the missing lanes with `fill`. A whole pack
     /// takes a fixed-length path so it compiles to one vector load.
     fn load(src: &[Self], fill: Self) -> Self::Pack;
@@ -35,6 +39,14 @@ impl Sealed for f32 {
     #[inline(always)]
     fn from_f64(value: f64) -> Self {
         value as f32
+    }
+    #[inline(always)]
+    fn to_f32(self) -> f32 {
+        self
+    }
+    #[inline(always)]
+    fn from_f32(value: f32) -> Self {
+        value
     }
     #[inline(always)]
     fn load(src: &[f32], fill: f32) -> F32x8 {
@@ -71,6 +83,14 @@ impl Sealed for f64 {
     #[inline(always)]
     fn from_f64(value: f64) -> Self {
         value
+    }
+    #[inline(always)]
+    fn to_f32(self) -> f32 {
+        self as f32
+    }
+    #[inline(always)]
+    fn from_f32(value: f32) -> Self {
+        f64::from(value)
     }
     #[inline(always)]
     fn load(src: &[f64], fill: f64) -> F64x4 {

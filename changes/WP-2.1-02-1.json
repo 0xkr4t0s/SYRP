@@ -1,0 +1,1 @@
+{"wp": "WP-2.1-02", "kind": "added", "summary": "syrp-audio-basics: convert module with SampleFormat, Endianness, read_into/write_from/convert_bytes (scale, round half away from zero, clip, NaN to 0); errors SYRP-AUDIO-0007..0009 (increment 1: B1-B2)."}

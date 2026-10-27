@@ -5,6 +5,8 @@
 //!   D2 (one allocation, every channel on a 64-byte boundary) and it lends
 //!   [`syrp_audio_api::AudioBlock`] and [`syrp_audio_api::AudioBlockMut`] views.
 //! - [`vector_ops`]: slice operations in the role of JUCE's `FloatVectorOperations`.
+//! - [`convert`]: packed sample formats and interleaving, in the role of JUCE's `AudioData`
+//!   (WP-2.1-02).
 //! - [`control`]: control-rate DSP (WP-2.1-03).
 //! - [`voice`]: the `VoicePool` (WP-2.1-05).
 //!
@@ -18,6 +20,7 @@
 
 pub mod buffer;
 pub mod control;
+pub mod convert;
 mod sealed;
 pub mod vector_ops;
 pub mod voice;

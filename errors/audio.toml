@@ -41,3 +41,24 @@ title = "Voice pool shape out of range"
 severity = "error"
 cause = "VoicePool::new was asked for more than 65536 voices (MAX_VOICES) or more than can be allocated, or VoicePool::prepare for more than 64 output channels, more than 1048576 frames (MAX_FRAMES), or a render scratch (output channels times maximum frames) that cannot be allocated."
 fix = "Check the voice count, channel count and maximum block size: they usually come from a host or a preset. Real pools hold tens of voices and render a few channels of at most a few thousand frames."
+
+[[error]]
+code = "SYRP-AUDIO-0007"
+title = "Packed sample data does not match the block shape"
+severity = "error"
+cause = "convert::read_into, write_from or convert_bytes was given a byte slice whose length is not exactly channels times frames times the format's bytes per sample (for convert_bytes: the destination does not hold as many samples as the source)."
+fix = "Size the byte slice from the block shape and SampleFormat::bytes_per_sample, or slice the block to the frames the bytes actually hold. A device or file header may report a different frame count than the buffer you passed."
+
+[[error]]
+code = "SYRP-AUDIO-0008"
+title = "Block has more channels than the sample data"
+severity = "error"
+cause = "convert::read_into was given a destination block with more channels than the `channels` argument says the bytes hold."
+fix = "Pass the channel count of the byte data (for example the device's channel count), and a block with at most that many channels; slice the block's channels if needed."
+
+[[error]]
+code = "SYRP-AUDIO-0009"
+title = "Byte data is not a whole number of samples"
+severity = "error"
+cause = "convert::convert_bytes was given a source slice whose length is not a multiple of the source format's bytes per sample."
+fix = "Check the source format and trim the slice to whole samples; a trailing partial sample usually means the format or the read size is wrong."

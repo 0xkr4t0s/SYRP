@@ -1,6 +1,6 @@
 [package]
 name = "syrp-audio-basics"
-description = "Syrp audio basics: the owned AudioBuffer, vector operations, control-rate DSP and the VoicePool."
+description = "Syrp audio basics: the owned AudioBuffer, vector operations, sample-format converters, control-rate DSP and the VoicePool."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
