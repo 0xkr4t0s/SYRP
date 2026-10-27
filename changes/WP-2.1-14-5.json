@@ -1,0 +1,1 @@
+{"wp": "WP-2.1-14", "kind": "fixed", "summary": "syrp-format-wav: plain RIFF never writes 0xFFFFFFFF as a size (RF64 switch edge), the writer starts at the stream position instead of 0, and flush patches the RIFF and data sizes for the data written so far."}
