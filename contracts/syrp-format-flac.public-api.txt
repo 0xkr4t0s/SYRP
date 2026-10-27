@@ -1,0 +1,13 @@
+pub mod syrp_format_flac
+pub struct syrp_format_flac::FlacAudioFormat
+impl syrp_format_flac::FlacAudioFormat
+pub const fn syrp_format_flac::FlacAudioFormat::new() -> Self
+pub const fn syrp_format_flac::FlacAudioFormat::quality_options() -> &'static [&'static str]
+impl syrp_format_api::format::AudioFormat for syrp_format_flac::FlacAudioFormat
+pub fn syrp_format_flac::FlacAudioFormat::bit_depths(&self) -> &[u32]
+pub fn syrp_format_flac::FlacAudioFormat::can_read(&self, &[u8]) -> bool
+pub fn syrp_format_flac::FlacAudioFormat::create_reader(&self, alloc::boxed::Box<dyn syrp_format_api::format::ReadSeek>) -> core::result::Result<alloc::boxed::Box<dyn syrp_format_api::format::AudioReader>, syrp_format_api::FormatError>
+pub fn syrp_format_flac::FlacAudioFormat::create_writer(&self, alloc::boxed::Box<dyn syrp_format_api::format::WriteSeek>, &syrp_format_api::spec::WriterOptions) -> core::result::Result<alloc::boxed::Box<dyn syrp_format_api::format::AudioWriter>, syrp_format_api::FormatError>
+pub fn syrp_format_flac::FlacAudioFormat::file_extensions(&self) -> &[&str]
+pub fn syrp_format_flac::FlacAudioFormat::name(&self) -> &str
+pub fn syrp_format_flac::FlacAudioFormat::sample_rates(&self) -> &[u32]
