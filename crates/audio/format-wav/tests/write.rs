@@ -268,3 +268,50 @@ fn b4_dropping_an_unfinished_writer_still_patches_the_sizes() {
     drop(w);
     assert_eq!(open(sink.bytes()).unwrap().length(), 4);
 }
+
+#[test]
+fn b4_writing_starts_at_the_stream_position_and_keeps_the_prefix() {
+    use std::io::{Seek, SeekFrom};
+    let prefix = b"PREFIX-BYTES".to_vec();
+    let mut cur = std::io::Cursor::new(prefix.clone());
+    cur.seek(SeekFrom::End(0)).unwrap();
+    let sink = Shared::from_cursor(cur);
+    let opts = options(ChannelSet::mono(), 16, SampleKind::Int);
+    let ch = vec![0.5f32, -0.25, 0.0, 0.125, -0.5];
+    let mut w = WavAudioFormat::new()
+        .with_rf64_threshold(0)
+        .create_writer(Box::new(sink.clone()), &opts)
+        .unwrap();
+    w.write(AudioBlock::new(&ch, 1, 5, 5).unwrap().into())
+        .unwrap();
+    w.finish().unwrap();
+    let all = sink.bytes();
+    assert_eq!(&all[..prefix.len()], &prefix[..]);
+    let file = all[prefix.len()..].to_vec();
+    assert_eq!(&file[..4], b"RF64");
+    assert_eq!(read_all_f32(open(file).unwrap().as_mut()), vec![ch]);
+}
+
+#[test]
+fn b4_flush_patches_the_sizes_for_the_data_so_far_and_writing_continues() {
+    let sink = Shared::default();
+    let opts = options(ChannelSet::mono(), 16, SampleKind::Int);
+    let mut w = WavAudioFormat::new()
+        .create_writer(Box::new(sink.clone()), &opts)
+        .unwrap();
+    let a = [0.5f32, -0.5, 0.25];
+    w.write(AudioBlock::new(&a, 1, 3, 3).unwrap().into())
+        .unwrap();
+    w.flush().unwrap();
+    let mid = sink.bytes();
+    let data = find(&mid, b"data");
+    assert_eq!(u32_at(&mid, data + 4), 6);
+    assert_eq!(u32_at(&mid, 4) as usize, mid.len() - 8);
+    assert_eq!(open(mid).unwrap().length(), 3);
+    w.write(AudioBlock::new(&a, 1, 3, 3).unwrap().into())
+        .unwrap();
+    w.finish().unwrap();
+    let end = sink.bytes();
+    assert_eq!(u32_at(&end, find(&end, b"data") + 4), 12);
+    assert_eq!(open(end).unwrap().length(), 6);
+}

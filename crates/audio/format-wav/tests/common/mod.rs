@@ -85,6 +85,12 @@ pub fn read_all_f32(r: &mut dyn AudioReader) -> Vec<Vec<f32>> {
 pub struct Shared(std::sync::Arc<std::sync::Mutex<Cursor<Vec<u8>>>>);
 
 impl Shared {
+    /// A sink over an existing cursor, keeping its contents and position.
+    #[allow(dead_code)]
+    pub fn from_cursor(c: Cursor<Vec<u8>>) -> Self {
+        Self(std::sync::Arc::new(std::sync::Mutex::new(c)))
+    }
+
     pub fn bytes(&self) -> Vec<u8> {
         self.0.lock().unwrap().get_ref().clone()
     }

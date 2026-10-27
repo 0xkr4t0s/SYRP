@@ -17,6 +17,13 @@ const DS64_BODY: usize = 28;
 const DS64_AT: u64 = 12;
 /// Bytes encoded per `write_all`, rounded down to whole frames (at least one frame).
 const SCRATCH_BYTES: usize = 16 * 1024;
+/// The largest size a plain RIFF may write: `0xFFFF_FFFF` means "unknown" to readers.
+const MAX_PLAIN_SIZE: u64 = 0xFFFF_FFFE;
+
+/// Whether a file with this RIFF size must be written as RF64.
+fn needs_rf64(riff_size: u64, threshold: u64) -> bool {
+    riff_size > threshold.min(MAX_PLAIN_SIZE)
+}
 
 /// Encodes one sample of `bytes` bytes (a float when `float`) from `v`.
 ///
@@ -49,6 +56,8 @@ pub(crate) struct WavWriter {
     /// For each file channel, the canonical channel of the written block it holds.
     canonical: Vec<usize>,
     rf64_threshold: u64,
+    /// Stream position where the file starts; every patch offset is relative to it.
+    start: u64,
     data_size_at: u64,
     data_bytes: u64,
     frames: u64,
@@ -113,7 +122,7 @@ impl WavWriter {
         push_chunk(&mut head, b"fmt ", &fmt_body(&spec, rate, mask))?;
         head.extend(encode(options.metadata(), rate)?);
         head.extend_from_slice(b"data\0\0\0\0");
-        out.seek(SeekFrom::Start(0))?;
+        let start = out.stream_position()?;
         out.write_all(&head)?;
         let block_align = channels * bytes;
         Ok(Self {
@@ -123,6 +132,7 @@ impl WavWriter {
             float: spec.is_float(),
             canonical,
             rf64_threshold,
+            start,
             data_size_at: head.len() as u64 - 4,
             data_bytes: 0,
             frames: 0,
@@ -166,7 +176,7 @@ impl WavWriter {
             self.out.write_all(&[0])?;
         }
         let riff_size = self.data_size_at + 4 + self.data_bytes + (self.data_bytes & 1) - 8;
-        if riff_size > self.rf64_threshold {
+        if needs_rf64(riff_size, self.rf64_threshold) {
             let mut ds64 = Vec::with_capacity(DS64_BODY);
             for v in [riff_size, self.data_bytes, self.frames] {
                 ds64.extend_from_slice(&v.to_le_bytes());
@@ -181,13 +191,37 @@ impl WavWriter {
             self.patch(4, &(riff_size as u32).to_le_bytes())?;
             self.patch(self.data_size_at, &(self.data_bytes as u32).to_le_bytes())?;
         }
-        self.out.seek(SeekFrom::End(0))?;
+        self.out.seek(SeekFrom::Start(
+            self.start + self.data_size_at + 4 + self.padded_data(),
+        ))?;
+        self.out.flush()?;
+        Ok(())
+    }
+
+    fn padded_data(&self) -> u64 {
+        self.data_bytes + (self.data_bytes & 1)
+    }
+
+    /// Writes the plain RIFF and `data` sizes for the data so far (both `0xFFFF_FFFF`,
+    /// "unknown", once the file would need RF64) and returns to the end of the data.
+    fn patch_sizes_so_far(&mut self) -> Result<(), FormatError> {
+        let riff_size = self.data_size_at + 4 + self.data_bytes - 8;
+        let (riff, data) = if needs_rf64(riff_size, self.rf64_threshold) {
+            (u32::MAX, u32::MAX)
+        } else {
+            (riff_size as u32, self.data_bytes as u32)
+        };
+        self.patch(4, &riff.to_le_bytes())?;
+        self.patch(self.data_size_at, &data.to_le_bytes())?;
+        self.out.seek(SeekFrom::Start(
+            self.start + self.data_size_at + 4 + self.data_bytes,
+        ))?;
         self.out.flush()?;
         Ok(())
     }
 
     fn patch(&mut self, at: u64, bytes: &[u8]) -> Result<(), FormatError> {
-        self.out.seek(SeekFrom::Start(at))?;
+        self.out.seek(SeekFrom::Start(self.start + at))?;
         self.out.write_all(bytes)?;
         Ok(())
     }
@@ -207,8 +241,10 @@ impl AudioWriter for WavWriter {
     }
 
     fn flush(&mut self) -> Result<(), FormatError> {
-        self.out.flush()?;
-        Ok(())
+        if self.finished {
+            return Ok(());
+        }
+        self.patch_sizes_so_far()
     }
 
     fn finish(mut self: Box<Self>) -> Result<(), FormatError> {
@@ -221,4 +257,20 @@ impl Drop for WavWriter {
         // Best effort, as the contract asks; `finish` reports the same failure.
         let _ = self.complete();
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn b4_rf64_threshold_never_leaves_an_unknown_size_in_plain_riff() {
+        assert!(!needs_rf64(0xFFFF_FFFE, DEFAULT));
+        assert!(needs_rf64(0xFFFF_FFFF, DEFAULT));
+        assert!(needs_rf64(0x1_0000_0000, DEFAULT));
+        assert!(!needs_rf64(100, 100));
+        assert!(needs_rf64(101, 100));
+    }
+
+    const DEFAULT: u64 = crate::WavAudioFormat::DEFAULT_RF64_THRESHOLD;
 }
