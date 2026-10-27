@@ -1,16 +1,29 @@
 // SPDX-License-Identifier: AGPL-3.0-only OR BUSL-1.1
-//! Behaviour tests for WP-1.1-06 increment 1 (B1 and the B6 error domain).
+//! Behaviour tests for WP-1.1-06 increment 1 (B1, B2, B6).
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, mpsc};
 use std::time::{Duration, Instant};
 
 use syrp_thread::{
-    DEFAULT_DROP_TIMEOUT, Diagnostic, Stopped, Thread, current_thread_id, current_thread_name,
-    sleep, yield_now,
+    DEFAULT_DROP_TIMEOUT, Diagnostic, Priority, RealtimeOptions, SchedulingStatus, Stopped, Thread,
+    ThreadError, current_thread_id, current_thread_name, set_current_thread_affinity_mask,
+    set_current_thread_priority, sleep, yield_now,
 };
 
 const LONG: Duration = Duration::from_secs(10);
+
+fn code(e: &ThreadError) -> &'static str {
+    match e.code().as_str() {
+        "SYRP-THREAD-0001" => "0001",
+        "SYRP-THREAD-0002" => "0002",
+        "SYRP-THREAD-0003" => "0003",
+        "SYRP-THREAD-0004" => "0004",
+        "SYRP-THREAD-0005" => "0005",
+        "SYRP-THREAD-0006" => "0006",
+        other => panic!("unexpected code {other}"),
+    }
+}
 
 #[test]
 fn b1_spawned_thread_has_name_and_id() {
@@ -107,7 +120,7 @@ fn b1_stop_times_out_and_detaches() {
     let start = Instant::now();
     let err = t.stop(Duration::from_millis(50)).unwrap_err();
     assert!(start.elapsed() < Duration::from_secs(5));
-    assert_eq!(err.code().as_str(), "SYRP-THREAD-0001");
+    assert_eq!(code(&err), "0001");
     assert!(err.to_string().contains("detached"));
     // The detached thread is still alive and finishes once released.
     release.send(()).unwrap();
@@ -168,10 +181,122 @@ fn b1_launch_and_free_functions() {
 }
 
 #[test]
+fn b2_every_priority_runs_and_reports_its_status() {
+    for p in [
+        Priority::Lowest,
+        Priority::Low,
+        Priority::Normal,
+        Priority::High,
+        Priority::Highest,
+    ] {
+        let t = Thread::builder("b2-prio")
+            .priority(p)
+            .spawn(|_| {})
+            .unwrap();
+        assert_ne!(t.priority_status(), SchedulingStatus::NotRequested, "{p:?}");
+        assert_eq!(t.realtime_status(), SchedulingStatus::NotRequested);
+        assert_eq!(t.stop(LONG), Ok(Stopped::Finished));
+    }
+    // Lowering one's own priority needs no privilege on any supported OS.
+    let t = Thread::builder("b2-low")
+        .priority(Priority::Lowest)
+        .spawn(|_| {})
+        .unwrap();
+    if cfg!(any(target_os = "linux", target_os = "macos", windows)) {
+        assert_eq!(t.priority_status(), SchedulingStatus::Granted);
+    }
+}
+
+#[test]
+fn b2_realtime_is_granted_or_refused_and_the_thread_still_runs() {
+    let opts = RealtimeOptions::new()
+        .with_priority(8)
+        .with_processing_period(Duration::from_micros(2_667))
+        .with_expected_work_time(Duration::from_millis(1));
+    let ran = Arc::new(AtomicUsize::new(0));
+    let r = Arc::clone(&ran);
+    let t = Thread::builder("b2-rt")
+        .realtime(opts)
+        .spawn(move |_| {
+            r.fetch_add(1, Ordering::SeqCst);
+        })
+        .unwrap();
+    let status = t.realtime_status();
+    assert!(
+        matches!(
+            status,
+            SchedulingStatus::Granted | SchedulingStatus::Refused { .. }
+        ),
+        "{status:?}"
+    );
+    println!("realtime status on this runner: {status:?}");
+    assert_eq!(t.stop(LONG), Ok(Stopped::Finished));
+    assert_eq!(ran.load(Ordering::SeqCst), 1);
+}
+
+#[test]
+fn b2_realtime_options_are_clamped_and_checked() {
+    let o = RealtimeOptions::default().with_priority(200);
+    assert_eq!(o.priority(), 10);
+    assert_eq!(RealtimeOptions::new().priority(), 5);
+    let cases = [
+        RealtimeOptions::new().with_processing_period(Duration::ZERO),
+        RealtimeOptions::new().with_expected_work_time(Duration::ZERO),
+        RealtimeOptions::new()
+            .with_processing_period(Duration::from_millis(1))
+            .with_expected_work_time(Duration::from_millis(2)),
+    ];
+    for opts in cases {
+        let err = Thread::builder("b2-bad")
+            .realtime(opts)
+            .spawn(|_| {})
+            .unwrap_err();
+        assert_eq!(code(&err), "0006");
+    }
+}
+
+#[test]
+fn b2_set_current_thread_priority_is_granted_or_coded() {
+    let t = Thread::builder("b2-set")
+        .spawn(|_| {
+            set_current_thread_priority(Priority::Low).unwrap();
+            if let Err(e) = set_current_thread_priority(Priority::Highest) {
+                assert_eq!(code(&e), "0003");
+            }
+        })
+        .unwrap();
+    assert_eq!(t.stop(LONG), Ok(Stopped::Finished));
+}
+
+#[test]
+fn b2_affinity_is_set_or_unsupported_on_macos() {
+    let t = Thread::builder("b2-affinity")
+        .spawn(|_| {
+            let one = set_current_thread_affinity_mask(0b1);
+            let zero = set_current_thread_affinity_mask(0);
+            if cfg!(target_vendor = "apple") {
+                assert_eq!(code(&one.unwrap_err()), "0004");
+                assert_eq!(code(&zero.unwrap_err()), "0004");
+            } else {
+                // CPU 0 may be outside a CI runner's CPU set; then the OS refuses it.
+                if let Err(e) = one {
+                    assert_eq!(code(&e), "0005");
+                }
+                assert_eq!(code(&zero.unwrap_err()), "0005");
+            }
+        })
+        .unwrap();
+    assert_eq!(t.stop(LONG), Ok(Stopped::Finished));
+}
+
+#[test]
 fn b6_every_code_is_catalogued() {
     let path = concat!(env!("CARGO_MANIFEST_DIR"), "/../../../errors/thread.toml");
     let catalogue = std::fs::read_to_string(path).unwrap();
-    for n in 1..=2 {
+    let e = ThreadError::AffinityUnsupported;
+    assert!(catalogue.contains(e.code().as_str()), "{e}");
+    assert!(e.hint().is_some());
+    for n in 1..=6 {
         assert!(catalogue.contains(&format!("code = \"SYRP-THREAD-{n:04}\"")));
     }
 }

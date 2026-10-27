@@ -1,6 +1,6 @@
 [package]
 name = "syrp-thread"
-description = "Threading layer for Syrp: named threads with exit signalling, notification and timed stop."
+description = "Threading layer for Syrp: named threads with exit signalling, priorities and realtime scheduling."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -15,6 +15,13 @@ wp = "WP-1.1-06"
 
 [dependencies]
 syrp-error = { version = "0.0.1", path = "../../foundation/error" }
+
+[target.'cfg(unix)'.dependencies]
+libc = { version = "0.2.186", default-features = false }
+
+[target.'cfg(windows)'.dependencies.windows-sys]
+version = "0.61.2"
+features = ["Win32_Foundation", "Win32_System_Threading"]
 
 [lints]
 workspace = true
