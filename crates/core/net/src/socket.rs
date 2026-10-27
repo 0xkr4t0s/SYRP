@@ -11,7 +11,7 @@ use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 use crate::{IpAddress, NetError};
 
 /// How long one blocking wait lasts before it checks again whether the socket was closed.
-const SLICE: Duration = Duration::from_millis(50);
+pub(crate) const SLICE: Duration = Duration::from_millis(50);
 
 /// `send` flags: Linux and Android suppress `SIGPIPE` per call; Apple sets `SO_NOSIGPIPE`
 /// on the socket instead, and Windows has no `SIGPIPE`.
@@ -567,12 +567,17 @@ pub(crate) fn retryable(e: &io::Error) -> bool {
 #[cfg(unix)]
 fn poll(sock: &Socket, for_reading: bool, ms: u16) -> io::Result<bool> {
     use std::os::fd::AsRawFd;
+    poll_fd(sock.as_raw_fd(), for_reading, ms)
+}
+
+/// Waits up to `ms` milliseconds for `fd` to become readable or writable.
+#[cfg(unix)]
+pub(crate) fn poll_fd(fd: std::os::fd::RawFd, for_reading: bool, ms: u16) -> io::Result<bool> {
     let events = if for_reading {
         libc::POLLIN
     } else {
         libc::POLLOUT
     };
-    let fd = sock.as_raw_fd();
     let mut pfd = libc::pollfd {
         fd,
         events,

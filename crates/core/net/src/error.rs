@@ -64,8 +64,26 @@ pub enum NetError {
         /// The OS error code, when the OS reported one.
         os_error: Option<i32>,
     },
-    /// SYRP-NET-0007: the socket was closed, before or during the call.
+    /// SYRP-NET-0007: the socket or pipe was closed, before or during the call.
     Closed,
+    /// SYRP-NET-0008: a name given to [`NamedPipe`](crate::NamedPipe) breaks the naming rule.
+    #[non_exhaustive]
+    InvalidPipeName {
+        /// The name that was rejected.
+        name: String,
+        /// What was wrong with it.
+        reason: &'static str,
+    },
+    /// SYRP-NET-0009: a named-pipe operation failed.
+    #[non_exhaustive]
+    Pipe {
+        /// The operation, such as `"create"`, `"open"`, `"read"` or `"write"`.
+        operation: &'static str,
+        /// The kind of I/O failure (`AlreadyExists` and `NotFound` for create and open).
+        kind: std::io::ErrorKind,
+        /// The OS error code, when the OS reported one.
+        os_error: Option<i32>,
+    },
 }
 
 impl NetError {
@@ -79,9 +97,11 @@ impl NetError {
         match self {
             Self::InterfaceQuery { os_error }
             | Self::Resolve { os_error, .. }
-            | Self::Socket { os_error, .. } => *os_error,
+            | Self::Socket { os_error, .. }
+            | Self::Pipe { os_error, .. } => *os_error,
             Self::InvalidIpAddress { .. }
             | Self::InvalidMacAddress { .. }
+            | Self::InvalidPipeName { .. }
             | Self::Unsupported { .. }
             | Self::Closed => None,
         }
@@ -98,6 +118,8 @@ impl Diagnostic for NetError {
             Self::Resolve { .. } => "SYRP-NET-0005",
             Self::Socket { .. } => "SYRP-NET-0006",
             Self::Closed => "SYRP-NET-0007",
+            Self::InvalidPipeName { .. } => "SYRP-NET-0008",
+            Self::Pipe { .. } => "SYRP-NET-0009",
         })
     }
 
@@ -113,7 +135,13 @@ impl Diagnostic for NetError {
             }
             Self::Resolve { .. } => "check the host name, or pass an IP address".into(),
             Self::Socket { .. } => "check the address, port and peer; the OS code says more".into(),
-            Self::Closed => "create a new socket; a closed one cannot be reopened".into(),
+            Self::Closed => "create a new socket or pipe; a closed one cannot be reopened".into(),
+            Self::InvalidPipeName { .. } => {
+                "use 1 to 200 ASCII letters, digits, '-', '_' or '.', not starting with '.'".into()
+            }
+            Self::Pipe { .. } => {
+                "check that the other end created the pipe; the OS code says more".into()
+            }
         })
     }
 }
@@ -148,7 +176,17 @@ impl fmt::Display for NetError {
                 self.os_error()
                     .map_or(Ok(()), |e| write!(f, " (OS error {e})"))
             }
-            Self::Closed => write!(f, "{code}: the socket is closed"),
+            Self::Closed => write!(f, "{code}: the socket or pipe is closed"),
+            Self::InvalidPipeName { name, reason } => {
+                write!(f, "{code}: {name:?} is not a valid pipe name: {reason}")
+            }
+            Self::Pipe {
+                operation, kind, ..
+            } => {
+                write!(f, "{code}: pipe {operation} failed ({kind})")?;
+                self.os_error()
+                    .map_or(Ok(()), |e| write!(f, " (OS error {e})"))
+            }
         }
     }
 }

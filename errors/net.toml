@@ -46,5 +46,19 @@ fix = "The message names the operation and the I/O error kind, and carries the O
 code = "SYRP-NET-0007"
 title = "Socket closed"
 severity = "error"
-cause = "The socket was closed with close(), either before the call or by another thread while the call was blocked."
-fix = "Create a new socket. A closed socket cannot be reopened."
+cause = "The socket or named pipe was closed with close(), either before the call or by another thread while the call was blocked."
+fix = "Create a new socket or pipe. A closed one cannot be reopened."
+
+[[error]]
+code = "SYRP-NET-0008"
+title = "Invalid pipe name"
+severity = "error"
+cause = "A NamedPipe name was empty, longer than 200 bytes, started with '.', or contained a character other than an ASCII letter, digit, '-', '_' or '.'."
+fix = "Choose a name that follows the rule; it becomes part of a file name on Unix and of \\\\.\\pipe\\<name> on Windows."
+
+[[error]]
+code = "SYRP-NET-0009"
+title = "Named pipe operation failed"
+severity = "error"
+cause = "The OS refused a named-pipe operation: creating a pipe that already exists with must_not_exist, opening one that does not exist, an unsafe pipe directory, or a failed read, write or connection."
+fix = "The message names the operation and the I/O error kind, and carries the OS error code when there is one. For open, make sure the other end has created the pipe first."

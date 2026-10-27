@@ -28,6 +28,11 @@ juce_core/SocketOptions, juce_core/NamedPipe
   wait loop with `StreamingSocket`. Reads use socket2's vectored receive, so an oversized
   datagram is truncated on every OS. On Unix `bind_to_port` sets `SO_REUSEADDR`, so several
   multicast receivers can share a port.
+- `NamedPipe` (`src/pipe.rs`, with `pipe_unix.rs` and `pipe_windows.rs`): Unix uses two
+  FIFOs in `<temp>/syrp-pipes-<uid>` (mode 0700, checked), each end holding both open
+  `O_RDWR | O_NONBLOCK` so nothing blocks on open and nothing raises `SIGPIPE`; the creator
+  removes them on close. Windows uses an overlapped byte-mode duplex pipe; every wait is a
+  50 ms slice, and cancelled I/O is always waited for before its buffer is released.
 - Errors are `NetError` (`SYRP-NET-*`, `errors/net.toml`); OS failures carry the OS code.
 
 ## Thread affinity
@@ -46,6 +51,9 @@ Tests use loopback only and never a real network. Enumeration tests assert that 
 listed, never a count of other interfaces.
 
 ## Known gaps
-WP-1.1-10 increment 3 (B1-B4). Still to come: `NamedPipe` (B5) and the remaining B6 codes. Socket types are
-absent on targets other than Unix and Windows (socket2 does not build there).
+WP-1.1-10 increment 4 (B1-B5). Still to come (B6): the `wasm32` stubs that return
+`NetError::Unsupported` from every socket and pipe constructor.
+Until then, socket and pipe types are absent on targets other than Unix and Windows (socket2
+does not build there). On Unix a peer that goes away is not reported to a `NamedPipe`; reads
+time out instead.
 `errors/net.toml` is not yet in the CLI's embedded catalogue.

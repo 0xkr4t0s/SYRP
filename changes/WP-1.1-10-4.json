@@ -1,0 +1,1 @@
+{"wp": "WP-1.1-10", "kind": "added", "summary": "syrp-net: NamedPipe (create_new_pipe, open_existing, read and write with timeouts, close from another thread) over FIFOs on Unix and overlapped named pipes on Windows; SYRP-NET-0008 and 0009."}
