@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only OR BUSL-1.1
-//! Tests for work/specs/WP-2.1-02.md, increment 1 (B1 and B2): packed formats and the
-//! conversion rule.
+//! Tests for work/specs/WP-2.1-02.md, increments 1 and 2 (B1–B3): packed formats, the
+//! conversion rule and interleaving.
 
 use proptest::prelude::*;
 use syrp_audio_api::{AudioBlock, AudioBlockMut};
 use syrp_audio_basics::BufferSample;
 use syrp_audio_basics::convert::{
-    ConvertError, Endianness, SampleFormat, convert_bytes, read_into, write_from,
+    ConvertError, Endianness, SampleFormat, convert_bytes, deinterleave, interleave, read_into,
+    write_from,
 };
 use syrp_error::Diagnostic;
 
@@ -513,4 +514,64 @@ proptest! {
         write_from(&block, &mut via, to, te, true).unwrap();
         prop_assert_eq!(direct, via);
     }
+
+    #[test]
+    fn b3_interleave_round_trips_and_places_frames(
+        channels in 0_usize..6, frames in 0_usize..40, pad in 0_usize..5,
+    ) {
+        let stride = frames + pad;
+        let planar: Vec<f32> = (0..channels * stride).map(|i| i as f32).collect();
+        let block = AudioBlock::new(&planar, channels, frames, stride).unwrap();
+        let mut inter = vec![-1.0; channels * frames];
+        interleave(&block, &mut inter).unwrap();
+        for c in 0..channels {
+            for i in 0..frames {
+                prop_assert_eq!(inter[i * channels + c], planar[c * stride + i]);
+            }
+        }
+        let mut back = vec![0.0; channels * stride];
+        let mut out = AudioBlockMut::new(&mut back, channels, frames, stride).unwrap();
+        deinterleave(&inter, &mut out).unwrap();
+        for c in 0..channels {
+            prop_assert_eq!(out.channel(c), block.channel(c));
+        }
+    }
+}
+
+#[test]
+fn b3_interleave_matches_the_documented_layout() {
+    let planar = [1.0_f64, 2.0, 3.0, -1.0, -2.0, -3.0];
+    let block = AudioBlock::new(&planar, 2, 3, 3).unwrap();
+    let mut out = [0.0; 6];
+    interleave(&block, &mut out).unwrap();
+    assert_eq!(out, [1.0, -1.0, 2.0, -2.0, 3.0, -3.0]);
+    let mut back = [0.0; 6];
+    let mut dest = AudioBlockMut::new(&mut back, 2, 3, 3).unwrap();
+    deinterleave(&out, &mut dest).unwrap();
+    assert_eq!(back, planar);
+}
+
+#[test]
+fn b3_interleave_length_mismatch_is_a_coded_error() {
+    let planar = [1.0_f32; 8];
+    let block = AudioBlock::new(&planar, 2, 4, 4).unwrap();
+    let mut short = [5.0; 7];
+    let e = interleave(&block, &mut short).unwrap_err();
+    assert!(
+        matches!(
+            e,
+            ConvertError::SampleCountMismatch {
+                expected: 8,
+                actual: 7,
+                ..
+            }
+        ),
+        "{e:?}"
+    );
+    assert_eq!(e.code().as_str(), "SYRP-AUDIO-0010");
+    assert_eq!(short, [5.0; 7]);
+    let mut back = [3.0_f32; 8];
+    let mut dest = AudioBlockMut::new(&mut back, 2, 4, 4).unwrap();
+    assert!(deinterleave(&[0.0; 9], &mut dest).is_err());
+    assert_eq!(back, [3.0; 8]);
 }
