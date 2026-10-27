@@ -13,6 +13,14 @@ const TOO_DEEP: ErrorCode = ErrorCode::new("SYRP-VAR-0002");
 const UNWRITABLE: ErrorCode = ErrorCode::new("SYRP-VAR-0003");
 /// Code for a tag or attribute name that is not an XML `Name`.
 const INVALID_XML_NAME: ErrorCode = ErrorCode::new("SYRP-VAR-0004");
+/// Code for XML text that is not well-formed.
+pub(crate) const MALFORMED_XML: ErrorCode = ErrorCode::new("SYRP-VAR-0005");
+/// Code for XML bytes in an encoding other than UTF-8 or UTF-16.
+pub(crate) const UNSUPPORTED_ENCODING: ErrorCode = ErrorCode::new("SYRP-VAR-0006");
+/// Code for an XML document with no root element or more than one.
+pub(crate) const XML_ROOT_COUNT: ErrorCode = ErrorCode::new("SYRP-VAR-0007");
+/// Code for XML input too large to allocate memory for.
+pub(crate) const XML_TOO_LARGE: ErrorCode = ErrorCode::new("SYRP-VAR-0008");
 
 /// An error from reading or writing a [`Var`](crate::Var) as JSON, or from building or
 /// parsing XML ([`xml`](crate::xml)).
@@ -68,6 +76,16 @@ impl VarError {
         }
     }
 
+    /// An XML parse error with its code, message and 1-based position (0 when unknown).
+    pub(crate) fn xml(code: ErrorCode, message: String, line: usize, column: usize) -> Self {
+        Self {
+            code,
+            message,
+            line,
+            column,
+        }
+    }
+
     /// The 1-based line of a parse error; 0 when there is no position (writing).
     ///
     /// ```
@@ -112,6 +130,10 @@ impl Diagnostic for VarError {
                 "SYRP-VAR-0004" => {
                     "start names with a letter, `_` or `:`; then letters, digits, `-`, `.`, `_` or `:`"
                 }
+                "SYRP-VAR-0005" => "fix the XML at the reported line and column",
+                "SYRP-VAR-0006" => "convert the document to UTF-8 or UTF-16 first",
+                "SYRP-VAR-0007" => "wrap the content in exactly one root element",
+                "SYRP-VAR-0008" => "the input is too large for the available memory",
                 _ => "fix the JSON at the reported line and column",
             }
             .into(),
