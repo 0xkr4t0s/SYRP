@@ -12,6 +12,7 @@
 //! - [`WindowingFunction`]: window tables; [`special`] holds the Bessel `I0` they use.
 //! - Tables and maths: [`LookupTable`], [`LookupTableTransform`], [`FastMathApproximations`],
 //!   [`Phase`] and [`LogRampedValue`].
+//! - Design-time maths: [`Matrix`] and [`Polynomial`].
 //!
 //! Per-instance DSP is written against [`syrp_simd::Sample`] (ADR 0003 D5); [`DspSample`]
 //! adds the lane access the processor model needs. Audio arrives as
@@ -48,7 +49,9 @@ mod duplicator;
 mod error;
 mod fast_math;
 mod fft;
+mod matrix;
 mod phase;
+mod polynomial;
 mod processor;
 mod ramp;
 mod sample;
@@ -63,7 +66,9 @@ pub use duplicator::{LaneProcessor, ProcessorDuplicator};
 pub use error::DspError;
 pub use fast_math::FastMathApproximations;
 pub use fft::Fft;
+pub use matrix::Matrix;
 pub use phase::Phase;
+pub use polynomial::Polynomial;
 pub use processor::{DspProcessor, ProcessorWrapper};
 pub use ramp::LogRampedValue;
 pub use rustfft::num_complex::Complex;
