@@ -8,11 +8,16 @@ pub(crate) mod epoll;
 pub(crate) use epoll::{Poller, Waker};
 
 #[cfg(target_os = "macos")]
-mod kqueue;
+mod cfrunloop;
 #[cfg(target_os = "macos")]
-pub(crate) use kqueue::{Poller, Waker};
+pub(crate) use cfrunloop::{Poller, Waker};
 
-#[cfg(not(any(target_os = "linux", target_os = "macos")))]
-mod portable;
-#[cfg(not(any(target_os = "linux", target_os = "macos")))]
-pub(crate) use portable::{Poller, Waker};
+#[cfg(windows)]
+mod win32;
+#[cfg(windows)]
+pub(crate) use win32::{Poller, Waker};
+
+#[cfg(not(any(target_os = "linux", target_os = "macos", windows)))]
+mod unsupported;
+#[cfg(not(any(target_os = "linux", target_os = "macos", windows)))]
+pub(crate) use unsupported::{Poller, Waker};

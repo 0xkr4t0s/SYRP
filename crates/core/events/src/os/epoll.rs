@@ -237,6 +237,12 @@ impl Poller {
         }
     }
 
+    /// Nothing else drives an epoll loop, so the core never needs calling back.
+    pub(crate) fn attach(&self, _dispatch: Rc<dyn Fn() -> usize>) {}
+
+    /// The `wait` timeout covers timers, so there is nothing to arm.
+    pub(crate) fn arm(&self, _next: Option<Duration>) {}
+
     /// Waits for a wake, a ready descriptor or the timeout, then runs ready descriptors'
     /// callbacks. Returns how many ran.
     pub(crate) fn wait(
