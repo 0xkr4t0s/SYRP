@@ -1,0 +1,1 @@
+{"wp": "WP-2.1-02", "kind": "added", "summary": "syrp-audio-basics: channel_set helpers over the contract ChannelSet (speaker names and abbreviations, arrangement strings, WAVEFORMATEXTENSIBLE masks, channel_sets_with_count, canonical_for_count) and grid round-trip tests for every sample format (increment 3, final: B5-B6)."}
