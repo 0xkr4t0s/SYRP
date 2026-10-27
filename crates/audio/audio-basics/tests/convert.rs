@@ -575,3 +575,40 @@ fn b3_interleave_length_mismatch_is_a_coded_error() {
     assert!(deinterleave(&[0.0; 9], &mut dest).is_err());
     assert_eq!(back, [3.0; 8]);
 }
+
+/// Decodes one sample to `f32`.
+fn read1_f32(bytes: &[u8], format: SampleFormat) -> f32 {
+    let mut out = [0.0_f32];
+    let mut block = AudioBlockMut::new(&mut out, 1, 1, 1).unwrap();
+    read_into(bytes, format, Little, false, 1, &mut block).unwrap();
+    out[0]
+}
+
+/// An `f32` on the grid of `format`: `k / 2^(bits-1)` for an integer `k` in range that `f32`
+/// holds exactly, or any non-NaN float for the float formats.
+fn grid_value(format: SampleFormat, raw: u32, shift: u32) -> f32 {
+    let (bits, signed_range) = match format {
+        Float32 | Float64 => {
+            let x = f32::from_bits(raw);
+            return if x.is_nan() { 0.0 } else { x };
+        }
+        Int8 | UInt8 => (8, 8),
+        Int16 => (16, 16),
+        Int24 | Int24In32 => (24, 24),
+        _ => (32, 24), // Int32: 24 significant bits, shifted into place
+    };
+    let k = (raw as i32) >> (32 - signed_range);
+    let k = if bits == 32 { k << (shift % 9) } else { k };
+    (f64::from(k) / f64::from(1_u32 << (bits - 1))) as f32
+}
+
+proptest! {
+    #[test]
+    fn b6_every_format_round_trips_f32_values_on_its_grid(
+        f in format(), raw in any::<u32>(), shift in any::<u32>(),
+    ) {
+        let x = grid_value(f, raw, shift);
+        let back = read1_f32(&write1(x, f, Little), f);
+        prop_assert_eq!(back.to_bits(), x.to_bits(), "{:?} {}", f, x);
+    }
+}
