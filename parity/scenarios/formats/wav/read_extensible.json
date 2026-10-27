@@ -1,0 +1,33 @@
+{
+  "id": "formats/wav/read_extensible",
+  "title": "WAVE_FORMAT_EXTENSIBLE: sub-formats, valid bits and channel masks",
+  "juce_tag": "9.0.4",
+  "tolerance": "exact",
+  "wp": "WP-2.1-14",
+  "ledger_rows": ["juce_audio_formats/WavAudioFormat"],
+  "docs": [{"page": "WavAudioFormat", "member": "createReaderFor", "says": "Creates a reader for a WAV stream; returns nullptr when the stream is not a format it can read."}, {"page": "AudioFormatReader", "member": "read", "says": "Integer samples are converted to floats in the range -1 to 1 when the destination is floating point."}],
+  "files": {
+    "ext_pcm16_stereo": {"chunks": [{"id": "fmt ", "hex": "feff020080bb000000ee02000400100016001000030000000100000000001000800000aa00389b71"}, {"id": "data", "hex": "004000c0"}]},
+    "ext_float_mono": {"chunks": [{"id": "fmt ", "hex": "feff010080bb000000ee02000400200016002000040000000300000000001000800000aa00389b71"}, {"id": "data", "hex": "0000403f"}]},
+    "valid20_in_24": {"chunks": [{"id": "fmt ", "hex": "feff010080bb0000803202000300180016001400040000000100000000001000800000aa00389b71"}, {"id": "data", "hex": "ffff7ff0ffff"}]},
+    "valid0_in_24": {"chunks": [{"id": "fmt ", "hex": "feff010080bb0000803202000300180016000000040000000100000000001000800000aa00389b71"}, {"id": "data", "hex": "001000"}]},
+    "mask_5_1_side": {"chunks": [{"id": "fmt ", "hex": "feff060080bb000000ca08000c001000160010000f0600000100000000001000800000aa00389b71"}, {"id": "data", "hex": "010002000300040005000600"}]},
+    "mask_5_1_back": {"chunks": [{"id": "fmt ", "hex": "feff060080bb000000ca08000c001000160010003f0000000100000000001000800000aa00389b71"}, {"id": "data", "hex": "010002000300040005000600"}]},
+    "mask_7_1": {"chunks": [{"id": "fmt ", "hex": "feff080080bb000000b80b0010001000160010003f0600000100000000001000800000aa00389b71"}, {"id": "data", "hex": "01000200030004000500060007000800"}]},
+    "mask_zero": {"chunks": [{"id": "fmt ", "hex": "feff020080bb000000ee02000400100016001000000000000100000000001000800000aa00389b71"}, {"id": "data", "hex": "01000200"}]},
+    "mask_too_many_bits": {"chunks": [{"id": "fmt ", "hex": "feff020080bb000000ee02000400100016001000070000000100000000001000800000aa00389b71"}, {"id": "data", "hex": "01000200"}]},
+    "mask_front_of_centre": {"chunks": [{"id": "fmt ", "hex": "feff020080bb000000ee02000400100016001000c00000000100000000001000800000aa00389b71"}, {"id": "data", "hex": "01000200"}]}
+  },
+  "steps": [
+    {"op": "read", "args": ["ext_pcm16_stereo"]},
+    {"op": "read", "args": ["ext_float_mono"]},
+    {"op": "read", "args": ["valid20_in_24"]},
+    {"op": "read", "args": ["valid0_in_24"]},
+    {"op": "read", "args": ["mask_5_1_side"]},
+    {"op": "read", "args": ["mask_5_1_back"]},
+    {"op": "read", "args": ["mask_7_1"]},
+    {"op": "read", "args": ["mask_zero"]},
+    {"op": "read", "args": ["mask_too_many_bits"]},
+    {"op": "read", "args": ["mask_front_of_centre"]}
+  ]
+}

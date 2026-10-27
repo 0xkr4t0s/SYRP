@@ -1,0 +1,1 @@
+{"wp": "WP-2.1-14", "kind": "added", "summary": "syrp-format-wav: round-trip and byte-flip/truncation proptests with an allocation bound, WAV parity scenarios under parity/scenarios/formats/wav, and the JUCE metadata key mapping (increment 4, final: B5-B6)."}
