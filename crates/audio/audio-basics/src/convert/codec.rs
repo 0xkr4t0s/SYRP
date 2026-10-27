@@ -53,6 +53,14 @@ pub(super) fn quantise(x: f64, bits: u32) -> i32 {
 }
 
 impl Codec {
+    pub(super) fn format(self) -> SampleFormat {
+        self.format
+    }
+
+    pub(super) fn is_big_endian(self) -> bool {
+        self.big
+    }
+
     pub(super) fn new(format: SampleFormat, endianness: Endianness) -> Self {
         Codec {
             format,

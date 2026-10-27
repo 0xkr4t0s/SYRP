@@ -62,3 +62,10 @@ title = "Byte data is not a whole number of samples"
 severity = "error"
 cause = "convert::convert_bytes was given a source slice whose length is not a multiple of the source format's bytes per sample."
 fix = "Check the source format and trim the slice to whole samples; a trailing partial sample usually means the format or the read size is wrong."
+
+[[error]]
+code = "SYRP-AUDIO-0010"
+title = "Interleaved slice does not match the block shape"
+severity = "error"
+cause = "convert::interleave or deinterleave was given a slice whose length is not exactly channels times frames of the block."
+fix = "Make the interleaved slice channels * frames samples long, or slice the block to match it."

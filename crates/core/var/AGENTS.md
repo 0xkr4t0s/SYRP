@@ -41,6 +41,10 @@ juce_core/JSON, juce_core/XmlElement, juce_core/XmlAttribute, juce_core/XmlDocum
   checks switch to a hash set past 8 attributes, so no input is quadratic. A DOCTYPE is
   skipped unread: no entity it declares is expanded and nothing external is fetched. Codes:
   `-0005` malformed (line/column in characters), `-0006` encoding, `-0007` root count.
+- XML writer (`src/xml/write.rs`) is iterative too. Elements with any text child are written
+  inline with their whole subtree, so layout never changes text, and every control character
+  in attributes (and all but tab/LF in text) is a numeric reference: `parse(to_string(t))` is
+  `t` after merging adjacent text and dropping whitespace-only text (B7 proptest).
 
 ## Features
 `serde` (default): public `Serialize`/`Deserialize` for `Var`. `json` works without it
@@ -61,6 +65,7 @@ experimental
 cargo syrp test --crate syrp-var
 cargo test -p syrp-var --no-default-features    # without the serde feature
 PROPTEST_CASES=5000 cargo test -p syrp-var --test json   # deeper round-trip run
+PROPTEST_CASES=5000 cargo test -p syrp-var --test xml_parse --test xml_write   # XML fuzz and round trips
 ```
 The `compile_fail` doctests in `src/lib.rs` ("Threads") prove the `!Send`/`!Sync` half of B2a.
 
@@ -95,8 +100,16 @@ The JUCE `var` documentation does not decide these; the choices here are documen
   ignored by `parse(&str)`; for bytes the BOM or first bytes decide the decoding and the
   declaration only has to name UTF-8/UTF-16(LE/BE); `only_read_outer_element` checks nothing
   after the root start tag.
+- XML writer (WP-1.1-15): default header `<?xml version="1.0" encoding="UTF-8"?>`; defaults
+  `line_wrap` 60 (bytes), `new_line_chars` `"\r\n"`, `indentation` 2; header, DTD and root
+  each end with a line end (none in `single_line`, which also drops indentation and
+  wrapping); `without_header` keeps the DTD; attributes wrap onto a new line aligned under the
+  first attribute; `'` is never escaped, `>` always is; control characters (Unicode `Cc`) are
+  decimal references except tab and LF in text; an element with a text child stays on one
+  line with its subtree; empty elements use `<a/>`.
 
 ## Known gaps
 WP-1.1-01 is complete (B1-B7). The CLI catalogue entry for the new `errors/var.toml` domain is
-tracked on CR #5. WP-1.1-15 increments 1-3 deliver the XML element model (B1-B3) and the parser (B4-B5); the
-writer (B6-B8) follows.
+tracked on CR #5. WP-1.1-15 is complete (B1-B8). It parses with a hand-written parser rather than `quick-xml`
+(no new dependency). Not in scope: reading XML from files, URLs or streams, DTD validation,
+namespaces beyond the prefix helpers, and `Var`/`ValueTree` mapping (WP-1.2-13, WP-1.2-08).

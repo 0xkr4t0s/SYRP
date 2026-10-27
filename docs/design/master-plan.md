@@ -1499,10 +1499,11 @@ Three further measures:
 | Room | Who | May do | May not do |
 |---|---|---|---|
 | **Spec room** | Spec agents and oracle agents | Read public JUCE documentation, tutorials and forum posts. Run JUCE binaries. Oracle agents may read JUCE headers in order to compile the harness. | Write to the Syrp repository. Spec agents may not open JUCE `.cpp` files or headers. |
-| **Clean room** | Implementers, reviewers and the PR manager | Read the WP specs (written in the spec room's own words), scenario outputs and Syrp's own code. | Access juce.com, docs.juce.com, github.com/juce-framework, forks and mirrors of JUCE, or the `aloe-*` crates. |
+| **Clean room** | Implementers, reviewers and the PR manager | Read the WP specs (written in the spec room's own words), scenario outputs, Syrp's own code, and JUCE's public API documentation (docs.juce.com class pages) for behaviour only. | Open or recall JUCE source code or headers from any site, including github.com/juce-framework and forks or mirrors of JUCE; read the `juce-oracle` repository; use the `aloe-*` crates; copy comments, constants or tables from JUCE. |
 
 **Enforcement and evidence**
-- The clean room's web sandbox blocklists the JUCE domains listed above. Dependency bans are enforced by `cargo-deny`.
+- The clean room's web sandbox blocklists JUCE source hosts (github.com/juce-framework and known mirrors). Public documentation stays reachable; a PR names the documentation pages its implementer read. Dependency bans are enforced by `cargo-deny`.
+- *Decision (rawnak, 2026-10-27):* implementers may read JUCE's public documentation for behaviour, matching `AGENTS.md` and every WP spec's rules line. Documentation describes behaviour, not expression; source code stays off-limits.
 - **Specs describe behaviour, never implementation.** Constants and tables come from observation, such as oracle-measured LookAndFeel colours and default parameter values, with provenance recorded. They never come from recall.
 - **Memorisation risk.** LLMs may have seen JUCE source in training, so a quarantined **contamination scanner** compares each PR diff with JUCE source using token winnowing, as MOSS and JPlag do. It is the only process that touches JUCE source, and it reports only similarity scores and line ranges. Scores above the threshold block the merge and trigger re-implementation from spec by a different agent.
 - **Reviewer checklist.** Reviewers look for JUCE-style idioms, comments or magic numbers without provenance.
