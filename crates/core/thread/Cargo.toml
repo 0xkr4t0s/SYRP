@@ -1,6 +1,6 @@
 [package]
 name = "syrp-thread"
-description = "Threading layer for Syrp: named threads with exit signalling, priorities, realtime scheduling, WaitableEvent and SpinLock."
+description = "Threading layer for Syrp: named threads with exit signalling, priorities, realtime scheduling, WaitableEvent, SpinLock and ThreadPool."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -15,6 +15,7 @@ wp = "WP-1.1-06"
 
 [dependencies]
 syrp-error = { version = "0.0.1", path = "../../foundation/error" }
+syrp-sys = { version = "0.0.1", path = "../sys" }
 
 [target.'cfg(unix)'.dependencies]
 libc = { version = "0.2.186", default-features = false }
