@@ -100,44 +100,9 @@ impl Inner {
             task.run(mt);
             ran += 1;
         }
-        ran += self.fire_timers(mt);
+        ran += EventLoop::fire_timers(self, mt);
         self.rearm();
         ran
-    }
-
-    /// Fires every timer due at the start of the pass once, in (due, creation) order.
-    fn fire_timers(&self, mt: &MessageThread<'_>) -> usize {
-        let now = self.now();
-        let timers = &self.timers;
-        let mut fired = 0;
-        loop {
-            let (due, id, period, mut f) = {
-                let mut t = timers.borrow_mut();
-                let Some(&(due, id)) = t.order.first().filter(|&&(due, _)| due <= now) else {
-                    break;
-                };
-                t.order.pop_first();
-                let Some(slot) = t.slots.get_mut(&id) else {
-                    continue;
-                };
-                let Some(f) = slot.f.take() else { continue };
-                (due, id, slot.period, f)
-            };
-            match &mut f {
-                Callback::Timer(f) => f(mt),
-                Callback::VBlank(f) => f(mt, due),
-            }
-            fired += 1;
-            let mut t = timers.borrow_mut();
-            if let Some(slot) = t.slots.get_mut(&id) {
-                slot.f = Some(f);
-                t.order.insert((next_due(due, period, now), id));
-            } else {
-                drop(t); // the guard was dropped in the callback; drop it outside the borrow
-                drop(f);
-            }
-        }
-        fired
     }
 }
 
@@ -381,6 +346,40 @@ impl EventLoop {
             .map(|t| t.saturating_sub(now))
     }
 
+    /// Fires every timer due at the start of the pass once, in (due, creation) order.
+    fn fire_timers(inner: &Inner, mt: &MessageThread<'_>) -> usize {
+        let now = inner.now();
+        let timers = &inner.timers;
+        let mut fired = 0;
+        loop {
+            let (due, id, period, mut f) = {
+                let mut t = timers.borrow_mut();
+                let Some(&(due, id)) = t.order.first().filter(|&&(due, _)| due <= now) else {
+                    break;
+                };
+                t.order.pop_first();
+                let Some(slot) = t.slots.get_mut(&id) else {
+                    continue;
+                };
+                let Some(f) = slot.f.take() else { continue };
+                (due, id, slot.period, f)
+            };
+            match &mut f {
+                Callback::Timer(f) => f(mt),
+                Callback::VBlank(f) => f(mt, due),
+            }
+            fired += 1;
+            let mut t = timers.borrow_mut();
+            if let Some(slot) = t.slots.get_mut(&id) {
+                slot.f = Some(f);
+                t.order.insert((next_due(due, period, now), id));
+            } else {
+                drop(t); // the guard was dropped in the callback; drop it outside the borrow
+                drop(f);
+            }
+        }
+        fired
+    }
     fn add_timer(&self, period: Duration, f: Callback) -> CallbackGuard {
         let period = period.max(MIN_PERIOD);
         let id = self.inner.next_id.get();
