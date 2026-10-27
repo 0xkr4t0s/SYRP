@@ -1,0 +1,1 @@
+{"wp": "WP-1.1-15", "kind": "added", "summary": "syrp-var: XmlDocument parser (iterative, UTF-8/UTF-16 detection, DOCTYPE skipped without entity expansion, coded errors with line and column) (increment 3: B4-B5)."}

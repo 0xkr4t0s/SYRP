@@ -27,3 +27,31 @@ title = "Invalid XML name"
 severity = "error"
 cause = "An XmlElement tag name or attribute name is not an XML 1.0 `Name`: it is empty, starts with a digit, `-` or `.`, or contains a space or another character the production does not allow."
 fix = "Use a name that starts with a letter, `_` or `:` and continues with letters, digits, `-`, `.`, `_` or `:`. syrp_var::xml::is_valid_xml_name checks a name before use."
+
+[[error]]
+code = "SYRP-VAR-0005"
+title = "Malformed XML"
+severity = "error"
+cause = "syrp_var::xml::XmlDocument met text that is not well-formed XML: a mismatched or unclosed tag, an undefined entity or bad character reference, a duplicate attribute, an invalid name, an unterminated comment, CDATA section or quoted value, or bytes that are not valid UTF-8 or UTF-16. The error carries the line and column."
+fix = "Fix the XML at the reported line and column. Only the five predefined entities and numeric character references are expanded; entities declared in a DOCTYPE are not."
+
+[[error]]
+code = "SYRP-VAR-0006"
+title = "Unsupported XML encoding"
+severity = "error"
+cause = "XmlDocument::parse_bytes read an XML declaration whose encoding is neither UTF-8 nor UTF-16 (or UTF-16LE/UTF-16BE)."
+fix = "Convert the document to UTF-8 or UTF-16 (and fix its encoding declaration) before parsing, or decode it yourself and call XmlDocument::parse with the text."
+
+[[error]]
+code = "SYRP-VAR-0007"
+title = "XML document needs exactly one root element"
+severity = "error"
+cause = "The XML text has no element at all, or a second element after the root element closed."
+fix = "Wrap the content in a single root element."
+
+[[error]]
+code = "SYRP-VAR-0008"
+title = "XML input too large"
+severity = "error"
+cause = "Memory for decoding the XML input could not be reserved."
+fix = "Parse a smaller document, or free memory first."

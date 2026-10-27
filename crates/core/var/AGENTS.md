@@ -8,8 +8,7 @@ as `Var`s. Behaviour comes from the public JUCE documentation only.
 
 ## Ledger rows
 juce_core/var, juce_core/Identifier, juce_core/NamedValueSet, juce_core/DynamicObject,
-juce_core/JSON, juce_core/XmlElement, juce_core/XmlAttribute (WP-1.1-15; juce_core/XmlDocument
-follows with the parser)
+juce_core/JSON, juce_core/XmlElement, juce_core/XmlAttribute, juce_core/XmlDocument (WP-1.1-15)
 
 ## Invariants
 - `size_of::<Identifier>() == 4`; `size_of::<Var>() == 16` on 64-bit targets. Heap variants
@@ -36,6 +35,12 @@ follows with the parser)
   `Clone`, `Drop`, `is_equivalent_to` (also `==`) and `all_sub_text` use explicit stacks,
   never recursion (100,000-level tests); `Debug` is shallow. Attribute text conversions call
   the same `convert::text_as_*` helpers as `Var`.
+- XML parser (`src/xml/parse.rs`) is hand-written (no `quick-xml`): an explicit stack of open
+  elements, no recursion, no depth limit. Every allocation is bounded by the input length
+  (UTF-16 decoding reserves with `try_reserve_exact`, `SYRP-VAR-0008`); duplicate-attribute
+  checks switch to a hash set past 8 attributes, so no input is quadratic. A DOCTYPE is
+  skipped unread: no entity it declares is expanded and nothing external is fetched. Codes:
+  `-0005` malformed (line/column in characters), `-0006` encoding, `-0007` root count.
 
 ## Features
 `serde` (default): public `Serialize`/`Deserialize` for `Var`. `json` works without it
@@ -83,8 +88,15 @@ The JUCE `var` documentation does not decide these; the choices here are documen
   `sort_child_elements` sorts text nodes too; `delete_all_child_elements` removes text nodes;
   `replace_child_element` past the end gives the new node back; `compare_attribute` with
   `ignore_case` compares Unicode lower-case forms.
+- XML parser (WP-1.1-15): character references may name any scalar value (`&#0;` and control
+  characters too) and literal control characters are accepted, so any `String` round-trips;
+  `&#X41;` (capital X) is an error; `]]>` in text and `--` inside comments are accepted; text
+  merges across comments; whitespace-only CDATA counts as empty text; a declared encoding is
+  ignored by `parse(&str)`; for bytes the BOM or first bytes decide the decoding and the
+  declaration only has to name UTF-8/UTF-16(LE/BE); `only_read_outer_element` checks nothing
+  after the root start tag.
 
 ## Known gaps
 WP-1.1-01 is complete (B1-B7). The CLI catalogue entry for the new `errors/var.toml` domain is
-tracked on CR #5. WP-1.1-15 increments 1-2 deliver the XML element model (B1-B3, and B5 for clone, drop and
-comparison); the parser (B4-B5) and the writer (B6-B8) follow.
+tracked on CR #5. WP-1.1-15 increments 1-3 deliver the XML element model (B1-B3) and the parser (B4-B5); the
+writer (B6-B8) follows.

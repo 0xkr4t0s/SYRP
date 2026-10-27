@@ -1,6 +1,6 @@
 [package]
 name = "syrp-var"
-description = "Dynamic values for Syrp: interned identifiers, the Var value type, named value sets, dynamic objects and JSON."
+description = "Dynamic values for Syrp: interned identifiers, the Var value type, named value sets, dynamic objects, JSON and XML."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
