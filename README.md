@@ -8,6 +8,14 @@ A Rust reimplementation of the [JUCE](https://juce.com) framework, built and use
 >
 > Syrp is a working name. Not affiliated with or endorsed by Raw Material Software / JUCE.
 
+## Links
+
+| | |
+|---|---|
+| [Progress](https://syrp-foundation.github.io/SYRP/progress/) | Progress toward JUCE 9.0.4 parity: module map, roadmap, work packages and merge history. Rebuilt on every merge to `main`. ([raw data](https://syrp-foundation.github.io/SYRP/progress/progress.json)) |
+| [Documentation](https://syrp-foundation.github.io/SYRP/) | The docs site for people: guide, cookbook, migration notes and design |
+| [Docs for agents](https://syrp-foundation.github.io/SYRP/agents/llms.txt) | The agent side: `llms.txt`, `llms-full.txt`, and JSON indexes of errors, work packages and crates |
+
 ## What is here
 
 | | |
