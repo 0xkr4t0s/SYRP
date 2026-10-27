@@ -15,8 +15,8 @@ juce_dsp/dsp::ProcessorDuplicator, juce_dsp/dsp::ProcessorState, juce_dsp/dsp::F
 juce_dsp/dsp::WindowingFunction, juce_dsp/dsp::LookupTable,
 juce_dsp/dsp::LookupTableTransform, juce_dsp/dsp::FastMathApproximations,
 juce_dsp/dsp::LogRampedValue, juce_dsp/dsp::Phase, juce_dsp/dsp::Matrix,
-juce_dsp/dsp::Polynomial.
-Later increment: dsp::SIMDRegister, dsp::SpecialFunctions (elliptic part).
+juce_dsp/dsp::Polynomial, juce_dsp/dsp::SpecialFunctions, juce_dsp/dsp::SIMDRegister
+(mapped to `syrp-simd` below, no new type).
 
 ## Invariants
 - ADR 0003: no public fields; per-instance DSP is generic over `S: DspSample` (a sealed
@@ -57,11 +57,38 @@ Choices made where the JUCE documentation is silent, each pinned by a test:
 - `Polynomial`: coefficient `i` multiplies `x^i`; `order()` is the degree (count - 1).
 - `Matrix::is_null_matrix` is a shape test (no elements); `toeplitz` is symmetric.
 
+## SIMDRegister map
+JUCE's `dsp::SIMDRegister<T>` is answered by `syrp_simd` packs (`F32x4`, `F32x8`, `F64x2`,
+`F64x4`) through `syrp_simd::Sample` and this crate's `DspSample`:
+
+| SIMDRegister | syrp equivalent |
+|---|---|
+| `SIMDNumElements`, `size()` | `Sample::LANES` |
+| `SIMDRegister(s)`, `expand`, `operator=(s)` | `Sample::splat` |
+| `fromRawArray`, `copyToRawArray` | `F32x4::from_array`/`to_array` (per pack), `DspSample::from_fn` |
+| `get`, `operator[]` | `F32x4::lane`, `DspSample::extract` |
+| `+ - *` and `+= -= *=` (register) | `Add`/`Sub`/`Mul` and assign ops (plus `Div`) |
+| `+ - *` with a scalar | the same ops with `Sample::splat(s)` |
+| `multiplyAdd(a, b, c)` (`a + b*c`) | `b.mul_add(c, a)` (fused) |
+| `min`, `max`, `abs` | `Sample::min`, `max`, `abs` (`sqrt` too) |
+| `equal` .. `greaterThanOrEqual` | `simd_eq`, `!simd_eq`, `simd_lt`, `simd_le`, `simd_gt`, `simd_ge` (return a `Mask`) |
+| `operator==`/`!=` (all lanes) | `a.simd_eq(b).all()` / `!a.simd_eq(b).all()` |
+| mask `& | ~` | `Mask` `BitAnd`/`BitOr`/`Not`; blend with `Sample::select` |
+| `isSIMDAligned`, `getNextSIMDAlignedPtr`, `SIMDRegisterSize` | `syrp_simd::ALIGN` (64), `AlignedBuf`, `size_of::<F32x8>()` |
+| `fromNative` | `syrp_simd::fearless_simd` (re-exported) |
+
+Known gaps (no `syrp_simd` equivalent yet; would need a `syrp-simd` change request):
+`set(idx, v)` (rebuild with `DspSample::from_fn`; `syrp-audio-basics` has `VoiceSample::set_lane`
+for `f32` packs), `sum()` (horizontal add; `VoiceSample::lane_sum` for `f32` packs),
+`truncate`, bitwise `& | ^ ~` on sample registers and with scalar masks, `^` on masks,
+integer and complex element types.
+
 ## Thread affinity
 Any thread. RT-safe: every `ProcessContext` method, `DspProcessor::process`/`reset` of the
 chain, duplicator and wrapper, `Fft::perform*`, `WindowingFunction::multiply_with_windowing_table`
 and `fill_windowing_tables_into`, table reads, every `FastMathApproximations` function,
-`Phase`, `LogRampedValue`, `Polynomial::evaluate`, and all accessors. Not RT-safe: `prepare` (allocates),
+`Phase`, `LogRampedValue`, `Polynomial::evaluate`, every `special` function, and all
+accessors. Not RT-safe: `prepare` (allocates),
 `ProcessorDuplicator::new`, `Fft::new`, `WindowingFunction::new`/`fill_windowing_tables`,
 table `new`/`initialise`/`calculate_max_relative_error`, every `Matrix` constructor and
 operator and `Polynomial` builder (allocate) and dropping any of them.
@@ -74,11 +101,15 @@ experimental
 cargo syrp test --crate syrp-dsp-core
 cargo test -p syrp-dsp-core --test fft      # fft profile: relative RMS <= 1e-6 (f32)
 cargo syrp wp check WP-2.1-10
+cargo bench -p syrp-dsp-core --bench fft   # Callgrind count (needs valgrind)
 ```
+The bench counts one order-10 real forward transform: 32,005 instructions when written
+(x86-64, rustfft's AVX path under Valgrind); it fails above 60,000, a wide margin because
+rustfft picks its SSE or AVX path at run time.
 Tests install `syrp_rt::GuardedAllocator` and wrap `process` in `syrp_rt::no_alloc`.
 
 ## Known gaps
-- Last WP-2.1-10 increment: the elliptic special functions, the `SIMDRegister` →
-  `syrp_simd` map and the Callgrind FFT bench (B6–B7).
+- The `SIMDRegister` operations listed above have no `syrp_simd` equivalent.
+- No CI gate runs the FFT bench yet.
 - `Fft` is `f32` only, like JUCE's.
 - `ProcessorChain` holds at most 8 members (nest chains for more).
