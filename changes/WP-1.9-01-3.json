@@ -1,0 +1,1 @@
+{"wp": "WP-1.9-01", "kind": "added", "summary": "syrp-compat-state, increment 3 (final): Value with ValueListener (property_as_value, standalone Value::new, refer_to), CachedValue<T> with defaults and store-driven cache, and VarConvert conversions for bool, i32, i64, f32, f64, String and Var."}

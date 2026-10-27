@@ -1,15 +1,15 @@
 # syrp-compat-state
 
 ## Purpose
-The JUCE-shaped porting layer over `syrp-state` (master plan §5.9, ADR 0003 D1): `ValueTree`
-and `Listener` (JUCE's `ValueTree::Listener`); `Value` and `CachedValue` arrive in increment 3
-of WP-1.9-01. Each
+The JUCE-shaped porting layer over `syrp-state` (master plan §5.9, ADR 0003 D1): `ValueTree`,
+`Listener` (JUCE's `ValueTree::Listener`), `Value` with `ValueListener`, and `CachedValue<T>`
+with the `VarConvert` conversions (JUCE's `VariantConverter`). Each
 type is a thin handle over the native store and owns no data. Rust method names carry their
 JUCE names as `#[doc(alias)]`.
 
 ## Ledger rows
-juce_data_structures/ValueTree, juce_data_structures/ValueTree::Listener;
-juce_data_structures/Value, juce_data_structures/CachedValue (increment 3).
+juce_data_structures/ValueTree, juce_data_structures/ValueTree::Listener,
+juce_data_structures/Value, juce_data_structures/CachedValue.
 
 ## Invariants
 - No storage: a `ValueTree` is `Option<(Rc<Store>, NodeRef)>`. Clone is shallow, `==` is node
@@ -26,6 +26,9 @@ juce_data_structures/Value, juce_data_structures/CachedValue (increment 3).
   weakly, so a listener that keeps a `ValueTree` makes no `Rc` cycle; callers own listeners.
 - Callbacks come only from store delivery (`Store::subscribe` order); a listener's `RefCell` is
   never borrowed twice (`try_borrow_mut`, skip when busy).
+- `Value` and `CachedValue` hold no data of their own: a tree plus a property id. A standalone
+  `Value::new` uses a hidden node in the thread's store. `CachedValue`'s cache is refreshed by
+  its own store subscription, so it is current for every route (undo, native calls).
 - `ValueTree::new` uses one store per thread, so trees made with it can be joined;
   `new_in` targets an explicit store.
 
@@ -39,7 +42,8 @@ experimental
 `cargo test -p syrp-compat-state`; `cargo clippy -p syrp-compat-state --all-targets -- -D warnings`.
 
 ## Known gaps
-`Value`/`CachedValue` (B3) are increment 3. Listener order is the store's and is not yet
-checked against JUCE (0005 open questions 1 to 9); the `parity/scenarios/` entries for it
-belong to the spec room. XML/binary
-serialisation is not in this WP.
+- `Value` listeners are called synchronously from the store's change log; JUCE notifies them
+  asynchronously. Ported code that relies on the async hop needs its own deferral.
+- Listener order is the store's and is not yet checked against JUCE (0005 open questions 1
+  to 9); the spec-room scenarios under `parity/scenarios/` describe what is decided.
+- XML/binary serialisation is not in this WP.

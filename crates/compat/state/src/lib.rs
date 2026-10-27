@@ -7,6 +7,7 @@
 //! core only: `syrp-state` never depends on this crate.
 //!
 //! [`Listener`] is JUCE's `ValueTree::Listener`; listeners belong to the wrapper they were added to.
+//! [`Value`] and [`CachedValue`] are observable and cached views of one property.
 //!
 //! Method names follow Rust conventions; each carries a `#[doc(alias)]` with its JUCE name
 //! (`getProperty`, `createCopy`, ...), so rustdoc search finds both.
@@ -21,8 +22,12 @@
 //! });
 //! ```
 
+mod cached;
 mod listener;
 mod tree;
+mod value;
 
+pub use cached::{CachedValue, VarConvert};
 pub use listener::Listener;
 pub use tree::{Children, ValueTree};
+pub use value::{Value, ValueListener};
