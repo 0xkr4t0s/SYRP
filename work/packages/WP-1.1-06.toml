@@ -1,0 +1,11 @@
+id = "WP-1.1-06"
+title = "syrp-thread: Thread, priorities and realtime threads, WaitableEvent, ThreadPool and SpinLock"
+crate = "crates/core/thread"
+depends_on = ["WP-0.1-04", "WP-1.1-12"]
+ledger_rows = ["juce_core/Thread", "juce_core/ThreadPool", "juce_core/ThreadPoolJob", "juce_core/ThreadPoolOptions", "juce_core/WaitableEvent", "juce_core/SpinLock", "juce_core/CriticalSection", "juce_core/ReadWriteLock", "juce_core/ThreadLocalValue"]
+spec = "work/specs/WP-1.1-06.md"
+risk = ["public-api", "unsafe", "ffi"]
+acceptance = "cargo syrp wp check WP-1.1-06 --json"
+platforms = ["linux", "macos", "windows"]
+role = "implementer"
+budget = { agent_hours = 40, max_review_rounds = 3, max_restarts = 2 }

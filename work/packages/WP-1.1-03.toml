@@ -1,0 +1,11 @@
+id = "WP-1.1-03"
+title = "syrp-io: InputStream and OutputStream, MemoryBlock, memory, buffered and subregion streams"
+crate = "crates/core/io"
+depends_on = ["WP-0.1-03"]
+ledger_rows = ["juce_core/InputStream", "juce_core/OutputStream", "juce_core/MemoryBlock", "juce_core/MemoryInputStream", "juce_core/MemoryOutputStream", "juce_core/BufferedInputStream", "juce_core/SubregionStream", "juce_core/InputSource"]
+spec = "work/specs/WP-1.1-03.md"
+risk = ["public-api"]
+acceptance = "cargo syrp wp check WP-1.1-03 --json"
+platforms = ["linux", "macos", "windows"]
+role = "implementer"
+budget = { agent_hours = 24, max_review_rounds = 3, max_restarts = 2 }
