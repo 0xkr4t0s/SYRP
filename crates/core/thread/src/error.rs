@@ -34,6 +34,32 @@ pub enum ThreadError {
         /// The OS error code, when the OS reported one.
         os_error: Option<i32>,
     },
+    /// SYRP-THREAD-0003: the operating system refused to change the thread's priority.
+    #[non_exhaustive]
+    PriorityRefused {
+        /// The OS error code, when the OS reported one.
+        os_error: Option<i32>,
+    },
+    /// SYRP-THREAD-0004: this platform has no API to pin a thread to CPUs (macOS).
+    AffinityUnsupported,
+    /// SYRP-THREAD-0005: the operating system rejected the affinity mask.
+    #[non_exhaustive]
+    AffinityRefused {
+        /// The OS error code, when the OS reported one.
+        os_error: Option<i32>,
+    },
+    /// SYRP-THREAD-0006: a [`RealtimeOptions`](crate::RealtimeOptions) value is inconsistent.
+    #[non_exhaustive]
+    InvalidRealtimeOptions {
+        /// Which rule the options broke.
+        reason: &'static str,
+    },
+}
+
+impl ThreadError {
+    pub(crate) fn priority(os_error: Option<i32>) -> Self {
+        Self::PriorityRefused { os_error }
+    }
 }
 
 impl Diagnostic for ThreadError {
@@ -41,6 +67,10 @@ impl Diagnostic for ThreadError {
         ErrorCode::new(match self {
             Self::StopTimedOut { .. } => "SYRP-THREAD-0001",
             Self::SpawnFailed { .. } => "SYRP-THREAD-0002",
+            Self::PriorityRefused { .. } => "SYRP-THREAD-0003",
+            Self::AffinityUnsupported => "SYRP-THREAD-0004",
+            Self::AffinityRefused { .. } => "SYRP-THREAD-0005",
+            Self::InvalidRealtimeOptions { .. } => "SYRP-THREAD-0006",
         })
     }
 
@@ -50,7 +80,21 @@ impl Diagnostic for ThreadError {
                 "make the thread body poll `thread_should_exit()` or use `ctx.wait`".into()
             }
             Self::SpawnFailed { .. } => "lower the stack size or the number of threads".into(),
+            Self::PriorityRefused { .. } | Self::AffinityRefused { .. } => {
+                "the process may lack the privilege; on Linux check RLIMIT_NICE and CPU sets".into()
+            }
+            Self::AffinityUnsupported => "macOS has no thread affinity; skip the call".into(),
+            Self::InvalidRealtimeOptions { .. } => {
+                "keep the expected work time non-zero and no longer than the period".into()
+            }
         })
+    }
+}
+
+fn os_suffix(f: &mut fmt::Formatter<'_>, os_error: Option<i32>) -> fmt::Result {
+    match os_error {
+        Some(e) => write!(f, " (OS error {e})"),
+        None => Ok(()),
     }
 }
 
@@ -62,14 +106,26 @@ impl fmt::Display for ThreadError {
                 f,
                 "{code}: the thread did not exit within {timeout:?} and was detached"
             ),
-            Self::SpawnFailed { os_error: Some(e) } => {
+            Self::SpawnFailed { os_error } => {
+                write!(f, "{code}: the OS could not create the thread")?;
+                os_suffix(f, *os_error)
+            }
+            Self::PriorityRefused { os_error } => {
+                write!(f, "{code}: the OS refused the thread priority")?;
+                os_suffix(f, *os_error)
+            }
+            Self::AffinityUnsupported => {
                 write!(
                     f,
-                    "{code}: the OS could not create the thread (OS error {e})"
+                    "{code}: thread affinity is not supported on this platform"
                 )
             }
-            Self::SpawnFailed { os_error: None } => {
-                write!(f, "{code}: the OS could not create the thread")
+            Self::AffinityRefused { os_error } => {
+                write!(f, "{code}: the OS refused the affinity mask")?;
+                os_suffix(f, *os_error)
+            }
+            Self::InvalidRealtimeOptions { reason } => {
+                write!(f, "{code}: invalid realtime options: {reason}")
             }
         }
     }

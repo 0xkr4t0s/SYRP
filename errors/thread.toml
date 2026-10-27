@@ -13,3 +13,31 @@ title = "Thread creation failed"
 severity = "error"
 cause = "The operating system refused to create a thread for ThreadBuilder::spawn or Thread::launch, usually because of a resource limit (thread count, memory for the stack)."
 fix = "Use a smaller stack size or fewer threads; the message carries the OS error code."
+
+[[error]]
+code = "SYRP-THREAD-0003"
+title = "Thread priority refused"
+severity = "error"
+cause = "set_current_thread_priority asked the OS for a priority it would not grant. Raising a priority needs CAP_SYS_NICE or RLIMIT_NICE on Linux; lowering is always allowed."
+fix = "Run with the privilege, or accept the default priority. Threads created with a refused priority still run; see ThreadHandle::priority_status."
+
+[[error]]
+code = "SYRP-THREAD-0004"
+title = "Thread affinity unsupported"
+severity = "error"
+cause = "set_current_thread_affinity_mask was called on a platform with no thread affinity API (macOS and iOS)."
+fix = "Skip the call on these platforms; the scheduler places threads itself."
+
+[[error]]
+code = "SYRP-THREAD-0005"
+title = "Thread affinity mask refused"
+severity = "error"
+cause = "The OS rejected the mask given to set_current_thread_affinity_mask: it is zero, names no CPU the process may use, or does not fit the platform's mask width."
+fix = "Pass a non-zero mask whose bits name CPUs available to the process (bit 0 is CPU 0)."
+
+[[error]]
+code = "SYRP-THREAD-0006"
+title = "Invalid realtime options"
+severity = "error"
+cause = "ThreadBuilder::spawn was given RealtimeOptions with a zero processing period, a zero expected work time, or a work time longer than the period."
+fix = "Give a non-zero period and a non-zero work time no longer than the period, or leave either unset."

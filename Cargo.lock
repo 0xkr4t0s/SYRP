@@ -1423,7 +1423,9 @@ dependencies = [
 name = "syrp-thread"
 version = "0.0.1"
 dependencies = [
+ "libc",
  "syrp-error",
+ "windows-sys",
 ]
 
 [[package]]
