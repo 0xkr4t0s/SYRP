@@ -5,7 +5,8 @@ Layer L3 audio basics (master plan §5.2, ADR 0003). `AudioBuffer<T>` is the own
 buffer for `f32`/`f64` (JUCE's `AudioBuffer`); it lends `syrp-audio-api` views. `vector_ops`
 covers JUCE's `FloatVectorOperations`. `control` holds control-rate DSP and `voice` the
 `VoicePool`. `convert` covers JUCE's `AudioData`: packed sample formats to and from planar
-blocks, and interleaving.
+blocks, and interleaving. `channel_set` adds the parts of JUCE's `AudioChannelSet` that the
+frozen `syrp-audio-api` `ChannelSet` lacks, as free functions.
 
 Module and bench owners:
 
@@ -14,7 +15,7 @@ Module and bench owners:
 | `src/buffer.rs`, `src/vector_ops.rs`, `benches/buffer.rs`, `tests/buffer.rs` | WP-2.1-01 |
 | `src/control/`, `benches/control.rs` (stub until it lands) | WP-2.1-03 |
 | `src/voice/`, `benches/voice_pool.rs` (stub until it lands) | WP-2.1-05 |
-| `src/convert/`, `tests/convert.rs`, `tests/convert_simd.rs`, `benches/convert.rs` | WP-2.1-02 |
+| `src/convert/`, `src/channel_set.rs`, `tests/convert*.rs`, `tests/channel_set.rs`, `benches/convert.rs` | WP-2.1-02 |
 
 WP-2.1-03 and WP-2.1-05 add their own `tests/control.rs` and `tests/voice_pool.rs`.
 
@@ -62,12 +63,19 @@ For the differential harness: the `AudioData` documentation describes scaling by
 - `convert_bytes` narrowing (for example `Int24` to `Int16`) rounds the same way instead of
   shifting;
 - `read_into` with fewer block channels than data channels skips the extra data channels.
+- `channel_set`: speaker names ("Left Surround Rear", "LFE"...) and abbreviations beyond the
+  documented 5.1 example ("L R C Lfe Ls Rs") are Syrp's wording, to confirm against JUCE;
+  discrete channels are "Discrete 1"/"D1", counting from one.
+  WAV masks map surround to the side bits and rear surround to the back bits; reading also
+  accepts the back pair in place of a missing side pair (`0x3F` is 5.1, `0x33` quad).
 
 ## Thread affinity
 Any thread. RT-safe: `channels`, `frames`, `channel`, `channel_mut`, `as_block`,
 `as_block_mut`, B3/B4 operations and `vector_ops` (after one `Level::detect()`), and
 `set_size`/`make_copy_of` with `avoid_reallocating` when the new shape
-fits, and everything in `convert` (no allocation, locks or I/O). `AudioBuffer` implements `syrp_rt::RtSafe` for those methods. Not RT-safe: `new`, `clone`, dropping a buffer, and resizes that reallocate.
+fits, and everything in `convert` (no allocation, locks or I/O). `channel_set`: any thread;
+`wave_channel_mask`, `from_wave_channel_mask` and `canonical_for_count` are RT-safe, the
+string and `Vec` helpers allocate. `AudioBuffer` implements `syrp_rt::RtSafe` for those methods. Not RT-safe: `new`, `clone`, dropping a buffer, and resizes that reallocate.
 
 ## Stability
 experimental
@@ -86,5 +94,9 @@ The bench fails if a `vector_ops` pack case at `Avx2` costs more than 70% of `Ss
 Tests install `syrp_rt::GuardedAllocator` so `no_alloc` proves allocation-free paths.
 
 ## Known gaps
+`channel_set` covers only the contract's layouts (mono to 7.1.4 and discrete): ambisonic and
+larger layouts (7.1.6, 9.1.6, Atmos beds) need new `Speaker`/`ChannelSet` variants, which is a
+contract-change WP. Reordering WAV channels from mask-bit order to Syrp's canonical order is
+the WAV format's job (WP-2.1-14).
 `add_from`/`copy_from` cannot take a channel of the same buffer (borrow rules).
 `AlignedBuf::zeroed` aborts on allocation failure (no fallible allocation in `syrp-simd` yet).
