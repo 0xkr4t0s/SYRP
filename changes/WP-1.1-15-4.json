@@ -1,0 +1,1 @@
+{"wp": "WP-1.1-15", "kind": "added", "summary": "syrp-var: XML writer (TextFormat, to_string, write_to) with escaping and pinned layout choices, parse/write round-trip proptest, and the XML migration page (increment 4, final: B6-B8)."}
