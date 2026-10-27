@@ -41,6 +41,11 @@ fn b7_kinds_map_to_std_kinds_and_codes() {
             "SYRP-IO-0005",
         ),
         (IoErrorKind::Io, io::ErrorKind::Other, "SYRP-IO-0003"),
+        (
+            IoErrorKind::BufferFull,
+            io::ErrorKind::StorageFull,
+            "SYRP-IO-0002",
+        ),
     ];
     for (kind, std_kind, code) in cases {
         let err = IoError::new(kind);

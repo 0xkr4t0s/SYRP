@@ -18,6 +18,8 @@ use syrp_error::{Diagnostic, ErrorCode};
 pub enum IoErrorKind {
     /// A fixed-size read reached the end of the stream (`SYRP-IO-0001`).
     EndOfStream,
+    /// A write did not fit in a fixed output buffer, so nothing was written (`SYRP-IO-0002`).
+    BufferFull,
     /// The underlying reader, writer or seek failed (`SYRP-IO-0003`).
     Io,
     /// The bytes do not follow the expected format (`SYRP-IO-0004`).
@@ -118,6 +120,7 @@ impl From<IoError> for io::Error {
     fn from(err: IoError) -> Self {
         let kind = match (&err.kind, &err.source) {
             (IoErrorKind::EndOfStream, _) => io::ErrorKind::UnexpectedEof,
+            (IoErrorKind::BufferFull, _) => io::ErrorKind::StorageFull,
             (IoErrorKind::InvalidData, _) => io::ErrorKind::InvalidData,
             (IoErrorKind::OutOfMemory, _) => io::ErrorKind::OutOfMemory,
             (IoErrorKind::Io, Some(source)) => source.kind(),
@@ -136,6 +139,7 @@ impl fmt::Display for IoError {
         } = self;
         f.write_str(match kind {
             IoErrorKind::EndOfStream => "the stream ended inside a fixed-size read",
+            IoErrorKind::BufferFull => "the fixed output buffer is full",
             IoErrorKind::Io => "the underlying I/O operation failed",
             IoErrorKind::InvalidData => "malformed data in the stream",
             IoErrorKind::OutOfMemory => "out of memory for a stream or memory block",
@@ -162,6 +166,7 @@ impl Diagnostic for IoError {
     fn code(&self) -> ErrorCode {
         ErrorCode::new(match self.kind {
             IoErrorKind::EndOfStream => "SYRP-IO-0001",
+            IoErrorKind::BufferFull => "SYRP-IO-0002",
             IoErrorKind::Io => "SYRP-IO-0003",
             IoErrorKind::InvalidData => "SYRP-IO-0004",
             IoErrorKind::OutOfMemory => "SYRP-IO-0005",
