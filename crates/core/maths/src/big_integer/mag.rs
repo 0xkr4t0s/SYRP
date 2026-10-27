@@ -171,8 +171,10 @@ pub(super) fn shl(a: &[u64], bits: u64) -> Vec<u64> {
     }
     let limbs = usize::try_from(bits / 64).expect("shift exceeds the address space");
     let s = (bits % 64) as u32;
-    let mut out = vec![0_u64; limbs];
-    out.reserve(a.len() + 1);
+    // The low zero limbs are part of the result, so they are allocated once together
+    // with the shifted limbs rather than grown afterwards.
+    let mut out = Vec::with_capacity(limbs + a.len() + 1);
+    out.resize(limbs, 0);
     if s == 0 {
         out.extend_from_slice(a);
     } else {
