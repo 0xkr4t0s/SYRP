@@ -14,6 +14,7 @@ layer = "L2"
 wp = "WP-1.2-11"
 
 [dependencies]
+syrp-error = { version = "0.0.1", path = "../../foundation/error" }
 syrp-sys = { version = "0.0.1", path = "../sys" }
 
 [lints]
