@@ -1,0 +1,1 @@
+{"wp": "WP-1.1-03", "kind": "added", "summary": "syrp-io (third increment): OutputStream trait with typed little- and big-endian writers, compressed ints, strings, text (UTF-8 or UTF-16, optional BOM and line-ending conversion), repeated bytes and stream copies; StdOutputStream adapter for any Write + Seek; IoError::bytes_copied for failed copies."}

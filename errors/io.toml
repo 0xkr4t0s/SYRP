@@ -18,7 +18,7 @@ fix = "Give the stream a larger slice, or write into a growing MemoryBlock inste
 code = "SYRP-IO-0003"
 title = "Underlying I/O operation failed"
 severity = "error"
-cause = "The reader, writer or seek target under a stream returned an error. The original std::io::Error is the source of this error."
+cause = "The reader, writer or seek target under a stream returned an error. The original std::io::Error is the source of this error; for write_from_input_stream the message also says how many bytes were copied before the failure."
 fix = "Inspect the source error (for example with std::error::Error::source). Seeking needs a source that supports it."
 
 [[error]]
