@@ -1,0 +1,13 @@
+{
+  "id": "formats/aiff/read/int8_mono",
+  "title": "Read: 8-bit signed mono AIFF",
+  "juce_tag": "9.0.4",
+  "tolerance": "exact",
+  "wp": "WP-2.1-17",
+  "ledger_rows": ["juce_audio_formats/AiffAudioFormat"],
+  "docs": [{"page": "AiffAudioFormat", "member": "createReaderFor", "says": "Makes a reader for a stream that holds audio in this format, or fails."}],
+  "op": "read",
+  "input_hex": "464f524d0000003241494646434f4d4d000000120001000000040008400eac4400000000000053534e440000000c000000000000000080c0407f",
+  "record": ["opened", "sample_rate", "num_channels", "length_in_samples", "bits_per_sample", "uses_floating_point_data", "samples_f32", "metadata_values"],
+  "notes": "Built by syrp-format-aiff tests/common/files.rs from the public AIFF 1.3 and AIFF-C layouts. Record whether a reader is created and, if so, everything it reports."
+}

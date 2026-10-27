@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "parity/scenarios/formats/aiff/scenario.schema.json",
+  "title": "AIFF format scenario",
+  "description": "Inputs only. A read scenario gives a whole file as hex; the runner opens it with AiffAudioFormat and records what the reader reports (or that no reader was created). A write scenario gives a stream and its metadata; the runner writes it with AiffAudioFormat, reads the result back with AiffAudioFormat and records the same fields. Expected outputs come solely from harness runs. Samples are listed per channel as JSON numbers.",
+  "type": "object",
+  "required": ["id", "title", "juce_tag", "tolerance", "ledger_rows", "docs", "op", "record"],
+  "properties": {
+    "id": {"type": "string"},
+    "title": {"type": "string"},
+    "juce_tag": {"const": "9.0.4"},
+    "tolerance": {"const": "exact"},
+    "wp": {"type": "string"},
+    "ledger_rows": {"type": "array", "items": {"type": "string"}},
+    "docs": {"type": "array", "items": {"type": "object", "required": ["page", "member", "says"]}},
+    "op": {"enum": ["read", "write"]},
+    "input_hex": {"type": "string", "pattern": "^([0-9a-f]{2})*$"},
+    "write": {
+      "type": "object",
+      "required": ["sample_rate", "bits_per_sample", "floating_point", "channels"],
+      "properties": {
+        "sample_rate": {"type": "number"},
+        "bits_per_sample": {"enum": [8, 16, 24, 32]},
+        "floating_point": {"type": "boolean"},
+        "channels": {"type": "array", "items": {"type": "array", "items": {"type": "number"}}},
+        "cues": {"type": "array", "items": {"type": "object", "required": ["id", "position"]}},
+        "loops": {"type": "array", "items": {"type": "object", "required": ["kind", "start", "end"]}},
+        "text": {"type": "object", "additionalProperties": {"type": "string"}}
+      }
+    },
+    "record": {"type": "array", "items": {"type": "string"}},
+    "notes": {"type": "string"}
+  },
+  "allOf": [
+    {"if": {"properties": {"op": {"const": "read"}}}, "then": {"required": ["input_hex"]}},
+    {"if": {"properties": {"op": {"const": "write"}}}, "then": {"required": ["write"]}}
+  ]
+}

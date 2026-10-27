@@ -1,0 +1,1 @@
+{"wp": "WP-2.1-17", "kind": "added", "summary": "syrp-format-aiff: exact round-trip, metadata round-trip and byte-flip/truncation fuzz tests with an allocation bound, and AIFF parity scenarios under parity/scenarios/formats/aiff (increment 3, final: B5-B6)."}
