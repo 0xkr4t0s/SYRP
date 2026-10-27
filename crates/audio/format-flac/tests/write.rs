@@ -221,9 +221,35 @@ fn b4_tags_are_written_as_a_vorbis_comment_block() {
     assert!(r.vendor().unwrap().starts_with("Syrp syrp-format-flac"));
     let tags: Vec<(&str, &str)> = r.tags().collect();
     assert_eq!(tags, [("TITLE", "Take 3"), ("Mood", "calm")]);
-    let mut bad = Metadata::new();
-    bad.set_tag(Tag::Custom("A=B".into()), "x");
-    let options = WriterOptions::new(spec(1, 16)).with_metadata(bad);
-    let made = FlacAudioFormat::new().create_writer(Box::new(Cursor::new(Vec::new())), &options);
-    assert_eq!(code(made), "SYRP-FORMAT-0003");
+}
+
+#[test]
+fn b4_custom_tags_vorbis_cannot_hold_are_skipped_syrp_choice() {
+    let mut meta = Metadata::new();
+    meta.set_tag(Tag::Custom("A=B".into()), "x");
+    meta.set_tag(Tag::Custom("Caf\u{e9}".into()), "x");
+    meta.set_tag(Tag::Custom("Mood".into()), "calm");
+    let (w, out) = writer(&WriterOptions::new(spec(1, 16)).with_metadata(meta));
+    w.finish().unwrap();
+    let r = claxon::FlacReader::new(Cursor::new(out.bytes())).unwrap();
+    let tags: Vec<(&str, &str)> = r.tags().collect();
+    assert_eq!(tags, [("Mood", "calm")]);
+}
+
+#[test]
+fn b4_every_writable_rate_writes_and_higher_rates_are_refused() {
+    let flac = FlacAudioFormat::new();
+    for &rate in flac.sample_rates() {
+        let s = AudioSpec::new(f64::from(rate), ChannelSet::mono(), 16, SampleKind::Int).unwrap();
+        let (mut w, out) = writer(&WriterOptions::new(s));
+        write_all(&mut *w, &[0.25; 100], 1);
+        w.finish().unwrap();
+        let (info, decoded) = claxon_samples(&out.bytes());
+        assert_eq!((info.sample_rate, decoded.len()), (rate, 100));
+    }
+    for rate in [176_400.0, 192_000.0, 384_000.0, 44_100.5] {
+        let s = AudioSpec::new(rate, ChannelSet::mono(), 16, SampleKind::Int).unwrap();
+        let made = flac.create_writer(Box::new(Cursor::new(Vec::new())), &WriterOptions::new(s));
+        assert_eq!(code(made), "SYRP-FORMAT-0003", "{rate}");
+    }
 }

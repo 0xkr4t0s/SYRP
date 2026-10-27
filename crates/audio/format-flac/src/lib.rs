@@ -66,10 +66,10 @@ mod tags;
 mod writer;
 
 /// Sample rates the writer accepts, in Hz (Syrp's choice: the public `FlacAudioFormat`
-/// documentation does not list them).
-const SAMPLE_RATES: [u32; 15] = [
-    8_000, 11_025, 12_000, 16_000, 22_050, 24_000, 32_000, 44_100, 48_000, 88_200, 96_000, 176_400,
-    192_000, 352_800, 384_000,
+/// documentation does not list them). `flacenc` 0.5 refuses rates above 96 kHz, so higher
+/// rates are not offered; reading them through `claxon` is unaffected.
+const SAMPLE_RATES: [u32; 11] = [
+    8_000, 11_025, 12_000, 16_000, 22_050, 24_000, 32_000, 44_100, 48_000, 88_200, 96_000,
 ];
 
 /// Bit depths the writer accepts (Syrp's choice: the documentation does not list them).

@@ -55,7 +55,7 @@ built from RFC 9639's layout in `tests/common/mod.rs`; nothing is copied from el
 - `flacenc` 0.5.1, Apache-2.0, default features off (encoding; no threads, logging or serde).
 
 ## Open questions (Syrp's choices, for the parity harness)
-- `name()` is `"FLAC file"`; the writer's rates (8 kHz to 384 kHz, 15 common rates) and depths
+- `name()` is `"FLAC file"`; the writer's rates (8 kHz to 96 kHz, 11 common rates) and depths
   (16, 24) are Syrp's: the public `FlacAudioFormat` documentation lists none of them.
 - A leading ID3v2 tag is skipped when reading; `can_read` is true only when `fLaC` follows the
   tag inside the given header (`b1_leading_id3v2_tag_is_skipped_syrp_choice`).
@@ -63,7 +63,9 @@ built from RFC 9639's layout in `tests/common/mod.rs`; nothing is copied from el
   (`b2_unknown_total_length_is_refused_syrp_choice`).
 - Compression levels 0 to 8 (`FlacAudioFormat::quality_options`, default 5) map to `flacenc`
   block size, stereo decorrelation and LPC order in `writer.rs`; the vendor string is
-  `Syrp syrp-format-flac <version>`. Tags are written at creation; other items are skipped.
+  `Syrp syrp-format-flac <version>`. Tags are written at creation; other items are skipped. Syrp's choice: a `Tag::Custom` whose
+  name Vorbis cannot hold (empty, `=`, non-ASCII or control characters) is skipped, not an error
+  (`b4_custom_tags_vorbis_cannot_hold_are_skipped_syrp_choice`).
 - An empty stream is written with total length 0, which this reader then refuses (`0003`).
 - Channel layouts: 1 is mono, 2 stereo, anything else `ChannelSet::discrete(n)`.
 - A cue point's id is `track_number << 8 | index_number`, at track offset + index offset, with
@@ -72,7 +74,9 @@ built from RFC 9639's layout in `tests/common/mod.rs`; nothing is copied from el
 ## Known gaps
 - Reading: `claxon` 0.4 decodes only frames whose header names the depth (8, 12, 16, 20, 24
   bits). Other depths, including 32-bit, are refused with `SYRP-FORMAT-0003`.
-- Writing: 16 and 24-bit only (`flacenc` 0.5 cannot write 32-bit; 8, 12 and 20 are not
+- Writing: rates above 96 kHz are refused with `SYRP-FORMAT-0003` (`flacenc` 0.5 rejects them in
+  `StreamInfo`; FLAC itself allows more), as are fractional rates; reading them is unaffected
+  (`b4_every_writable_rate_writes_and_higher_rates_are_refused`). Writing: 16 and 24-bit only (`flacenc` 0.5 cannot write 32-bit; 8, 12 and 20 are not
   offered). No `SEEKTABLE`, `CUESHEET` or `PICTURE` is written.
 - The round-trip, seek and corruption proptests (B5) and the parity scenarios (B6) arrive in
   the next increment of WP-2.1-15.

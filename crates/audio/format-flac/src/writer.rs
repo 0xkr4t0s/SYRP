@@ -110,8 +110,10 @@ fn vorbis_body(options: &WriterOptions) -> Result<Vec<u8>, FormatError> {
     let mut fields = Vec::new();
     for item in options.metadata().items() {
         if let MetadataItem::Tag(tag, value) = item {
-            let name = field_name(tag)
-                .ok_or_else(|| FormatError::unsupported(format!("FLAC: tag name {tag:?}")))?;
+            // Syrp's choice: a tag Vorbis cannot name is skipped, not an error.
+            let Some(name) = field_name(tag) else {
+                continue;
+            };
             fields.push(format!("{name}={value}"));
         }
     }
@@ -173,7 +175,13 @@ impl FlacWriter {
         }
         let config = config.into_verified().map_err(|(_, e)| encode_error(e))?;
         let bits = spec.bits_per_sample();
-        let rate = spec.sample_rate() as usize;
+        let rate = spec.sample_rate();
+        if rate.fract() != 0.0 || !(1.0..=96_000.0).contains(&rate) {
+            return Err(FormatError::unsupported(format!(
+                "FLAC writer: sample rate {rate} Hz (whole rates up to 96000)"
+            )));
+        }
+        let rate = rate as usize;
         let info = StreamInfo::new(rate, channels, bits as usize).map_err(encode_error)?;
         let frame = FrameBuf::with_size(channels, level.block).map_err(encode_error)?;
         let vorbis = vorbis_body(options)?;
@@ -212,10 +220,10 @@ impl FlacWriter {
 
     /// Encodes the pending samples (a full block, or the shorter last one) as one frame.
     fn encode_pending(&mut self) -> Result<(), FormatError> {
-        (&mut self.frame, &mut self.context)
-            .fill_interleaved(&self.pending)
-            .map_err(encode_error)?;
+        let filled = (&mut self.frame, &mut self.context).fill_interleaved(&self.pending);
+        // Whatever happens next, these samples must not be encoded again.
         self.pending.clear();
+        filled.map_err(encode_error)?;
         let number = self.context.current_frame_number().unwrap_or(0);
         let frame = flacenc::encode_fixed_size_frame(&self.config, &self.frame, number, &self.info)
             .map_err(encode_error)?;
