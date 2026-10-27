@@ -1,0 +1,1 @@
+{"wp": "WP-2.1-17", "kind": "added", "summary": "syrp-format-aiff: AiffAudioFormat reading AIFF and AIFF-C (NONE, sowt, fl32, fl64) and exact 80-bit extended sample-rate conversion (increment 1: B1-B2)."}
