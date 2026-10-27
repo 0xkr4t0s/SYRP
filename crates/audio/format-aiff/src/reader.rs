@@ -292,7 +292,10 @@ impl AiffReader {
     ) -> Result<(), FormatError> {
         let sample_bytes = self.encoding.bytes();
         let frame_bytes = self.spec.channel_count() * sample_bytes;
-        let per_pass = (SCRATCH_BYTES / frame_bytes).max(1);
+        // Never more than the file's own sample data, so tiny files get tiny buffers.
+        let per_pass = (SCRATCH_BYTES / frame_bytes)
+            .max(1)
+            .min(usize::try_from(self.length).unwrap_or(usize::MAX));
         if self.scratch.is_empty() {
             let len = per_pass * frame_bytes;
             self.scratch

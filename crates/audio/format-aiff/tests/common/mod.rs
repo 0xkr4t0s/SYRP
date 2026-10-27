@@ -2,6 +2,8 @@
 //! Hand-built AIFF files from the public AIFF 1.3 / AIFF-C layouts.
 #![allow(dead_code)]
 
+pub mod files;
+
 use std::io::Cursor;
 
 use syrp_audio_api::AudioBlockMut;
