@@ -63,7 +63,7 @@ struct Timers {
 pub(crate) struct Inner {
     shared: Arc<Shared>,
     sender: TaskSender,
-    pub(crate) poller: os::Poller,
+    poller: os::Poller,
     epoch: Instant,
     timers: RefCell<Timers>,
     next_id: Cell<u64>,
@@ -261,11 +261,6 @@ impl EventLoop {
         // and the token is dropped when `f` returns.
         let mt = unsafe { MessageThread::new_unchecked() };
         f(&mt)
-    }
-
-    #[cfg(target_os = "linux")]
-    pub(crate) fn inner(&self) -> &Rc<Inner> {
-        &self.inner
     }
 
     fn take_quit(&self) -> bool {

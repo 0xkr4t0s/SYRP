@@ -3,7 +3,7 @@
 //! whose `wait` blocks until a wake, a ready source or the timeout, and runs ready sources.
 
 #[cfg(target_os = "linux")]
-pub(crate) mod linux;
+mod linux;
 #[cfg(target_os = "linux")]
 pub(crate) use linux::{Poller, Waker};
 

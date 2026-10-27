@@ -30,9 +30,9 @@ fix = "Use the existing loop, or its task_sender() from other code. Drop the old
 
 [[error]]
 code = "SYRP-LOOP-0005"
-title = "The OS refused a call the loop needs"
+title = "The OS refused a call while creating the loop"
 severity = "error"
-cause = "EventLoop::new needs a few OS objects (an epoll instance and an eventfd on Linux, a run-loop source on macOS, a message-only window on Windows), and EventLoop::add_fd registers a file descriptor with epoll. The named OS call failed; the error carries the OS error number."
+cause = "EventLoop::new needs a few OS objects (an epoll instance and an eventfd on Linux, a run-loop source on macOS, a message-only window on Windows). The named OS call failed; the error carries the OS error number."
 fix = "Read the OS error. Usually the process has run out of file descriptors or handles: close unused ones or raise the limit."
 
 [[error]]

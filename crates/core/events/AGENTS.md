@@ -4,8 +4,7 @@
 The owned desktop message loops (master plan §5.5, kind 1): `EventLoop`, the loop an app runs
 on its main thread. It implements the frozen `syrp_loop_api::MessageLoop` contract through the
 implementer hooks (`TaskSender::new`, `CallbackGuard::new`, `MessageThread::new_unchecked`) and
-adds `run`, `run_for`, `dispatch_pending`, `with_token`, `now`, `QuitHandle` and, on Linux,
-`add_fd`. Covers JUCE's MessageManager (`callAsync`, `callFunctionOnMessageThread`,
+adds `run`, `run_for`, `dispatch_pending`, `with_token`, `now` and `QuitHandle`. Covers JUCE's MessageManager (`callAsync`, `callFunctionOnMessageThread`,
 `isThisTheMessageThread`), CallbackMessage, Message and MessageListener. Behaviour comes from
 the WP spec and public JUCE documentation only. Layout: `src/event_loop.rs` is the
 platform-neutral core (queue, timer schedule, dispatch pass); `src/os/` holds the backends.
@@ -44,7 +43,8 @@ cargo check -p syrp-events --target x86_64-pc-windows-msvc
 there, never in two places. Timing tests use loose bounds.
 
 ## Known gaps
-WP-1.1-14 increment 1 of 3 (B1-B4, B9 codes). macOS and Windows run an interim portable
+WP-1.1-14 increment 1 (B1-B3, the B4 epoll/eventfd core, B9 codes). Next: B4's
+`add_fd(fd, Interest, callback) -> FdGuard` on the same epoll instance. macOS and Windows run an interim portable
 backend (condvar, no OS sources); the `CFRunLoop` (B5) and Win32 (B6) backends replace it.
 `on_vblank` always uses the 60 Hz fallback timer; `VBlankDriver` (B7) and the migration page
 (B8) follow. `errors/loop.toml` codes 0004-0006 are in the existing domain.

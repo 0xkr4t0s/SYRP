@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only OR BUSL-1.1
-//! Tests for B1, B3, B4 and B9 of work/specs/WP-1.1-14.md (B2 is in `conformance.rs`).
+//! Tests for B1, B3, B4 (the eventfd wake; `add_fd` is the next increment) and B9 of
+//! work/specs/WP-1.1-14.md. B2 is in `conformance.rs`.
 
 use std::cell::Cell;
 use std::rc::Rc;
@@ -121,73 +122,10 @@ fn b4_a_posted_task_wakes_a_blocked_run() {
     t.join().unwrap();
 }
 
-#[cfg(target_os = "linux")]
-#[test]
-fn b4_add_fd_calls_back_while_readable_until_the_guard_drops() {
-    use std::io::{Read, Write};
-    use std::os::fd::AsFd;
-    use std::os::unix::net::UnixStream;
-    use syrp_events::Interest;
-
-    let lp = EventLoop::new().unwrap();
-    let (mut a, b) = UnixStream::pair().unwrap();
-    let reader = Rc::new(b);
-    let got = Rc::new(Cell::new(0));
-    let (r, g) = (reader.clone(), got.clone());
-    let guard = lp
-        .add_fd(
-            reader.as_fd(),
-            Interest::READABLE,
-            Box::new(move |_mt, ready| {
-                assert!(ready.is_readable());
-                let mut buf = [0u8; 8];
-                g.set(g.get() + (&*r).read(&mut buf).unwrap());
-            }),
-        )
-        .unwrap();
-    assert_eq!(lp.dispatch_pending(), 0);
-    a.write_all(b"abc").unwrap();
-    assert!(!lp.run_for(ms(20)));
-    assert_eq!(got.get(), 3);
-    drop(guard);
-    a.write_all(b"de").unwrap();
-    assert_eq!(lp.dispatch_pending(), 0);
-    assert_eq!(got.get(), 3);
-}
-
-#[cfg(target_os = "linux")]
-#[test]
-fn b4_add_fd_reports_an_epoll_refusal_with_the_os_error() {
-    use std::os::fd::AsFd;
-    let lp = EventLoop::new().unwrap();
-    let file = std::fs::File::open(concat!(env!("CARGO_MANIFEST_DIR"), "/Cargo.toml")).unwrap();
-    let err = lp
-        .add_fd(
-            file.as_fd(),
-            syrp_events::Interest::READABLE,
-            Box::new(|_, _| {}),
-        )
-        .err()
-        .unwrap();
-    assert_eq!(err.code().as_str(), "SYRP-LOOP-0005");
-    assert!(
-        err.to_string()
-            .starts_with("SYRP-LOOP-0005: epoll_ctl failed")
-    );
-    assert!(matches!(
-        err,
-        EventsError::Os {
-            call: "epoll_ctl",
-            os_error: Some(_),
-            ..
-        }
-    ));
-}
-
 #[test]
 fn b9_errors_are_catalogued_in_errors_loop_toml() {
     let catalogue = include_str!("../../../../errors/loop.toml");
-    // `Os` (SYRP-LOOP-0005) cannot be built outside the crate; b4_add_fd_reports_... covers it.
+    // `Os` (SYRP-LOOP-0005) is non-exhaustive and needs a failing OS call to build.
     for (err, code) in [
         (EventsError::LoopAlreadyOnThread, "SYRP-LOOP-0004"),
         (EventsError::UnsupportedTarget, "SYRP-LOOP-0006"),
