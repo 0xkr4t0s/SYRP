@@ -1,0 +1,11 @@
+id = "WP-1.1-07"
+title = "syrp-thread: HighResolutionTimer and TimeSliceThread"
+crate = "crates/core/thread"
+depends_on = ["WP-1.1-06"]
+ledger_rows = ["juce_core/HighResolutionTimer", "juce_core/TimeSliceThread", "juce_core/TimeSliceClient"]
+spec = "work/specs/WP-1.1-07.md"
+risk = ["public-api", "unsafe", "ffi"]
+acceptance = "cargo syrp wp check WP-1.1-07 --json"
+platforms = ["linux", "macos", "windows"]
+role = "implementer"
+budget = { agent_hours = 24, max_review_rounds = 3, max_restarts = 2 }

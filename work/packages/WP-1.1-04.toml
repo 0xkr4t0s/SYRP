@@ -1,0 +1,11 @@
+id = "WP-1.1-04"
+title = "syrp-io: File, file streams, special locations, directory iteration, TemporaryFile and MemoryMappedFile"
+crate = "crates/core/io"
+depends_on = ["WP-1.1-03", "WP-1.1-12"]
+ledger_rows = ["juce_core/File", "juce_core/FileInputStream", "juce_core/FileOutputStream", "juce_core/FileInputSource", "juce_core/RangedDirectoryIterator", "juce_core/DirectoryEntry", "juce_core/FileFilter", "juce_core/WildcardFileFilter", "juce_core/FileSearchPath", "juce_core/TemporaryFile", "juce_core/MemoryMappedFile"]
+spec = "work/specs/WP-1.1-04.md"
+risk = ["public-api", "unsafe", "ffi", "supply-chain"]
+acceptance = "cargo syrp wp check WP-1.1-04 --json"
+platforms = ["linux", "macos", "windows"]
+role = "implementer"
+budget = { agent_hours = 40, max_review_rounds = 3, max_restarts = 2 }

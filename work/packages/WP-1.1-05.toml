@@ -1,0 +1,11 @@
+id = "WP-1.1-05"
+title = "syrp-io: gzip and zlib streams, ZipFile reader and builder"
+crate = "crates/core/io"
+depends_on = ["WP-1.1-04"]
+ledger_rows = ["juce_core/GZIPCompressorOutputStream", "juce_core/GZIPDecompressorInputStream", "juce_core/ZipFile"]
+spec = "work/specs/WP-1.1-05.md"
+risk = ["public-api", "supply-chain"]
+acceptance = "cargo syrp wp check WP-1.1-05 --json"
+platforms = ["linux", "macos", "windows"]
+role = "implementer"
+budget = { agent_hours = 24, max_review_rounds = 3, max_restarts = 2 }

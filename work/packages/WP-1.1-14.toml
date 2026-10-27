@@ -1,0 +1,11 @@
+id = "WP-1.1-14"
+title = "syrp-events: owned desktop MessageLoop implementations (epoll, CFRunLoop, Win32)"
+crate = "crates/core/events"
+depends_on = ["WP-0.2-01"]
+ledger_rows = ["juce_events/MessageManager", "juce_events/MessageManagerLock", "juce_events/CallbackMessage", "juce_events/Message", "juce_events/MessageListener"]
+spec = "work/specs/WP-1.1-14.md"
+risk = ["public-api", "unsafe", "ffi", "supply-chain"]
+acceptance = "cargo syrp wp check WP-1.1-14 --json"
+platforms = ["linux", "macos", "windows"]
+role = "implementer"
+budget = { agent_hours = 40, max_review_rounds = 3, max_restarts = 2 }

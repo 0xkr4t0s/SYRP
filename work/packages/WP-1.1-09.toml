@@ -1,0 +1,11 @@
+id = "WP-1.1-09"
+title = "syrp-net: URL, WebInputStream, URLInputSource and downloads"
+crate = "crates/core/net"
+depends_on = ["WP-1.1-10", "WP-1.1-04", "WP-1.1-06"]
+ledger_rows = ["juce_core/URL", "juce_core/WebInputStream", "juce_core/URLInputSource"]
+spec = "work/specs/WP-1.1-09.md"
+risk = ["public-api", "supply-chain"]
+acceptance = "cargo syrp wp check WP-1.1-09 --json"
+platforms = ["linux", "macos", "windows"]
+role = "implementer"
+budget = { agent_hours = 32, max_review_rounds = 3, max_restarts = 2 }
