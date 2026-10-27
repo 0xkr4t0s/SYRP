@@ -2,9 +2,9 @@
 
 ## Purpose
 The L2 threading layer (master plan §5.2, §5.4): named threads with cooperative exit
-signalling, notification and timed stop, priorities and realtime scheduling, `WaitableEvent` and
-`SpinLock`; `ThreadPool` comes later. Covers JUCE's Thread, WaitableEvent and SpinLock; JUCE's
-other locks map to `std` (`docs/migration/locks.md`). Platform code is in
+signalling, notification and timed stop, priorities and realtime scheduling, `WaitableEvent`,
+`SpinLock` and `ThreadPool`. Covers JUCE's Thread, ThreadPool, WaitableEvent and SpinLock;
+JUCE's other locks map to `std` (`docs/migration/locks.md`). Platform code is in
 `src/os/` (one module per OS: `linux.rs`, `apple.rs`, `windows.rs`, plus `other.rs`, which
 refuses everything). Behaviour comes from the WP spec and the public JUCE class documentation only.
 
@@ -30,6 +30,12 @@ juce_core/ThreadLocalValue
   only a dependency under `cfg(loom)`.
 - `WaitableEvent` is one `bool` behind a mutex: signals do not count, auto-reset clears it in
   the wait that returns `true`, `signal` notifies one waiter (auto) or all (manual).
+- `ThreadPool` keeps every job in one map behind one mutex; a worker takes the job out of its
+  entry while running it, which is what stops a job running on two threads at once. Remove
+  calls on a running job only mark it (`removed`, plus the interrupt flag); the worker drops
+  it when it returns. Jobs and user closures are dropped and filtered with the lock released.
+- Dropping a `ThreadPool` waits for running jobs with no time limit (workers use
+  `drop_timeout(Duration::MAX)`); a job that ignores `should_exit` hangs the drop.
 - `SpinLock::try_lock` is one compare-and-swap and must stay free of system calls; `lock`
   spins with doubling backoff for 7 rounds, then yields. It is not re-entrant.
 
@@ -37,8 +43,9 @@ juce_core/ThreadLocalValue
 Any thread. Nothing here is RT-safe except `ThreadContext::thread_should_exit` (one atomic
 load) and `SpinLock::try_lock` (one compare-and-swap, but a spin lock still blocks a realtime
 thread behind a preempted holder); `notify`, `wait`, `is_running` and every `WaitableEvent`
-call take a short mutex. `set_current_thread_*` act on
-the calling thread only.
+call take a short mutex, as do all `ThreadPool` methods. `ThreadPool` methods may be called
+from inside a job, except waiting on that same job. `set_current_thread_*` act on the calling
+thread only.
 
 ## Stability
 experimental
@@ -55,7 +62,7 @@ Realtime, raised-priority and affinity tests accept "granted" or the documented 
 CI runners usually lack `RLIMIT_RTPRIO` and `CAP_SYS_NICE`.
 
 ## Known gaps
-WP-1.1-06 increments 1-3 (B1, B2, B3, B5 and the B6 error domain, codes 0001-0006). Still
-to come: `ThreadPool` (B4). The loom models are not wired into CI yet, and the migration pages
+WP-1.1-06 is complete (B1-B6, codes 0001-0007). `syrp-rt` is not a dependency: nothing here
+needs its lock-free types yet. The loom models are not wired into CI yet, and the migration pages
 are not linked from `docs/SUMMARY.md` (a shared file).
 `errors/thread.toml` is not yet in the CLI's embedded catalogue.

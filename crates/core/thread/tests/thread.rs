@@ -21,6 +21,7 @@ fn code(e: &ThreadError) -> &'static str {
         "SYRP-THREAD-0004" => "0004",
         "SYRP-THREAD-0005" => "0005",
         "SYRP-THREAD-0006" => "0006",
+        "SYRP-THREAD-0007" => "0007",
         other => panic!("unexpected code {other}"),
     }
 }
@@ -296,7 +297,12 @@ fn b6_every_code_is_catalogued() {
     let e = ThreadError::AffinityUnsupported;
     assert!(catalogue.contains(e.code().as_str()), "{e}");
     assert!(e.hint().is_some());
-    for n in 1..=6 {
+    for n in 1..=7 {
         assert!(catalogue.contains(&format!("code = \"SYRP-THREAD-{n:04}\"")));
+    }
+    // Codes are dense and each entry is complete: no gaps, no extras, no missing fields.
+    assert_eq!(catalogue.matches("code = \"SYRP-THREAD-").count(), 7);
+    for field in ["title = ", "severity = ", "cause = ", "fix = "] {
+        assert_eq!(catalogue.matches(field).count(), 7, "{field}");
     }
 }
