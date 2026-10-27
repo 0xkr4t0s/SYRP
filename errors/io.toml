@@ -1,0 +1,36 @@
+# Error catalogue: streams and memory blocks (syrp-io). Never renumber.
+
+[[error]]
+code = "SYRP-IO-0001"
+title = "Stream ended inside a fixed-size read"
+severity = "error"
+cause = "A typed read such as read_i32_le or read_f64_be needed more bytes than were left in the stream. JUCE returns zero here; Syrp reports the end instead."
+fix = "Check is_exhausted() or total_length() before reading, or treat this error as the end of the data. The bytes that were available have been consumed."
+
+[[error]]
+code = "SYRP-IO-0002"
+title = "Fixed output buffer is full"
+severity = "error"
+cause = "A MemoryOutputStream over a caller's fixed slice was asked to write past the end of that slice. Nothing from that write was stored."
+fix = "Give the stream a larger slice, or write into a growing MemoryBlock instead."
+
+[[error]]
+code = "SYRP-IO-0003"
+title = "Underlying I/O operation failed"
+severity = "error"
+cause = "The reader, writer or seek target under a stream returned an error. The original std::io::Error is the source of this error."
+fix = "Inspect the source error (for example with std::error::Error::source). Seeking needs a source that supports it."
+
+[[error]]
+code = "SYRP-IO-0004"
+title = "Malformed data in a stream"
+severity = "error"
+cause = "read_compressed_int found a length byte that announces more than four value bytes, so the data was not written by write_compressed_int."
+fix = "Make sure the reader and writer agree on the format, and that the stream is positioned at the start of a compressed integer."
+
+[[error]]
+code = "SYRP-IO-0005"
+title = "Out of memory for a stream or memory block"
+severity = "error"
+cause = "A MemoryBlock resize or a read into memory needed a buffer that could not be allocated. The size usually comes from a file header or from user input."
+fix = "Check the requested size: a corrupt length field is the usual cause. Read large data in pieces instead of all at once."

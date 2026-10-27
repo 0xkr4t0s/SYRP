@@ -1,0 +1,1 @@
+{"wp": "WP-1.1-03", "kind": "added", "summary": "syrp-io (first increment): new crate with MemoryBlock (clipping range operations, bit ranges, fallible resizes) and IoError with the new errors/io.toml domain, convertible to and from std::io::Error."}
