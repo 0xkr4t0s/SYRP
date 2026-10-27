@@ -81,14 +81,17 @@ mod unix {
 
     /// Lists the assigned addresses through `getifaddrs`.
     pub(crate) fn interfaces() -> Result<Vec<IfEntry>, NetError> {
-        let mut head: *mut libc::ifaddrs = std::ptr::null_mut();
-        // SAFETY: `head` is a valid, writable out-pointer; on success the list it receives is
-        // freed exactly once below.
-        if unsafe { libc::getifaddrs(&mut head) } != 0 {
+        let mut head = std::mem::MaybeUninit::<*mut libc::ifaddrs>::uninit();
+        // SAFETY: `head` is a valid, writable out-pointer for getifaddrs; on success the list
+        // it receives is freed exactly once below.
+        if unsafe { libc::getifaddrs(head.as_mut_ptr()) } != 0 {
             return Err(NetError::InterfaceQuery {
                 os_error: std::io::Error::last_os_error().raw_os_error(),
             });
         }
+        // SAFETY: getifaddrs returned 0, so it wrote the list head (possibly null for an
+        // empty list).
+        let head = unsafe { head.assume_init() };
         let mut out = Vec::new();
         let mut node = head.cast_const();
         while !node.is_null() {
