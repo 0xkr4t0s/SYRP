@@ -7,6 +7,11 @@
 //! - [`AnalyticsDestination`]: the trait a destination implements.
 //! - [`AnalyticsEvent`]: one logged event, read through accessors or an
 //!   [`AnalyticsEventView`].
+//! - [`ThreadedAnalyticsDestination`]: queues events and sends them in batches to a
+//!   [`BatchSink`] on a background thread, with retry, back-off, and saving of unsent events
+//!   on stop.
+//!
+//! Errors are [`AnalyticsError`], with codes `SYRP-ANALYTICS-*` in `errors/analytics.toml`.
 //!
 //! No destination here talks to the network; those arrive in Wave 5.1.
 //!
@@ -30,7 +35,15 @@
 //! ```
 
 mod analytics;
+mod error;
 mod event;
+mod threaded;
 
 pub use analytics::{Analytics, AnalyticsDestination, DestinationIter, Destinations};
+pub use error::AnalyticsError;
 pub use event::{AnalyticsEvent, AnalyticsEventView, StringPairs};
+pub use syrp_error::Diagnostic;
+pub use threaded::{
+    BatchSink, DEFAULT_QUEUE_CAPACITY, DROP_STOP_TIMEOUT, MAX_BACKOFF_PERIOD, StopReport,
+    ThreadedAnalyticsDestination,
+};

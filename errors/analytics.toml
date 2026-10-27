@@ -1,0 +1,29 @@
+# Error catalogue: headless analytics (syrp-analytics). Codes are permanent: never reuse or renumber one.
+
+[[error]]
+code = "SYRP-ANALYTICS-0001"
+title = "The analytics thread could not be started"
+severity = "error"
+cause = "ThreadedAnalyticsDestination::start_analytics_thread asked the operating system for a new thread and the request failed, usually because the process hit a thread or memory limit."
+fix = "Free resources or raise the thread limit, then call start_analytics_thread again. Queued events are kept."
+
+[[error]]
+code = "SYRP-ANALYTICS-0002"
+title = "The analytics thread is already running"
+severity = "error"
+cause = "ThreadedAnalyticsDestination::start_analytics_thread was called while a thread started by an earlier call was still running."
+fix = "Call stop_analytics_thread first, or keep the thread that is running."
+
+[[error]]
+code = "SYRP-ANALYTICS-0003"
+title = "Batch period is shorter than one millisecond"
+severity = "error"
+cause = "start_analytics_thread or set_batch_period was given a period under one millisecond. Periods are counted in whole milliseconds, and a zero period would make the thread spin."
+fix = "Pass a period of at least one millisecond."
+
+[[error]]
+code = "SYRP-ANALYTICS-0004"
+title = "Thread name contains a NUL character"
+severity = "error"
+cause = "The thread name given to ThreadedAnalyticsDestination::new contains a NUL character, which operating systems do not accept in thread names."
+fix = "Remove the NUL character from the name."

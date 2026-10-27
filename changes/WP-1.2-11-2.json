@@ -1,0 +1,1 @@
+{"wp": "WP-1.2-11", "kind": "added", "summary": "syrp-analytics: ThreadedAnalyticsDestination with the BatchSink trait (bounded queue, batching, retry with capped back-off, save and restore of unsent events on stop and drop, StopReport) and AnalyticsError with the new errors/analytics.toml domain."}
