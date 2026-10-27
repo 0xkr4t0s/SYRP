@@ -326,6 +326,11 @@ impl MemoryBlock {
     pub fn to_string_lossy(&self) -> String {
         String::from_utf8_lossy(&self.data).into_owned()
     }
+
+    /// The backing vector, for stream code in this crate that appends to a block.
+    pub(crate) fn vec_mut(&mut self) -> &mut Vec<u8> {
+        &mut self.data
+    }
 }
 
 impl From<Vec<u8>> for MemoryBlock {
