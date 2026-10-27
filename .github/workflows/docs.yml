@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
   pages: write
   id-token: write
 
@@ -20,12 +21,20 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # the progress page lists merged PRs from git history
       - uses: Swatinem/rust-cache@v2
       - uses: taiki-e/install-action@v2
         with:
           tool: mdbook
       - run: cargo syrp docs build --json
       - run: cargo doc --workspace --no-deps && cp -r target/doc target/site/api
+      - name: Progress page
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr list --repo "$GITHUB_REPOSITORY" --state open --limit 200 --json number,title > open-prs.json
+          cargo run --quiet -p syrp-progress -- --root . --out target/site/progress --open-prs open-prs.json
       - uses: actions/upload-pages-artifact@v3
         with:
           path: target/site
