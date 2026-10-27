@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "parity/scenarios/formats/wav/scenario.schema.json",
+  "title": "WAV reading and writing scenario",
+  "description": "Inputs only; expected outputs come solely from harness runs. Each entry of files is built byte by byte: the form magic (RIFF unless form says RF64 or BW64), the 32-bit RIFF size (riff_size when given, else the true size of what follows), the form type (form_type, default WAVE), then each chunk as its id, its 32-bit size (size when given, else the length of hex) and its bytes, plus a zero pad byte after an odd length. ds64_riff_size 'actual' overwrites the first 8 bytes of the ds64 body with the true size minus 8. truncate_by removes that many bytes from the end. A read step opens the named file with WavAudioFormat::createReaderFor and records whether a reader came back, then sampleRate, numChannels, the channel layout's description, bitsPerSample, usesFloatingPointData, lengthInSamples, every metadataValues pair, and every sample read as float. A write step creates a writer with WavAudioFormat::createWriterFor for the given sample rate, layout, bit depth and metadata values, writes channels (channel-major float samples, at least one channel) in one call, and records the file bytes in hex, then reads the file back as a read step does.",
+  "type": "object",
+  "required": ["id", "title", "juce_tag", "tolerance", "wp", "ledger_rows", "docs", "files", "steps"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string" },
+    "title": { "type": "string" },
+    "juce_tag": { "const": "9.0.4" },
+    "tolerance": { "const": "exact" },
+    "wp": { "type": "string" },
+    "ledger_rows": { "type": "array", "items": { "type": "string" } },
+    "docs": { "type": "array", "items": { "type": "object", "required": ["page", "member", "says"] } },
+    "files": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["chunks"],
+        "additionalProperties": false,
+        "properties": {
+          "form": { "enum": ["RIFF", "RF64", "BW64"] },
+          "form_type": { "type": "string", "minLength": 4, "maxLength": 4 },
+          "riff_size": { "type": "integer", "minimum": 0, "maximum": 4294967295 },
+          "ds64_riff_size": { "const": "actual" },
+          "truncate_by": { "type": "integer", "minimum": 0 },
+          "chunks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["id", "hex"],
+              "additionalProperties": false,
+              "properties": {
+                "id": { "type": "string", "minLength": 4, "maxLength": 4 },
+                "hex": { "type": "string", "pattern": "^([0-9a-f]{2})*$" },
+                "size": { "type": "integer", "minimum": 0, "maximum": 4294967295 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["op", "args"],
+            "additionalProperties": false,
+            "properties": {
+              "op": { "const": "read" },
+              "args": { "type": "array", "items": { "type": "string" }, "minItems": 1, "maxItems": 1 }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["op", "args"],
+            "additionalProperties": false,
+            "properties": {
+              "op": { "const": "write" },
+              "args": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 1,
+                "items": {
+                  "type": "object",
+                  "required": ["sample_rate", "layout", "bits_per_sample", "float", "metadata", "channels"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "sample_rate": { "type": "integer", "minimum": 1 },
+                    "layout": { "enum": ["mono", "stereo", "5.1", "7.1"] },
+                    "bits_per_sample": { "enum": [8, 16, 24, 32] },
+                    "float": { "type": "boolean" },
+                    "metadata": { "type": "object", "additionalProperties": { "type": "string" } },
+                    "channels": { "type": "array", "items": { "type": "array", "items": { "type": "number" } } }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "notes": { "type": "string" }
+  }
+}
