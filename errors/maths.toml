@@ -7,3 +7,10 @@ title = "Invalid NormalisableRange parameters"
 severity = "error"
 cause = "A NormalisableRange was built with an end that is not greater than its start, a negative or non-finite interval, a skew that is not a finite positive number, or a centre that is not strictly between start and end."
 fix = "Pass finite values with start < end, interval >= 0 (0 means continuous), skew > 0 (1 is linear) and, for with_centre, start < centre < end."
+
+[[error]]
+code = "SYRP-MATHS-0002"
+title = "Unsupported base or invalid digit in BigInteger text"
+severity = "error"
+cause = "BigInteger::parse or to_string_radix was given a base other than 2, 8, 10 or 16, or parse was given text that is empty, has no digits after a leading '-', or contains a character that is not a digit of the base (including spaces, '+' and '_')."
+fix = "Use base 2, 8, 10 or 16, and pass only an optional leading '-' followed by digits of that base (hex digits in either case). Trim whitespace before parsing."

@@ -10,6 +10,7 @@ use std::hash::{Hash, Hasher};
 mod ops;
 mod bits;
 mod mag;
+mod text;
 
 /// An arbitrary-size signed integer.
 ///
