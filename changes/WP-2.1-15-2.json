@@ -1,0 +1,1 @@
+{"wp": "WP-2.1-15", "kind": "added", "summary": "syrp-format-flac: Vorbis comment, CUESHEET, APPLICATION and PICTURE metadata, and a block-by-block FLAC writer through flacenc with compression levels 0-8, tags and a patched STREAMINFO with MD5 (increment 2: B3-B4)."}
