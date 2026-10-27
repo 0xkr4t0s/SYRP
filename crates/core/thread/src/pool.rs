@@ -366,6 +366,9 @@ impl ThreadPool {
             }
         }
         drop(st);
+        // Waiters on a queued job that was just removed must re-check now, not when a
+        // worker next finishes a job.
+        self.shared.done.notify_all();
         drop(dropped);
         let st = self.shared.lock();
         if self.shared.wait_gone(st, ids, t) {

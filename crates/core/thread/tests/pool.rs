@@ -250,6 +250,29 @@ fn b4_remove_queued_jobs_and_remove_all_with_a_filter() {
 }
 
 #[test]
+fn b4_removing_a_queued_job_wakes_a_thread_waiting_for_it() {
+    let p = Arc::new(pool(1));
+    let (gate, started) = (
+        Arc::new(WaitableEvent::new(true)),
+        Arc::new(WaitableEvent::new(true)),
+    );
+    let _blocker = gated(&p, &gate, &started);
+    assert!(started.wait(LONG));
+    let queued = p.add_fn(|_| JobStatus::Finished);
+    let (tx, rx) = mpsc::channel();
+    let p2 = Arc::clone(&p);
+    let waiter = std::thread::spawn(move || tx.send(p2.wait_for_job_to_finish(queued, None)));
+    // Give the waiter time to block; the test still passes if it has not, but then it
+    // would not exercise the wake-up.
+    std::thread::sleep(Duration::from_millis(20));
+    assert_eq!(p.remove_job(queued, false, Some(Duration::ZERO)), Ok(()));
+    // The only worker is still busy, so only the removal itself can wake the waiter.
+    assert_eq!(rx.recv_timeout(Duration::from_secs(10)), Ok(true));
+    gate.signal();
+    waiter.join().unwrap().unwrap();
+}
+
+#[test]
 fn b4_dropping_the_pool_interrupts_and_waits_for_running_jobs() {
     let p = pool(2);
     let started = Arc::new(AtomicUsize::new(0));
