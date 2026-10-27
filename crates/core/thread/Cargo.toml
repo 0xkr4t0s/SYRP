@@ -1,6 +1,6 @@
 [package]
 name = "syrp-thread"
-description = "Threading layer for Syrp: named threads with exit signalling, priorities and realtime scheduling."
+description = "Threading layer for Syrp: named threads with exit signalling, priorities, realtime scheduling, WaitableEvent and SpinLock."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -22,6 +22,10 @@ libc = { version = "0.2.186", default-features = false }
 [target.'cfg(windows)'.dependencies.windows-sys]
 version = "0.61.2"
 features = ["Win32_Foundation", "Win32_System_Threading"]
+
+# Only for `RUSTFLAGS="--cfg loom"` model-checking builds (see AGENTS.md).
+[target.'cfg(loom)'.dependencies]
+loom = "0.7.2"
 
 [lints]
 workspace = true

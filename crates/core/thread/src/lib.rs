@@ -7,6 +7,8 @@
 //!   thread that does not exit in time is detached, never killed (`SYRP-THREAD-0001`).
 //! - [`Priority`] and [`RealtimeOptions`] map onto each OS's scheduler; see [`priority`] for
 //!   the table. Refusals are reported through [`SchedulingStatus`] and never stop the thread.
+//! - [`WaitableEvent`] is an auto- or manual-reset signal to wait on, and [`SpinLock`] a lock
+//!   for very short sections. JUCE's other locks map to `std` (see `docs/migration/locks.md`).
 //!
 //! ```
 //! use std::time::Duration;
@@ -23,15 +25,20 @@
 //! ```
 
 mod error;
+mod event;
 mod os;
 pub mod priority;
+mod spin;
+mod sync;
 mod thread;
 
 pub use error::ThreadError;
+pub use event::WaitableEvent;
 pub use priority::{
     MAX_REALTIME_PRIORITY, Priority, RealtimeOptions, SchedulingStatus,
     set_current_thread_affinity_mask, set_current_thread_priority,
 };
+pub use spin::{SpinLock, SpinLockGuard};
 pub use syrp_error::Diagnostic;
 pub use thread::{
     DEFAULT_DROP_TIMEOUT, Stopped, Thread, ThreadBuilder, ThreadContext, ThreadHandle,

@@ -1424,6 +1424,7 @@ name = "syrp-thread"
 version = "0.0.1"
 dependencies = [
  "libc",
+ "loom",
  "syrp-error",
  "windows-sys",
 ]
