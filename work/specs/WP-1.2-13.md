@@ -1,0 +1,25 @@
+# WP-1.2-13: syrp-state: native persistence (XML, JSON and Syrp binary) by a linear walk of the arena
+
+## Purpose
+The "Persistence" part of master plan §5.9: XML, JSON and a binary format for `syrp-state` subtrees, written by a linear walk of the arena. The Wave 1.2 list has no item of its own for it, but items 6–8 need it (the synchroniser sends subtrees in this binary form, and the JUCE layouts of WP-1.2-08 sit beside these), so it is numbered after the list. It works in the crate WP-1.2-03 creates and continues the chain WP-1.2-04 → this WP → WP-1.2-07 → WP-1.2-06 → WP-1.2-08, because those WPs share the crate. Formats here are Syrp's own; JUCE's are WP-1.2-08. Delivery: 2 PRs, each at most 1,200 changed lines (B1–B2, then B3–B6).
+
+## Behaviour
+- B1. XML (`XmlElement` from WP-1.1-15): `persist::to_xml(store, node) -> Result<XmlElement, StateError>` maps the node type to the tag, each property to an attribute (its `Var::to_text`) and each child to a child element in order; `persist::from_xml(store, mt, &XmlElement) -> Result<NodeRef, StateError>` reverses it, with every property value read back as a string `Var` (XML carries no types; say so in the rustdoc). A type or property name that is not a valid XML name, or an array, object or binary property value, is a coded error on write, never silently changed. Text children in the input are ignored, as documented.
+- B2. JSON (`syrp_var::json`): `persist::to_json(store, node) -> Var` and `to_json_string(store, node, Format)`, and `from_json` back, in a documented layout of one object per node with `type`, `properties` and `children` members. Property values keep their `Var` type through the WP-1.1-01 JSON mapping; a binary value is a coded error, as JSON has no bytes.
+- B3. Syrp binary: `persist::to_bytes(store, node) -> Vec<u8>` and `from_bytes(store, mt, &[u8], ReadLimits) -> Result<NodeRef, StateError>`. The layout starts with a magic tag and a format version, writes each identifier once in a string table, then walks the subtree in pre-order with tagged `Var` values; it preserves every `Var` variant exactly, binary and nested arrays and objects included (an object is written as its property list, so object identity and sharing are not kept: document it). Write the layout into the rustdoc. Reading checks every length and count against the remaining input and against `ReadLimits` (maximum nodes, depth and total bytes, with documented defaults) before allocating, so forged input cannot exhaust memory, and corrupt input is a coded error, never a panic (a proptest flips and truncates bytes of valid encodings).
+- B4. Streams: `write_to(store, node, &mut dyn OutputStream)` and `read_from(store, mt, &mut dyn InputStream, ReadLimits)` for the binary format, over the `syrp-io` traits (WP-1.1-03); XML and JSON go through their text forms. Reading builds a new detached subtree and changes no existing node, so it appends no undo records; the caller attaches it with `add_child`, undoably if it wants. Gzip is the caller's choice (wrap the stream in WP-1.1-05's gzip streams); this crate does not compress.
+- B5. Determinism and depth: the walks are iterative, never recursive, and a 100,000-deep chain works in all three formats. The store keeps properties sorted by `Identifier`, whose order is interning order and differs between runs, so every writer orders properties by `Identifier::cmp_text` instead; the same tree always gives the same bytes and text, and a test interns names in two different orders to prove it.
+- B6. Round trips (ADR 0003 D7): proptests over random trees from WP-1.2-03 B7's generator check that binary and JSON round trips are `is_equivalent` with strict `Var` equality per property (binary also for binary values), and that XML round trips are `is_equivalent` after mapping every value through `to_text`. Errors continue `errors/state.toml` from the next free code.
+
+## Not in this WP
+JUCE's ValueTree binary and XML layouts and JUCE properties files (WP-1.2-08), `PropertiesFile` (WP-1.2-06), change messages for the synchroniser (WP-1.2-07), typed schemas, and compression.
+
+## Crate setup
+The whole crate `crates/core/state/`, which WP-1.2-03 creates; this WP starts after WP-1.2-04 merges and may edit any file there, including `Cargo.toml` and `AGENTS.md` (add this WP's ledger rows, invariants and gaps). No new crate.
+Licence: `license = "AGPL-3.0-only OR BUSL-1.1"`.
+
+## Rules that apply to every WP
+- Clean room: work only from this spec, the master plan (`docs/design/master-plan.md`) and public JUCE *documentation* for behaviour. Never fetch or recall JUCE source code.
+- Name every test after the behaviour it proves, prefixed with its id, for example `b3_try_push_fails_when_full`.
+- Run `cargo syrp wp show WP-1.2-13` first and `cargo syrp wp check WP-1.2-13` last. A PR is ready only when that command exits 0.
+- Shared files (workspace `Cargo.toml`, CI, `deny.toml`) are not yours. If you need a new third-party dependency in `[workspace.dependencies]`, declare it with an explicit version in your crate's own `Cargo.toml` and list it in the PR front matter `deps_added`; the adversarial verifier reviews it.

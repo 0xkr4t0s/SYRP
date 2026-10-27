@@ -1,0 +1,11 @@
+id = "WP-1.2-11"
+title = "syrp-analytics: headless Analytics, AnalyticsDestination and ThreadedAnalyticsDestination"
+crate = "crates/core/analytics"
+depends_on = ["WP-1.1-12"]
+ledger_rows = ["juce_analytics/Analytics", "juce_analytics/AnalyticsDestination", "juce_analytics/ThreadedAnalyticsDestination"]
+spec = "work/specs/WP-1.2-11.md"
+risk = ["public-api"]
+acceptance = "cargo syrp wp check WP-1.2-11 --json"
+platforms = ["linux", "macos", "windows"]
+role = "implementer"
+budget = { agent_hours = 16, max_review_rounds = 3, max_restarts = 2 }

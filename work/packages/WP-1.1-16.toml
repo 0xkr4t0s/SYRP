@@ -1,0 +1,12 @@
+id = "WP-1.1-16"
+title = "syrp-maths: BigInteger, arbitrary-precision signed integers with bit, string and modular operations"
+crate = "crates/core/maths"
+paths = ["parity/scenarios/maths/big_integer/"]
+depends_on = ["WP-1.1-11"]
+ledger_rows = ["juce_core/BigInteger"]
+spec = "work/specs/WP-1.1-16.md"
+risk = ["public-api"]
+acceptance = "cargo syrp wp check WP-1.1-16 --json"
+platforms = ["linux", "macos", "windows"]
+role = "implementer"
+budget = { agent_hours = 24, max_review_rounds = 3, max_restarts = 2 }
