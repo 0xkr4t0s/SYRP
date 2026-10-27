@@ -65,6 +65,21 @@ fn saturate_i32(value: i64) -> i32 {
     i32::try_from(value).unwrap_or(if value < 0 { i32::MIN } else { i32::MAX })
 }
 
+/// Text to `bool` by the conversion table (shared with XML attributes).
+pub(crate) fn text_as_bool(text: &str) -> bool {
+    text.trim().eq_ignore_ascii_case("true") || leading_f64(text) != 0.0
+}
+
+/// Text to `i32` by the conversion table (shared with XML attributes).
+pub(crate) fn text_as_i32(text: &str) -> i32 {
+    saturate_i32(leading_i64(text))
+}
+
+/// Text to `f64` by the conversion table (shared with XML attributes).
+pub(crate) fn text_as_f64(text: &str) -> f64 {
+    leading_f64(text)
+}
+
 /// Returns whether integer `i` and float `x` hold exactly the same number.
 fn int_eq_float(i: i64, x: f64) -> bool {
     // 2^63 as f64; every integral f64 in [-2^63, 2^63) converts to i64 exactly.
@@ -91,7 +106,7 @@ impl Var {
             Repr::Int(n) => *n != 0,
             Repr::Int64(n) => *n != 0,
             Repr::Double(x) => *x != 0.0,
-            Repr::Str(s) => s.trim().eq_ignore_ascii_case("true") || leading_f64(s) != 0.0,
+            Repr::Str(s) => text_as_bool(s),
             Repr::Void | Repr::Undefined | Repr::Array(_) | Repr::Object(_) | Repr::Binary(_) => {
                 false
             }
@@ -154,7 +169,7 @@ impl Var {
             Repr::Int(n) => f64::from(*n),
             Repr::Int64(n) => *n as f64,
             Repr::Double(x) => *x,
-            Repr::Str(s) => leading_f64(s),
+            Repr::Str(s) => text_as_f64(s),
             Repr::Void | Repr::Undefined | Repr::Array(_) | Repr::Object(_) | Repr::Binary(_) => {
                 0.0
             }

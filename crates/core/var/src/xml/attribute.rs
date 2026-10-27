@@ -2,6 +2,7 @@
 
 use super::{XmlElement, check_name};
 use crate::VarError;
+use crate::convert::{text_as_bool, text_as_f64, text_as_i32};
 
 /// One `name="value"` attribute of an [`XmlElement`]. The name is a valid XML name; the value
 /// is any text (entities already decoded).
@@ -60,7 +61,8 @@ impl XmlAttribute {
 /// Integers are written in decimal, `bool` as `"1"` or `"0"`, and `f64` in the shortest text
 /// that reads back to the same value (Rust's `Display`, so `2.0` is `"2"` and `0.1` is
 /// `"0.1"`). These match [`Var::to_text`](crate::Var::to_text). Infinities and NaN are written
-/// as `inf`, `-inf` and `NaN` (Syrp's choice).
+/// as `inf`, `-inf` and `NaN`, which [`XmlElement::double_attribute`] reads as 0 (Syrp's
+/// choice).
 ///
 /// ```
 /// use syrp_var::xml::IntoAttributeValue;
@@ -82,6 +84,12 @@ impl IntoAttributeValue for &str {
 impl IntoAttributeValue for String {
     fn into_attribute_value(self) -> String {
         self
+    }
+}
+
+impl IntoAttributeValue for &String {
+    fn into_attribute_value(self) -> String {
+        self.clone()
     }
 }
 
@@ -109,8 +117,17 @@ impl IntoAttributeValue for bool {
     }
 }
 
+/// Unicode case-insensitive comparison without allocating.
+fn eq_ignore_case(a: &str, b: &str) -> bool {
+    a.chars()
+        .flat_map(char::to_lowercase)
+        .eq(b.chars().flat_map(char::to_lowercase))
+}
+
 /// Attribute access. Names are case-sensitive and may be given as `&str`, `String` or
-/// [`Identifier`](crate::Identifier).
+/// [`Identifier`](crate::Identifier). The numeric and boolean readers use the text conversions
+/// of [`Var`](crate::Var) (see the crate's conversion table), so `"12px"` reads as 12 and
+/// `" TRUE "` as `true`.
 impl XmlElement {
     /// Sets an attribute. Replacing one keeps its position; a new one is appended.
     ///
@@ -181,6 +198,95 @@ impl XmlElement {
             .iter()
             .find(|a| a.name == name)
             .map(|a| a.value.as_str())
+    }
+
+    /// The attribute's text, or `default` when it is missing.
+    ///
+    /// ```
+    /// use syrp_var::xml::XmlElement;
+    /// let e = XmlElement::new("a")?;
+    /// assert_eq!(e.string_attribute_or("x", "none"), "none");
+    /// # Ok::<(), syrp_var::VarError>(())
+    /// ```
+    #[doc(alias = "getStringAttribute")]
+    #[must_use]
+    pub fn string_attribute_or<'a>(&'a self, name: impl AsRef<str>, default: &'a str) -> &'a str {
+        self.string_attribute(name).unwrap_or(default)
+    }
+
+    /// The attribute read as `i32` (its leading integer, clamped), or `default` when missing.
+    ///
+    /// ```
+    /// use syrp_var::xml::XmlElement;
+    /// let mut e = XmlElement::new("a")?;
+    /// e.set_attribute("w", " 12px")?;
+    /// assert_eq!(e.int_attribute("w", 0), 12);
+    /// assert_eq!(e.int_attribute("h", -1), -1);
+    /// # Ok::<(), syrp_var::VarError>(())
+    /// ```
+    #[doc(alias = "getIntAttribute")]
+    #[must_use]
+    pub fn int_attribute(&self, name: impl AsRef<str>, default: i32) -> i32 {
+        self.string_attribute(name).map_or(default, text_as_i32)
+    }
+
+    /// The attribute read as `f64` (its leading number), or `default` when missing.
+    ///
+    /// ```
+    /// use syrp_var::xml::XmlElement;
+    /// let mut e = XmlElement::new("a")?;
+    /// e.set_attribute("g", 0.1)?;
+    /// assert_eq!(e.double_attribute("g", 1.0), 0.1);
+    /// assert_eq!(e.double_attribute("h", 1.0), 1.0);
+    /// # Ok::<(), syrp_var::VarError>(())
+    /// ```
+    #[doc(alias = "getDoubleAttribute")]
+    #[must_use]
+    pub fn double_attribute(&self, name: impl AsRef<str>, default: f64) -> f64 {
+        self.string_attribute(name).map_or(default, text_as_f64)
+    }
+
+    /// The attribute read as `bool` (`"true"` in any case, or a non-zero leading number), or
+    /// `default` when missing.
+    ///
+    /// ```
+    /// use syrp_var::xml::XmlElement;
+    /// let mut e = XmlElement::new("a")?;
+    /// e.set_attribute("on", "True")?;
+    /// e.set_attribute("off", "0")?;
+    /// assert!(e.bool_attribute("on", false));
+    /// assert!(!e.bool_attribute("off", true));
+    /// assert!(e.bool_attribute("missing", true));
+    /// # Ok::<(), syrp_var::VarError>(())
+    /// ```
+    #[doc(alias = "getBoolAttribute")]
+    #[must_use]
+    pub fn bool_attribute(&self, name: impl AsRef<str>, default: bool) -> bool {
+        self.string_attribute(name).map_or(default, text_as_bool)
+    }
+
+    /// Returns whether the attribute exists and its text equals `value`, optionally ignoring
+    /// case (Unicode lower-casing).
+    ///
+    /// ```
+    /// use syrp_var::xml::XmlElement;
+    /// let mut e = XmlElement::new("a")?;
+    /// e.set_attribute("mode", "Stereo")?;
+    /// assert!(e.compare_attribute("mode", "stereo", true));
+    /// assert!(!e.compare_attribute("mode", "stereo", false));
+    /// assert!(!e.compare_attribute("missing", "", true));
+    /// # Ok::<(), syrp_var::VarError>(())
+    /// ```
+    #[doc(alias = "compareAttribute")]
+    #[must_use]
+    pub fn compare_attribute(&self, name: impl AsRef<str>, value: &str, ignore_case: bool) -> bool {
+        self.string_attribute(name).is_some_and(|text| {
+            if ignore_case {
+                eq_ignore_case(text, value)
+            } else {
+                text == value
+            }
+        })
     }
 
     /// Removes the attribute and returns whether it existed. The others keep their order.

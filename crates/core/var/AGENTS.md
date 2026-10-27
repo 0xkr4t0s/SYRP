@@ -79,9 +79,12 @@ The JUCE `var` documentation does not decide these; the choices here are documen
 - XML model (WP-1.1-15): text is a separate `XmlNode` variant, not an element; the namespace
   prefix is the text before the *first* `:`; `has_tag_name_ignoring_namespace(n)` matches the
   full tag or the local part; `set_attribute` with an invalid name is an error (not ignored);
-  `f64` attributes use Rust's shortest text, so non-finite values read back as 0.
+  `f64` attributes use Rust's shortest text, so non-finite values read back as 0;
+  `sort_child_elements` sorts text nodes too; `delete_all_child_elements` removes text nodes;
+  `replace_child_element` past the end gives the new node back; `compare_attribute` with
+  `ignore_case` compares Unicode lower-case forms.
 
 ## Known gaps
 WP-1.1-01 is complete (B1-B7). The CLI catalogue entry for the new `errors/var.toml` domain is
-tracked on CR #5. WP-1.1-15 increment 1 delivers the XML element model (B1-B2, the core of B3, and B5 for
-clone, drop and comparison); the rest of B3, the parser (B4-B5) and the writer (B6-B8) follow.
+tracked on CR #5. WP-1.1-15 increments 1-2 deliver the XML element model (B1-B3, and B5 for clone, drop and
+comparison); the parser (B4-B5) and the writer (B6-B8) follow.
