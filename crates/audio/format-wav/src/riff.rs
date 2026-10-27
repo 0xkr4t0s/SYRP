@@ -57,8 +57,9 @@ pub(crate) struct Fmt {
 /// The walked file: its chunks in file order, plus the decoded format and sample data.
 #[derive(Debug)]
 pub(crate) struct Riff {
-    #[allow(dead_code)] // Read by the metadata parser (B3, the next increment).
     pub(crate) chunks: Vec<Chunk>,
+    /// The input's length in bytes.
+    pub(crate) len: u64,
     pub(crate) fmt: Fmt,
     pub(crate) data: Chunk,
 }
@@ -226,7 +227,12 @@ pub(crate) fn walk(input: &mut dyn ReadSeek) -> Result<Riff, WavError> {
         return Err(WavError::truncated(FMT));
     }
     let fmt = parse_fmt(input, fmt_chunk)?;
-    Ok(Riff { chunks, fmt, data })
+    Ok(Riff {
+        chunks,
+        len,
+        fmt,
+        data,
+    })
 }
 
 fn parse_fmt(input: &mut dyn ReadSeek, chunk: Chunk) -> Result<Fmt, WavError> {

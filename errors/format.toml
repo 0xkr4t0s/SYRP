@@ -83,3 +83,10 @@ title = "RF64 file has no valid ds64 chunk"
 severity = "error"
 cause = "An RF64 or BW64 file must carry a 'ds64' chunk with its 64-bit sizes as the first chunk; it is missing, too short, or its table runs past the chunk."
 fix = "The file is corrupt or was not finished by its writer; re-export it."
+
+[[error]]
+code = "SYRP-FORMAT-0013"
+title = "WAV metadata chunk is malformed"
+severity = "error"
+cause = "A bext, cue or smpl chunk is shorter than its fixed fields, declares more cue points or loops than its size holds, or has a loop that ends before it starts."
+fix = "The file's metadata is corrupt; strip the damaged chunk with another tool or re-export the file."
