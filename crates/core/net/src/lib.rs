@@ -5,9 +5,10 @@
 //!   conversions and interface enumeration ([`IpAddress::all_addresses`]).
 //! - [`MacAddress`]: a 6-byte hardware address, with its text forms and
 //!   [`MacAddress::find_all_addresses`].
-//! - [`StreamingSocket`]: TCP connections and listeners.
+//! - [`StreamingSocket`]: TCP connections and listeners, with [`SocketOptions`] on creation.
+//! - [`DatagramSocket`]: UDP over IPv4, with broadcast and multicast.
 //!
-//! `SocketOptions`, `DatagramSocket` and `NamedPipe` follow in later increments of WP-1.1-10;
+//! `NamedPipe` follows in a later increment of WP-1.1-10;
 //! URL and HTTP in WP-1.1-09. The socket types exist on Unix and Windows only.
 //! Errors are [`NetError`], with codes `SYRP-NET-*` in `errors/net.toml`. On targets without an
 //! OS network API (such as `wasm32`) the value types work and every OS query returns
@@ -21,6 +22,8 @@
 //! # Ok::<(), syrp_net::NetError>(())
 //! ```
 
+#[cfg(any(unix, windows))]
+mod datagram;
 mod error;
 mod ifaces;
 mod ip;
@@ -28,9 +31,11 @@ mod mac;
 #[cfg(any(unix, windows))]
 mod socket;
 
+#[cfg(any(unix, windows))]
+pub use datagram::DatagramSocket;
 pub use error::NetError;
 pub use ip::{IpAddress, IpFamily};
 pub use mac::MacAddress;
 #[cfg(any(unix, windows))]
-pub use socket::{Readiness, StreamingSocket};
+pub use socket::{Readiness, SocketOptions, StreamingSocket};
 pub use syrp_error::Diagnostic;
