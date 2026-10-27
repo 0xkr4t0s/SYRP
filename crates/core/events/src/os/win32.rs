@@ -6,11 +6,12 @@
 //! later peers work. The loop holds a 1 ms system timer resolution (`timeBeginPeriod`) for its
 //! lifetime, because wait timeouts otherwise follow the 15.6 ms tick.
 //!
-//! When something else pumps the thread's messages (a modal dialog), the window procedure
-//! dispatches tasks and due timers on each wake message. Timers alone do not wake a foreign
-//! pump.
+//! When something else pumps the thread's messages (a modal dialog, or a nested pump inside a
+//! peer's handler, which can start inside our own wait), the window procedure dispatches tasks
+//! and due timers on each wake message, and on a coarse `SetTimer` that `arm` keeps at the next
+//! deadline so timers also run there. Our own wait takes both of our messages inline instead.
 
-use std::cell::{Cell, RefCell};
+use std::cell::RefCell;
 use std::ptr;
 use std::rc::Rc;
 use std::sync::atomic::{AtomicBool, AtomicPtr, Ordering};
@@ -23,9 +24,9 @@ use windows_sys::Win32::Media::{timeBeginPeriod, timeEndPeriod};
 use windows_sys::Win32::System::LibraryLoader::GetModuleHandleW;
 use windows_sys::Win32::UI::WindowsAndMessaging::{
     CreateWindowExW, DefWindowProcW, DestroyWindow, DispatchMessageW, GWLP_USERDATA,
-    GetWindowLongPtrW, HWND_MESSAGE, MSG, MWMO_INPUTAVAILABLE, MsgWaitForMultipleObjectsEx,
-    PM_REMOVE, PeekMessageW, PostMessageW, QS_ALLINPUT, RegisterClassExW, SetWindowLongPtrW,
-    TranslateMessage, WM_APP, WNDCLASSEXW,
+    GetWindowLongPtrW, HWND_MESSAGE, KillTimer, MSG, MWMO_INPUTAVAILABLE,
+    MsgWaitForMultipleObjectsEx, PM_REMOVE, PeekMessageW, PostMessageW, QS_ALLINPUT,
+    RegisterClassExW, SetTimer, SetWindowLongPtrW, TranslateMessage, WM_APP, WM_TIMER, WNDCLASSEXW,
 };
 
 use crate::EventsError;
@@ -75,7 +76,6 @@ impl Waker {
 /// What the window procedure reaches through `GWLP_USERDATA`. Loop thread only.
 struct Hooks {
     dispatch: RefCell<Option<Rc<dyn Fn() -> usize>>>,
-    in_wait: Cell<bool>,
     /// Shared with the waker; its pending flag is cleared when the message arrives.
     wake: Arc<WakeState>,
 }
@@ -148,7 +148,6 @@ impl Poller {
         }
         let hooks = Rc::new(Hooks {
             dispatch: RefCell::new(None),
-            in_wait: Cell::new(false),
             wake: Arc::clone(&waker.state),
         });
         // SAFETY: `hwnd` is our live window, and the pointer stays valid until `Drop` clears
@@ -168,12 +167,29 @@ impl Poller {
         *self.hooks.dispatch.borrow_mut() = Some(dispatch);
     }
 
-    /// The `wait` timeout covers timers, so there is nothing to arm.
-    pub(crate) fn arm(&self, _next: Option<Duration>) {}
+    /// Keeps a coarse `SetTimer` at the next deadline (`None`: none), so a foreign message
+    /// pump also runs timers. Our own wait uses the precise timeout and ignores it.
+    pub(crate) fn arm(&self, next: Option<Duration>) {
+        // SAFETY: `hwnd` is our live window on this thread; no callback function is passed,
+        // so the timer arrives as WM_TIMER in our window procedure.
+        unsafe {
+            match next {
+                Some(d) => {
+                    let ms = u32::try_from(d.as_millis().max(1)).unwrap_or(INFINITE - 1);
+                    SetTimer(self.hwnd, 1, ms, None);
+                }
+                None => {
+                    KillTimer(self.hwnd, 1);
+                }
+            }
+        }
+    }
 
     /// Waits for a message or the timeout (`None`: no limit), then translates and dispatches
-    /// up to `MAX_MESSAGES` queued messages. Our own wake only ends the wait, so this runs no
-    /// loop callbacks and returns 0. A `WM_QUIT` is taken and ignored: stop the loop with a
+    /// up to `MAX_MESSAGES` queued messages. Our own wake and timer messages are taken here and
+    /// only end the wait, so this runs no loop callbacks itself and returns 0. Other windows'
+    /// handlers may start a nested pump; that pump reaches our window procedure, which then
+    /// dispatches. A `WM_QUIT` is taken and ignored: stop the loop with a
     /// `QuitHandle`.
     pub(crate) fn wait(
         &self,
@@ -186,7 +202,6 @@ impl Poller {
             u32::try_from(t.as_nanos().div_ceil(1_000_000))
                 .map_or(INFINITE - 1, |m| m.min(INFINITE - 1))
         });
-        let was = self.hooks.in_wait.replace(true);
         // SAFETY: no handles are passed (count 0, null array); the call only waits on this
         // thread's message queue.
         unsafe {
@@ -201,11 +216,16 @@ impl Poller {
                 if PeekMessageW(&raw mut msg, ptr::null_mut(), 0, 0, PM_REMOVE) == 0 {
                     break;
                 }
+                if msg.hwnd == self.hwnd && matches!(msg.message, WM_WAKE | WM_TIMER) {
+                    if msg.message == WM_WAKE {
+                        self.hooks.wake.pending.store(false, Ordering::Release);
+                    }
+                    continue; // the core dispatches after this wait
+                }
                 TranslateMessage(&raw const msg);
                 DispatchMessageW(&raw const msg);
             }
         }
-        self.hooks.in_wait.set(was);
         0
     }
 }
@@ -227,13 +247,13 @@ impl Drop for Poller {
     }
 }
 
-/// The window procedure: `WM_WAKE` clears the pending flag and, under a foreign pump,
-/// dispatches tasks and due timers. A panic here aborts the process, as for any panic that
+/// The window procedure, reached for our messages only under a foreign pump: `WM_WAKE`
+/// clears the pending flag, and it and `WM_TIMER` dispatch tasks and due timers. A panic here aborts the process, as for any panic that
 /// would unwind into the system.
 unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, wp: WPARAM, lp: LPARAM) -> LRESULT {
     // SAFETY: `hwnd` is the window this procedure was called for.
     let data = unsafe { GetWindowLongPtrW(hwnd, GWLP_USERDATA) } as *const Hooks;
-    if msg != WM_WAKE || data.is_null() {
+    if !matches!(msg, WM_WAKE | WM_TIMER) || data.is_null() {
         // SAFETY: forwards the call unchanged to the default procedure.
         return unsafe { DefWindowProcW(hwnd, msg, wp, lp) };
     }
@@ -244,12 +264,12 @@ unsafe extern "system" fn window_proc(hwnd: HWND, msg: u32, wp: WPARAM, lp: LPAR
         Rc::increment_strong_count(data);
         Rc::from_raw(data)
     };
-    hooks.wake.pending.store(false, Ordering::Release);
-    if !hooks.in_wait.get() {
-        let dispatch = hooks.dispatch.borrow().clone();
-        if let Some(dispatch) = dispatch {
-            dispatch();
-        }
+    if msg == WM_WAKE {
+        hooks.wake.pending.store(false, Ordering::Release);
+    }
+    let dispatch = hooks.dispatch.borrow().clone();
+    if let Some(dispatch) = dispatch {
+        dispatch();
     }
     0
 }

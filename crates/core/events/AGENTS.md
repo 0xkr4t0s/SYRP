@@ -27,6 +27,15 @@ juce_events/CallbackMessage, juce_events/Message, juce_events/MessageListener
   `SYRP-LOOP-0003`; senders and quit handles hold only weak references.
 - `contracts/` and `syrp-loop-api` are never changed here.
 
+## Deviations from the spec
+- B5 (macOS): timers do not use `CFRunLoopTimer`s. Timer deadlines come from a one-shot
+  `EVFILT_TIMER` with `NOTE_CRITICAL` on a kqueue, added to the run loop as a
+  `CFFileDescriptor` run-loop source (common modes). Reason: Darwin coalesces ordinary timed
+  waits (increment 1 measured condvar and plain `kevent` timeouts overshooting a 10 ms period
+  on CI), run-loop timers are armed as ordinary kernel timers, and critical kqueue timers are
+  exempt. Delivery under a foreign run-loop driver is unchanged. Posted tasks do use a
+  `CFRunLoopSource`, as specified.
+
 ## Thread affinity
 `EventLoop` and its guards and callbacks live on the message thread. `TaskSender` and
 `QuitHandle` are any-thread. Nothing here is RT-safe.
@@ -52,8 +61,9 @@ through a `CFFileDescriptor`, not a `CFRunLoopTimer`, because Darwin coalesces o
 waits), `src/os/win32.rs` (message-only window, `MsgWaitForMultipleObjectsEx` under
 `timeBeginPeriod(1)`), `src/os/unsupported.rs` (other targets). Backends whose OS loop can be
 driven by someone else call the core back through `Poller::attach`; `Poller::arm` tells them
-the next deadline. Under a foreign message pump on Windows, timers run only when a wake
-arrives. `add_fd` is Linux only. macOS and Windows code is compile-checked locally and run
+the next deadline (on Windows a coarse `SetTimer`, so timers also run under a modal or
+nested pump; the loop's own wait takes its `WM_WAKE`/`WM_TIMER` inline and uses the precise
+timeout). `add_fd` is Linux only. macOS and Windows code is compile-checked locally and run
 only on CI; `tests/macos_main_thread.rs` (`harness = false`) needs the process main thread.
 `on_vblank` always uses the 60 Hz fallback timer; `VBlankDriver` (B7) and the migration page
 (B8) follow. `errors/loop.toml` codes 0004-0006 are in the existing domain.
