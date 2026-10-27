@@ -10,7 +10,7 @@ Compression in `syrp-io` from master plan §5.2 (L2 Core) and Wave 1.1 item 5. `
 - B4. Extraction: `uncompress_to(dir, OverwriteFiles, FollowSymlinks)` and `uncompress_entry(i, dir, ...)` return `Result` and never write outside `dir`. An entry name that is absolute or climbs out with `..` is rejected (zip-slip; tested with crafted archives). Symlink entries are created only on Unix and only when asked; otherwise they are extracted as regular files holding the link text, as documented.
 - B5. `ZipBuilder` (JUCE's `ZipFile::Builder`): `add_file(file, level, stored_path)`, `add_entry(Box<dyn InputStream>, level, stored_path, Time)` and `write_to_stream(&mut dyn OutputStream, progress: Option<&mut dyn FnMut(f64)>)`. Proptest: a random tree of names and contents is built, read back with B3, and compared (bytes, names and times to the two-second DOS resolution). An archive built here also passes an independent reader (the `zip` crate as a dev-dependency, or `unzip -t` when present on the runner).
 
-Errors continue `errors/io.toml`. Use `flate2` with its pure-Rust backend (no C zlib), and `zip` or an in-crate zip container; list each in `deps_added`.
+Errors continue `errors/io.toml`. Use `flate2` with its pure-Rust backend (no C zlib), and either `zip` with `default-features = false` and only its deflate feature (its defaults build bzip2, zstd and lzma C code) or an in-crate zip container; list each in `deps_added`.
 
 ## Not in this WP
 Encrypted archives, compression methods other than stored and deflate, writing Zip64.
