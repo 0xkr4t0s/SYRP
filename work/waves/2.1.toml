@@ -1,9 +1,20 @@
 id = "2.1"
 phase = 2
-title = "Audio basics: AudioBuffer, vector ops, control-rate DSP and VoicePool"
+title = "Audio basics, MIDI, DSP and the first file formats: AudioBuffer and converters, sources, VoicePool, MPE, MIDI utilities and files, UMP translation, syrp-dsp-{core,filters,fx,conv}, WAV, AIFF and FLAC"
 # Brought forward from phase 2: syrp-audio-basics needs only merged contracts (audio-api, rt,
 # simd), and WP-1.9-02 is parked on it. Numbers follow the master plan's Wave 2.1 list (§7.2).
-# WP-2.1-03 and WP-2.1-05 own disjoint modules of the crate WP-2.1-01 creates, so they run in
-# parallel once it merges.
+# Item 5 (Synthesiser) is WP-2.1-05's VoicePool; the JUCE-shaped Synthesiser is compat
+# (WP-1.9-02). Item 7: MidiMessage and MidiBuffer are already in the syrp-midi contract
+# (WP-0.2-03), so WP-2.1-07 creates syrp-midi-utils for the rest. Two WPs are numbered after
+# the list: WP-2.1-16 (interpolators, which item 3 named, plus IIRFilter and Reverb, which the
+# sources wrap) and WP-2.1-17 (the AIFF half of item 14; WP-2.1-14 is WAV).
+# WPs that share a crate run in sequence, because ownership may not overlap:
+# audio-basics 2.1-01 -> (03 | 05) -> 02 -> 16 -> 04; midi-utils 07 -> (08 | 09), which own
+# modules of it. syrp-mpe waits for 07; the dsp crates run 10 -> 11 -> (12 | 13), and 12 and 13
+# also wait for 16. The format crates (14, 15, 17) are parallel leaves on syrp-format-api.
 enabled = true
-packages = ["WP-2.1-01", "WP-2.1-03", "WP-2.1-05"]
+packages = [
+  "WP-2.1-01", "WP-2.1-02", "WP-2.1-03", "WP-2.1-04", "WP-2.1-05", "WP-2.1-06", "WP-2.1-07",
+  "WP-2.1-08", "WP-2.1-09", "WP-2.1-10", "WP-2.1-11", "WP-2.1-12", "WP-2.1-13", "WP-2.1-14",
+  "WP-2.1-15", "WP-2.1-16", "WP-2.1-17",
+]

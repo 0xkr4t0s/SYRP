@@ -1,0 +1,25 @@
+# WP-2.1-02: syrp-audio-basics: AudioData sample-format converters, interleaving and ChannelSet helpers
+
+## Purpose
+Wave 2.1 item 2 (master plan §7.2): JUCE's `AudioData` converters, which audio devices and file formats use to move samples between packed integer or float bytes and the planar `f32`/`f64` buffers, and the parts of `AudioChannelSet` that the frozen `syrp-audio-api` `ChannelSet` (WP-0.2-02) does not cover. The contract already owns `ChannelSet` and `Speaker` and cannot change here, so the helpers are free functions over it. This WP works in the crate WP-2.1-01 created, after WP-2.1-03 and WP-2.1-05 (which own modules of it) have merged. Delivery: 2 PRs, each at most 1,200 changed lines (B1–B3, then B4–B6).
+
+## Behaviour
+- B1. `convert::SampleFormat` covers the formats the `AudioData` documentation lists: `Int8`, `UInt8`, `Int16`, `Int24` (packed 3 bytes), `Int24In32`, `Int32` and `Float32`, plus `Float64`; `Endianness` is `Little`, `Big` or `Native`. `bytes_per_sample()` for each. Whether the data is interleaved is a separate argument.
+- B2. Conversion: `read_into(src: &[u8], format, endianness, interleaved, channels, dest: &mut AudioBlockMut<'_, T>)` and `write_from(src: &AudioBlock<'_, T>, dest: &mut [u8], format, endianness, interleaved)` for `T` = `f32` and `f64`, plus `convert_bytes` between any two packed formats. Integers map to floats by dividing by 2^(bits − 1) (`UInt8` is offset by 128 first); floats map to integers by multiplying by 2^(bits − 1), rounding and clipping to the integer range, as the `AudioData` documentation describes; where it is silent, Syrp's rule is: round to nearest with ties away from zero, clip to the integer range (so values outside −1..1 saturate), and NaN becomes 0; the format crates (WP-2.1-14, WP-2.1-15, WP-2.1-17) apply the same rule. Pin each part with a `b2_..._syrp_choice` test and list it under "Open questions" in the crate `AGENTS.md` for the harness. A size mismatch between the byte slice and the block is a coded error (`SYRP-AUDIO-0007` onwards in `errors/audio.toml`), never a panic or a partial write.
+- B3. Interleaving: `interleave(&AudioBlock<'_, T>, &mut [T])` and `deinterleave(&[T], &mut AudioBlockMut<'_, T>)`, as `AudioData::interleaveSamples` and `deinterleaveSamples` document them.
+- B4. Speed (ADR 0003 D5): little-endian `Int16`, `Int24`, `Int32` and `Float32` to and from `f32` use `syrp_simd` packs with a scalar reference path; every SIMD path is bit-identical to its scalar path for all inputs (`exact` profile; proptest over random bytes and block shapes, including lengths that are not a multiple of the pack width). B2 and B3 calls never allocate (`syrp_rt::no_alloc` test). `benches/convert.rs` counts instructions (Callgrind, as in `benches/buffer.rs`) for 512 stereo frames of `Int24` to `f32`, scalar versus the best level.
+- B5. `channel_set` helpers over `syrp_audio_api::ChannelSet`: `speaker_name(Speaker)` and `speaker_abbreviation(Speaker)` (the strings the `AudioChannelSet::getChannelTypeName` and `getAbbreviatedChannelTypeName` documentation gives), `speaker_arrangement_string(&ChannelSet)` and `from_abbreviated_string(&str) -> Option<ChannelSet>`, `wave_channel_mask(&ChannelSet) -> Option<u32>` and `from_wave_channel_mask(u32) -> Option<ChannelSet>` (the `WAVEFORMATEXTENSIBLE` speaker bits Microsoft publishes), and `channel_sets_with_count(n)` and `canonical_for_count(n)` as `channelSetsWithNumberOfChannels` and `canonicalChannelSet` describe. Only the speakers the contract has (mono to 7.1.4 and discrete) are covered; ambisonic and larger layouts are listed under "Known gaps", because `Speaker` belongs to the frozen contract.
+- B6. Tests: every format round-trips `f32 → bytes → f32` exactly for values on its grid; every mask and abbreviation round-trips for every layout the contract defines. Update the crate `AGENTS.md` (module table, ledger rows, invariants, thread affinity).
+
+## Not in this WP
+`AudioProcessLoadMeasurer`, `AudioWorkgroup`, ambisonic layouts, and dithering (JUCE's converters do not dither).
+
+## Crate setup
+The whole crate `crates/audio/audio-basics/`, which WP-2.1-01 creates; this WP starts after WP-2.1-03 and WP-2.1-05 merge and may edit any file there, including `Cargo.toml` and `AGENTS.md` (add this WP's ledger rows, invariants and gaps). No new crate.
+Licence: `license = "AGPL-3.0-only OR BUSL-1.1"`.
+
+## Rules that apply to every WP
+- Clean room: work only from this spec, the master plan (`docs/design/master-plan.md`) and public JUCE *documentation* for behaviour. Never fetch or recall JUCE source code.
+- Name every test after the behaviour it proves, prefixed with its id, for example `b3_try_push_fails_when_full`.
+- Run `cargo syrp wp show WP-2.1-02` first and `cargo syrp wp check WP-2.1-02` last. A PR is ready only when that command exits 0.
+- Shared files (workspace `Cargo.toml`, CI, `deny.toml`) are not yours. If you need a new third-party dependency in `[workspace.dependencies]`, declare it with an explicit version in your crate's own `Cargo.toml` and list it in the PR front matter `deps_added`; the adversarial verifier reviews it.

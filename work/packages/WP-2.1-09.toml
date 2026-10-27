@@ -1,0 +1,10 @@
+id = "WP-2.1-09"
+title = "syrp-midi-utils: MIDI 1.0 and MIDI 2.0 protocol translation and UMP dispatchers"
+paths = ["crates/audio/midi-utils/src/ump/", "crates/audio/midi-utils/tests/ump.rs", "crates/audio/midi-utils/benches/ump.rs", "parity/scenarios/midi/ump/"]
+depends_on = ["WP-2.1-07"]
+spec = "work/specs/WP-2.1-09.md"
+risk = ["public-api", "rt-safety"]
+acceptance = "cargo syrp wp check WP-2.1-09 --json"
+platforms = ["linux", "macos", "windows"]
+role = "implementer"
+budget = { agent_hours = 24, max_review_rounds = 3, max_restarts = 2 }

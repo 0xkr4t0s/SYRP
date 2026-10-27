@@ -1,0 +1,12 @@
+id = "WP-2.1-17"
+title = "syrp-format-aiff: AIFF and AIFF-C reading and writing with marker, instrument and text metadata"
+crate = "crates/audio/format-aiff"
+paths = ["parity/scenarios/formats/aiff/"]
+depends_on = ["WP-0.2-04"]
+ledger_rows = ["juce_audio_formats/AiffAudioFormat"]
+spec = "work/specs/WP-2.1-17.md"
+risk = ["public-api"]
+acceptance = "cargo syrp wp check WP-2.1-17 --json"
+platforms = ["linux", "macos", "windows"]
+role = "implementer"
+budget = { agent_hours = 24, max_review_rounds = 3, max_restarts = 2 }

@@ -1,0 +1,11 @@
+id = "WP-2.1-07"
+title = "syrp-midi-utils: MidiMessageSequence, MidiKeyboardState, RPN detector and generator, and MIDI message helpers"
+crate = "crates/audio/midi-utils"
+depends_on = ["WP-0.2-03", "WP-0.1-04"]
+ledger_rows = ["juce_audio_basics/MidiMessageSequence", "juce_audio_basics/MidiKeyboardState", "juce_audio_basics/MidiRPNDetector", "juce_audio_basics/MidiRPNGenerator", "juce_audio_basics/MidiRPNMessage"]
+spec = "work/specs/WP-2.1-07.md"
+risk = ["public-api", "rt-safety"]
+acceptance = "cargo syrp wp check WP-2.1-07 --json"
+platforms = ["linux", "macos", "windows"]
+role = "implementer"
+budget = { agent_hours = 32, max_review_rounds = 3, max_restarts = 2 }
