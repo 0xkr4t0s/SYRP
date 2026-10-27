@@ -63,7 +63,7 @@ struct Timers {
 pub(crate) struct Inner {
     shared: Arc<Shared>,
     sender: TaskSender,
-    poller: os::Poller,
+    pub(crate) poller: os::Poller,
     epoch: Instant,
     timers: RefCell<Timers>,
     next_id: Cell<u64>,
@@ -78,8 +78,9 @@ pub(crate) struct Inner {
 /// blocked) fires once and keeps its phase: unlike `ManualLoop::advance`, it never fires a
 /// burst to catch up.
 ///
-/// Backends are interim for now: a `kqueue` on macOS and a condition variable on Linux and
-/// Windows. The `epoll`, `CFRunLoop` and Win32 backends follow.
+/// Backends: `epoll` with a non-blocking `eventfd` on Linux, where peers add descriptors with
+/// `add_fd`. macOS (a `kqueue`) and Windows (a condition variable) use interim backends until
+/// the `CFRunLoop` and Win32 ones land.
 /// ```
 /// use std::time::Duration;
 /// use syrp_events::EventLoop;
@@ -261,6 +262,11 @@ impl EventLoop {
         // and the token is dropped when `f` returns.
         let mt = unsafe { MessageThread::new_unchecked() };
         f(&mt)
+    }
+
+    #[cfg(target_os = "linux")]
+    pub(crate) fn inner(&self) -> &Rc<Inner> {
+        &self.inner
     }
 
     fn take_quit(&self) -> bool {
