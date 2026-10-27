@@ -1,0 +1,1 @@
+{"wp": "WP-2.1-15", "kind": "fixed", "summary": "syrp-format-flac: the writer offers only rates flacenc can write (up to 96 kHz) and refuses higher or fractional rates with SYRP-FORMAT-0003; unrepresentable custom tags are skipped; a failed encode no longer leaves stale samples pending."}

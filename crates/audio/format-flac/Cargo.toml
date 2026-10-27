@@ -18,9 +18,6 @@ syrp-audio-api = { version = "0.0.1", path = "../../contracts/audio-api" }
 syrp-error = { version = "0.0.1", path = "../../foundation/error" }
 syrp-format-api = { version = "0.0.1", path = "../../contracts/format-api" }
 claxon = "=0.4.3"
-
-[dev-dependencies]
-# Test streams only in this increment; the writer (B4) makes it a normal dependency.
 flacenc = { version = "=0.5.1", default-features = false }
 
 [lints]
