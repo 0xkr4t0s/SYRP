@@ -437,7 +437,8 @@ fn b5_every_error_code_is_catalogued() {
         assert!(catalogue.contains(&format!("code = \"{code}\"")), "{code}");
         assert!(!err.to_string().is_empty());
     }
-    assert_eq!(catalogue.matches("[[error]]").count(), errors.len());
+    // Format crates add their own codes after the contract's, so the catalogue may be longer.
+    assert!(catalogue.matches("[[error]]").count() >= errors.len());
     assert!(std::error::Error::source(&errors[0]).is_some());
     for (bits, kind) in [
         (0, SampleKind::Int),
