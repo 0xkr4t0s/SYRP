@@ -3,6 +3,10 @@
 //!
 //! - The processor model: [`DspSpec`], [`ProcessContext`] and the [`DspProcessor`] trait that
 //!   every `syrp-dsp-*` processor implements.
+//! - Composition: [`ProcessorChain`] (a tuple of processors run in order, each one
+//!   bypassable), [`ProcessorDuplicator`] (one mono processor per channel, packed into SIMD
+//!   lanes when it is lane-generic) and [`ProcessorWrapper`] (adapts a type that has no
+//!   `DspProcessor` impl).
 //!
 //! Per-instance DSP is written against [`syrp_simd::Sample`] (ADR 0003 D5); [`DspSample`]
 //! adds the lane access the processor model needs. Audio arrives as
@@ -10,7 +14,7 @@
 //!
 //! ```
 //! use syrp_audio_api::{AudioBlockMut, ProcessConfig};
-//! use syrp_dsp_core::{DspError, DspProcessor, DspSpec, ProcessContext};
+//! use syrp_dsp_core::{DspError, DspProcessor, DspSpec, ProcessContext, ProcessorChain};
 //!
 //! /// Multiplies every sample by a constant.
 //! struct Gain(f32);
@@ -25,22 +29,26 @@
 //!     }
 //! }
 //!
-//! let mut gain = Gain(2.0);
-//! gain.prepare(&DspSpec::new(ProcessConfig::new(48_000.0, 64)?, 1))?;
+//! let mut chain = ProcessorChain::new((Gain(2.0), Gain(3.0)));
+//! chain.prepare(&DspSpec::new(ProcessConfig::new(48_000.0, 64)?, 1))?;
 //! let mut data = [1.0_f32; 4];
-//! gain.process(&mut ProcessContext::replacing(AudioBlockMut::new(&mut data, 1, 4, 4)?));
-//! assert_eq!(data, [2.0; 4]);
+//! chain.process(&mut ProcessContext::replacing(AudioBlockMut::new(&mut data, 1, 4, 4)?));
+//! assert_eq!(data, [6.0; 4]);
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
 
+mod chain;
 mod context;
+mod duplicator;
 mod error;
 mod processor;
 mod sample;
 mod spec;
 
+pub use chain::{ChainIndex, ChainProcessors, ProcessorChain};
 pub use context::ProcessContext;
+pub use duplicator::{LaneProcessor, ProcessorDuplicator};
 pub use error::DspError;
-pub use processor::DspProcessor;
+pub use processor::{DspProcessor, ProcessorWrapper};
 pub use sample::DspSample;
 pub use spec::DspSpec;
