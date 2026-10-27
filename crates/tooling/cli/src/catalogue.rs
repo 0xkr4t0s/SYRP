@@ -9,6 +9,10 @@ use crate::envelope::{Diagnostic, ExitCode, Outcome};
 
 /// The catalogue sources, embedded. Add a domain here when adding `errors/<domain>.toml`.
 const SOURCES: &[(&str, &str)] = &[
+    (
+        "analytics",
+        include_str!("../../../../errors/analytics.toml"),
+    ),
     ("audio", include_str!("../../../../errors/audio.toml")),
     (
         "cleanroom",
