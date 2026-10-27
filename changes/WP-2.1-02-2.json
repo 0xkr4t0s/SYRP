@@ -1,0 +1,1 @@
+{"wp": "WP-2.1-02", "kind": "added", "summary": "syrp-audio-basics: convert::interleave/deinterleave (SYRP-AUDIO-0010), syrp_simd pack paths for little-endian Int16/Int24/Int32/Float32 to and from f32 (bit-identical to the scalar codec), read_into_at/write_from_at and a Callgrind bench (increment 2: B3-B4)."}

@@ -5,7 +5,7 @@ Layer L3 audio basics (master plan §5.2, ADR 0003). `AudioBuffer<T>` is the own
 buffer for `f32`/`f64` (JUCE's `AudioBuffer`); it lends `syrp-audio-api` views. `vector_ops`
 covers JUCE's `FloatVectorOperations`. `control` holds control-rate DSP and `voice` the
 `VoicePool`. `convert` covers JUCE's `AudioData`: packed sample formats to and from planar
-blocks (interleaving follows in a later increment).
+blocks, and interleaving.
 
 Module and bench owners:
 
@@ -14,7 +14,7 @@ Module and bench owners:
 | `src/buffer.rs`, `src/vector_ops.rs`, `benches/buffer.rs`, `tests/buffer.rs` | WP-2.1-01 |
 | `src/control/`, `benches/control.rs` (stub until it lands) | WP-2.1-03 |
 | `src/voice/`, `benches/voice_pool.rs` (stub until it lands) | WP-2.1-05 |
-| `src/convert/`, `tests/convert.rs` | WP-2.1-02 |
+| `src/convert/`, `tests/convert.rs`, `tests/convert_simd.rs`, `benches/convert.rs` | WP-2.1-02 |
 
 WP-2.1-03 and WP-2.1-05 add their own `tests/control.rs` and `tests/voice_pool.rs`.
 
@@ -38,7 +38,11 @@ juce_audio_basics/AudioData (WP-2.1-02).
 - `convert`: one scalar codec (`src/convert/codec.rs`) is the reference for every format.
   Integers decode exactly to `f64` and round once to the block type; floats encode by
   `x * 2^(bits-1)`, round half away from zero, clip, NaN to 0. A size mismatch returns a
-  `ConvertError` (`SYRP-AUDIO-0007`..`0009`) before anything is written.
+  `ConvertError` (`SYRP-AUDIO-0007`..`0010`) before anything is written.
+- `convert` pack paths (`src/convert/fast.rs`, ADR 0003 D5): little-endian `Int16`, `Int24`,
+  `Int32`, `Float32` to and from `f32` on `F32x8`. They must give the codec's bits for every
+  input at every level (`tests/convert_simd.rs`); `Level::Scalar` runs the codec. Kernels are
+  `#[inline(always)]` down from `dispatch!` and avoid `array::from_fn` (not always inlined).
 - Cleared flag (B3): set by `new`/`clear`, reset by any mutable access. Kernels see `frames`.
 
 ## Parity notes
@@ -74,9 +78,11 @@ cargo syrp test --crate syrp-audio-basics
 PROPTEST_CASES=5000 cargo test -p syrp-audio-basics --test buffer
 cargo syrp wp check WP-2.1-01
 cargo test -p syrp-audio-basics --test convert   # includes exhaustive Int16/Int24 sweeps (~10 s debug)
+cargo bench -p syrp-audio-basics --bench convert # Callgrind: Scalar vs Level::best(), 2 x 512 frames
 cargo bench -p syrp-audio-basics --bench buffer   # Callgrind counts (needs valgrind)
 ```
-The bench fails if a `vector_ops` pack case at `Avx2` costs more than 70% of `Sse2`.
+The bench fails if a `vector_ops` pack case at `Avx2` costs more than 70% of `Sse2`, and
+`benches/convert.rs` fails if a pack path costs more than the scalar codec.
 Tests install `syrp_rt::GuardedAllocator` so `no_alloc` proves allocation-free paths.
 
 ## Known gaps

@@ -1,12 +1,18 @@
 // SPDX-License-Identifier: AGPL-3.0-only OR BUSL-1.1
 //! Packed sample formats and the converters between them and planar `f32`/`f64` blocks, in the
-//! role of JUCE's `AudioData` (WP-2.1-02 B1–B3).
+//! role of JUCE's `AudioData` (WP-2.1-02 B1–B4).
 //!
 //! Audio devices and file formats hand over samples as bytes: integers of 8 to 32 bits or
 //! floats, little- or big-endian, with the channels interleaved frame by frame or stored one
 //! after another. [`read_into`] decodes such bytes into an [`AudioBlockMut`], [`write_from`]
 //! encodes an [`AudioBlock`] into bytes, and [`convert_bytes`] goes from one packed format to
-//! another.
+//! another. [`interleave`] and [`deinterleave`] move samples between planar blocks and
+//! interleaved slices.
+//!
+//! Little-endian `Int16`, `Int24`, `Int32` and `Float32` to and from `f32` run on `syrp_simd`
+//! lane packs (ADR 0003 D5); every other combination runs the scalar codec. The pack paths
+//! give the same bits as the scalar codec for every input ([`read_into_at`] and
+//! [`write_from_at`] pick the level).
 //!
 //! # The conversion rule
 //! - An integer sample `n` of `bits` bits becomes the float `n / 2^(bits - 1)`, rounded once to
@@ -21,7 +27,8 @@
 //!   `f64` to `Float32` rounds to nearest. `Float32` read into `f32` (and `Float64` into `f64`)
 //!   keeps every bit, NaN payloads included.
 //!
-//! The converters never allocate, lock or do I/O, so they are safe on the audio thread. A slice
+//! The converters never allocate, lock or do I/O, so they are safe on the audio thread once
+//! [`Level::detect`] has run (its first call probes the CPU). A slice
 //! whose size does not match the block is a [`ConvertError`] and nothing is written.
 //!
 //! ```
@@ -41,12 +48,16 @@ use std::fmt;
 
 use syrp_audio_api::{AudioBlock, AudioBlockMut};
 use syrp_error::{Diagnostic, ErrorCode};
+use syrp_simd::Level;
 
 use crate::BufferSample;
 
 mod codec;
+mod fast;
+mod interleave;
 
 use codec::Codec;
+pub use interleave::{deinterleave, interleave};
 
 /// The packed sample formats the converters read and write.
 ///
@@ -214,6 +225,15 @@ pub enum ConvertError {
         /// Channels in the byte data.
         data: usize,
     },
+    /// The interleaved slice given to [`interleave`] or [`deinterleave`] does not hold exactly
+    /// `channels * frames` samples (`SYRP-AUDIO-0010`). `expected` saturates at `usize::MAX`.
+    #[non_exhaustive]
+    SampleCountMismatch {
+        /// Samples the block shape needs.
+        expected: usize,
+        /// Samples the slice holds.
+        actual: usize,
+    },
     /// [`convert_bytes`] was given a source that is not a whole number of samples
     /// (`SYRP-AUDIO-0009`).
     #[non_exhaustive]
@@ -231,6 +251,10 @@ impl fmt::Display for ConvertError {
             ConvertError::ByteLengthMismatch { expected, actual } => write!(
                 f,
                 "the sample data is {actual} bytes but the block shape needs {expected}"
+            ),
+            ConvertError::SampleCountMismatch { expected, actual } => write!(
+                f,
+                "the interleaved slice holds {actual} samples but the block shape needs {expected}"
             ),
             ConvertError::TooFewChannels { block, data } => write!(
                 f,
@@ -255,6 +279,7 @@ impl Diagnostic for ConvertError {
             ConvertError::ByteLengthMismatch { .. } => "SYRP-AUDIO-0007",
             ConvertError::TooFewChannels { .. } => "SYRP-AUDIO-0008",
             ConvertError::PartialSample { .. } => "SYRP-AUDIO-0009",
+            ConvertError::SampleCountMismatch { .. } => "SYRP-AUDIO-0010",
         })
     }
 }
@@ -313,6 +338,41 @@ pub fn read_into<T: BufferSample>(
     channels: usize,
     dest: &mut AudioBlockMut<'_, T>,
 ) -> Result<(), ConvertError> {
+    let level = Level::detect();
+    read_into_at(level, src, format, endianness, interleaved, channels, dest)
+}
+
+/// [`read_into`] at a given SIMD [`Level`]; `read_into` uses [`Level::detect`].
+///
+/// Little-endian `Int16`, `Int24`, `Int32` and `Float32` into `f32` run on `syrp_simd` packs
+/// at every level but [`Level::Scalar`], which runs the scalar reference. Both give the same
+/// bits for every input. Tests and benches use this to compare the two.
+///
+/// # Errors
+/// As [`read_into`].
+///
+/// ```
+/// use syrp_audio_api::AudioBlockMut;
+/// use syrp_audio_basics::convert::{self, Endianness, SampleFormat};
+/// use syrp_simd::Level;
+/// let bytes: Vec<u8> = (0..20_i16).flat_map(|n| (n * 1000).to_le_bytes()).collect();
+/// let (mut a, mut b) = ([0.0_f32; 20], [0.0_f32; 20]);
+/// for (level, out) in [(Level::Scalar, &mut a), (Level::detect(), &mut b)] {
+///     let mut block = AudioBlockMut::new(out, 1, 20, 20)?;
+///     convert::read_into_at(level, &bytes, SampleFormat::Int16, Endianness::Little, false, 1, &mut block)?;
+/// }
+/// assert_eq!(a, b);
+/// # Ok::<(), Box<dyn std::error::Error>>(())
+/// ```
+pub fn read_into_at<T: BufferSample>(
+    level: Level,
+    src: &[u8],
+    format: SampleFormat,
+    endianness: Endianness,
+    interleaved: bool,
+    channels: usize,
+    dest: &mut AudioBlockMut<'_, T>,
+) -> Result<(), ConvertError> {
     let (block_channels, frames) = (dest.channels(), dest.frames());
     if block_channels > channels {
         return Err(ConvertError::TooFewChannels {
@@ -327,21 +387,25 @@ pub fn read_into<T: BufferSample>(
     let codec = Codec::new(format, endianness);
     let size = format.bytes_per_sample();
     for c in 0..block_channels {
-        let out = dest.channel_mut(c);
-        if interleaved {
-            let frames_in = src.chunks_exact(channels * size);
-            for (o, frame) in out.iter_mut().zip(frames_in) {
-                *o = codec.decode(&frame[c * size..]);
-            }
-        } else {
-            let start = c * frames * size;
-            let samples = src[start..start + frames * size].chunks_exact(size);
-            for (o, bytes) in out.iter_mut().zip(samples) {
-                *o = codec.decode(bytes);
-            }
-        }
+        let (start, step) = placement(interleaved, c, channels, frames, size);
+        fast::decode(level, codec, &src[start..], step, dest.channel_mut(c));
     }
     Ok(())
+}
+
+/// Where channel `c` starts in the packed data and the distance between its samples, in bytes.
+fn placement(
+    interleaved: bool,
+    c: usize,
+    channels: usize,
+    frames: usize,
+    size: usize,
+) -> (usize, usize) {
+    if interleaved {
+        (c * size, channels * size)
+    } else {
+        (c * frames * size, size)
+    }
 }
 
 /// Encodes `src` into packed samples.
@@ -374,6 +438,37 @@ pub fn write_from<T: BufferSample>(
     endianness: Endianness,
     interleaved: bool,
 ) -> Result<(), ConvertError> {
+    write_from_at(Level::detect(), src, dest, format, endianness, interleaved)
+}
+
+/// [`write_from`] at a given SIMD [`Level`]; `write_from` uses [`Level::detect`].
+///
+/// `f32` into little-endian `Int16`, `Int24`, `Int32` and `Float32` runs on `syrp_simd` packs
+/// at every level but [`Level::Scalar`]; both give the same bits for every input.
+///
+/// # Errors
+/// As [`write_from`].
+///
+/// ```
+/// use syrp_audio_api::AudioBlock;
+/// use syrp_audio_basics::convert::{self, Endianness, SampleFormat};
+/// use syrp_simd::Level;
+/// let planar: Vec<f32> = (0..20).map(|i| i as f32 / 7.0 - 1.3).collect();
+/// let block = AudioBlock::new(&planar, 1, 20, 20)?;
+/// let (mut a, mut b) = ([0_u8; 60], [0_u8; 60]);
+/// convert::write_from_at(Level::Scalar, &block, &mut a, SampleFormat::Int24, Endianness::Little, false)?;
+/// convert::write_from_at(Level::detect(), &block, &mut b, SampleFormat::Int24, Endianness::Little, false)?;
+/// assert_eq!(a, b);
+/// # Ok::<(), Box<dyn std::error::Error>>(())
+/// ```
+pub fn write_from_at<T: BufferSample>(
+    level: Level,
+    src: &AudioBlock<'_, T>,
+    dest: &mut [u8],
+    format: SampleFormat,
+    endianness: Endianness,
+    interleaved: bool,
+) -> Result<(), ConvertError> {
     let (channels, frames) = (src.channels(), src.frames());
     check_bytes(dest.len(), channels, frames, format)?;
     if channels == 0 || frames == 0 {
@@ -382,19 +477,8 @@ pub fn write_from<T: BufferSample>(
     let codec = Codec::new(format, endianness);
     let size = format.bytes_per_sample();
     for c in 0..channels {
-        let input = src.channel(c);
-        if interleaved {
-            let frames_out = dest.chunks_exact_mut(channels * size);
-            for (&x, frame) in input.iter().zip(frames_out) {
-                codec.encode(x, &mut frame[c * size..]);
-            }
-        } else {
-            let start = c * frames * size;
-            let samples = dest[start..start + frames * size].chunks_exact_mut(size);
-            for (&x, bytes) in input.iter().zip(samples) {
-                codec.encode(x, bytes);
-            }
-        }
+        let (start, step) = placement(interleaved, c, channels, frames, size);
+        fast::encode(level, codec, src.channel(c), &mut dest[start..], step);
     }
     Ok(())
 }
