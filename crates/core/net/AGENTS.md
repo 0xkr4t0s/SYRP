@@ -21,8 +21,15 @@ juce_core/SocketOptions, juce_core/NamedPipe
 - Socket addresses from the OS are read with `read_unaligned`; every `unsafe` block has a
   `// SAFETY:` comment (clippy `undocumented_unsafe_blocks`).
 - `StreamingSocket` (`src/socket.rs`, socket2) takes `&self` everywhere; blocking waits poll
-  in 50 ms slices so `close` from another thread ends them with `NetError::Closed`. Writes
+  in 50 ms slices so `close` from another thread ends them with `NetError::Closed`. Connected
+  TCP and all UDP sockets are non-blocking: an OS call that would block (another reader
+  took the data) goes back to the readiness wait, so no thread can be stranded in the OS. Writes
   never raise `SIGPIPE` (`MSG_NOSIGNAL` on Linux, `SO_NOSIGPIPE` on Apple).
+- `SocketOptions` is a `Copy` value applied once, at creation, to TCP and UDP sockets.
+- `DatagramSocket` (`src/datagram.rs`) is IPv4 only (Syrp's choice) and shares the 50 ms
+  wait loop with `StreamingSocket`. Reads use socket2's vectored receive, so an oversized
+  datagram is truncated on every OS. On Unix `bind_to_port` sets `SO_REUSEADDR`, so several
+  multicast receivers can share a port.
 - Errors are `NetError` (`SYRP-NET-*`, `errors/net.toml`); OS failures carry the OS code.
 
 ## Thread affinity
@@ -41,7 +48,6 @@ Tests use loopback only and never a real network. Enumeration tests assert that 
 listed, never a count of other interfaces.
 
 ## Known gaps
-WP-1.1-10 increment 2 (B2, B3 without `SocketOptions`). Still to come: `SocketOptions` and
-`DatagramSocket` (B3-B4), `NamedPipe` (B5) and the remaining B6 codes. Socket types are
+WP-1.1-10 increment 3 (B1-B4). Still to come: `NamedPipe` (B5) and the remaining B6 codes. Socket types are
 absent on targets other than Unix and Windows (socket2 does not build there).
 `errors/net.toml` is not yet in the CLI's embedded catalogue.

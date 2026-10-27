@@ -1,0 +1,172 @@
+pub mod syrp_thread
+pub use syrp_thread::Diagnostic
+pub mod syrp_thread::priority
+#[non_exhaustive] pub enum syrp_thread::priority::Priority
+pub syrp_thread::priority::Priority::High
+pub syrp_thread::priority::Priority::Highest
+pub syrp_thread::priority::Priority::Low
+pub syrp_thread::priority::Priority::Lowest
+pub syrp_thread::priority::Priority::Normal
+#[non_exhaustive] pub enum syrp_thread::priority::SchedulingStatus
+pub syrp_thread::priority::SchedulingStatus::Granted
+pub syrp_thread::priority::SchedulingStatus::NotRequested
+#[non_exhaustive] pub syrp_thread::priority::SchedulingStatus::Refused
+pub syrp_thread::priority::SchedulingStatus::Refused::os_error: core::option::Option<i32>
+pub struct syrp_thread::priority::RealtimeOptions
+impl syrp_thread::priority::RealtimeOptions
+pub const fn syrp_thread::priority::RealtimeOptions::expected_work_time(&self) -> core::option::Option<core::time::Duration>
+pub const fn syrp_thread::priority::RealtimeOptions::new() -> Self
+pub const fn syrp_thread::priority::RealtimeOptions::priority(&self) -> u8
+pub const fn syrp_thread::priority::RealtimeOptions::processing_period(&self) -> core::option::Option<core::time::Duration>
+pub const fn syrp_thread::priority::RealtimeOptions::with_expected_work_time(self, core::time::Duration) -> Self
+pub const fn syrp_thread::priority::RealtimeOptions::with_priority(self, u8) -> Self
+pub const fn syrp_thread::priority::RealtimeOptions::with_processing_period(self, core::time::Duration) -> Self
+impl core::default::Default for syrp_thread::priority::RealtimeOptions
+pub fn syrp_thread::priority::RealtimeOptions::default() -> Self
+pub const syrp_thread::priority::MAX_REALTIME_PRIORITY: u8
+pub fn syrp_thread::priority::set_current_thread_affinity_mask(u64) -> core::result::Result<(), syrp_thread::ThreadError>
+pub fn syrp_thread::priority::set_current_thread_priority(syrp_thread::priority::Priority) -> core::result::Result<(), syrp_thread::ThreadError>
+#[non_exhaustive] pub enum syrp_thread::JobStatus
+pub syrp_thread::JobStatus::Finished
+pub syrp_thread::JobStatus::RunAgain
+#[non_exhaustive] pub enum syrp_thread::Priority
+pub syrp_thread::Priority::High
+pub syrp_thread::Priority::Highest
+pub syrp_thread::Priority::Low
+pub syrp_thread::Priority::Lowest
+pub syrp_thread::Priority::Normal
+#[non_exhaustive] pub enum syrp_thread::SchedulingStatus
+pub syrp_thread::SchedulingStatus::Granted
+pub syrp_thread::SchedulingStatus::NotRequested
+#[non_exhaustive] pub syrp_thread::SchedulingStatus::Refused
+pub syrp_thread::SchedulingStatus::Refused::os_error: core::option::Option<i32>
+#[non_exhaustive] pub enum syrp_thread::Stopped
+pub syrp_thread::Stopped::Finished
+pub syrp_thread::Stopped::Panicked
+pub enum syrp_thread::Thread
+impl syrp_thread::Thread
+pub fn syrp_thread::Thread::builder(impl core::convert::Into<alloc::string::String>) -> syrp_thread::ThreadBuilder
+pub fn syrp_thread::Thread::launch<F>(F) -> core::result::Result<(), syrp_thread::ThreadError> where F: core::ops::function::FnOnce() + core::marker::Send + 'static
+#[non_exhaustive] pub enum syrp_thread::ThreadError
+#[non_exhaustive] pub syrp_thread::ThreadError::AffinityRefused
+pub syrp_thread::ThreadError::AffinityRefused::os_error: core::option::Option<i32>
+pub syrp_thread::ThreadError::AffinityUnsupported
+#[non_exhaustive] pub syrp_thread::ThreadError::InvalidRealtimeOptions
+pub syrp_thread::ThreadError::InvalidRealtimeOptions::reason: &'static str
+#[non_exhaustive] pub syrp_thread::ThreadError::JobTimedOut
+pub syrp_thread::ThreadError::JobTimedOut::timeout: core::time::Duration
+#[non_exhaustive] pub syrp_thread::ThreadError::PriorityRefused
+pub syrp_thread::ThreadError::PriorityRefused::os_error: core::option::Option<i32>
+#[non_exhaustive] pub syrp_thread::ThreadError::SpawnFailed
+pub syrp_thread::ThreadError::SpawnFailed::os_error: core::option::Option<i32>
+#[non_exhaustive] pub syrp_thread::ThreadError::StopTimedOut
+pub syrp_thread::ThreadError::StopTimedOut::timeout: core::time::Duration
+impl core::error::Error for syrp_thread::ThreadError
+impl core::fmt::Display for syrp_thread::ThreadError
+pub fn syrp_thread::ThreadError::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl syrp_error::Diagnostic for syrp_thread::ThreadError
+pub fn syrp_thread::ThreadError::code(&self) -> syrp_error::ErrorCode
+pub fn syrp_thread::ThreadError::hint(&self) -> core::option::Option<alloc::borrow::Cow<'static, str>>
+pub struct syrp_thread::JobContext
+impl syrp_thread::JobContext
+pub fn syrp_thread::JobContext::should_exit(&self) -> bool
+pub struct syrp_thread::JobHandle(_)
+pub struct syrp_thread::RealtimeOptions
+impl syrp_thread::priority::RealtimeOptions
+pub const fn syrp_thread::priority::RealtimeOptions::expected_work_time(&self) -> core::option::Option<core::time::Duration>
+pub const fn syrp_thread::priority::RealtimeOptions::new() -> Self
+pub const fn syrp_thread::priority::RealtimeOptions::priority(&self) -> u8
+pub const fn syrp_thread::priority::RealtimeOptions::processing_period(&self) -> core::option::Option<core::time::Duration>
+pub const fn syrp_thread::priority::RealtimeOptions::with_expected_work_time(self, core::time::Duration) -> Self
+pub const fn syrp_thread::priority::RealtimeOptions::with_priority(self, u8) -> Self
+pub const fn syrp_thread::priority::RealtimeOptions::with_processing_period(self, core::time::Duration) -> Self
+impl core::default::Default for syrp_thread::priority::RealtimeOptions
+pub fn syrp_thread::priority::RealtimeOptions::default() -> Self
+pub struct syrp_thread::SpinLock<T>
+impl<T> syrp_thread::SpinLock<T>
+pub fn syrp_thread::SpinLock<T>::into_inner(self) -> T
+pub fn syrp_thread::SpinLock<T>::lock(&self) -> syrp_thread::SpinLockGuard<'_, T>
+pub const fn syrp_thread::SpinLock<T>::new(T) -> Self
+pub fn syrp_thread::SpinLock<T>::try_lock(&self) -> core::option::Option<syrp_thread::SpinLockGuard<'_, T>>
+impl<T: core::default::Default> core::default::Default for syrp_thread::SpinLock<T>
+pub fn syrp_thread::SpinLock<T>::default() -> Self
+impl<T: core::marker::Send> core::marker::Sync for syrp_thread::SpinLock<T>
+impl<T> core::fmt::Debug for syrp_thread::SpinLock<T>
+pub fn syrp_thread::SpinLock<T>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+pub struct syrp_thread::SpinLockGuard<'a, T>
+impl<T: core::fmt::Debug> core::fmt::Debug for syrp_thread::SpinLockGuard<'_, T>
+pub fn syrp_thread::SpinLockGuard<'_, T>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<T> core::ops::deref::Deref for syrp_thread::SpinLockGuard<'_, T>
+pub type syrp_thread::SpinLockGuard<'_, T>::Target = T
+pub fn syrp_thread::SpinLockGuard<'_, T>::deref(&self) -> &T
+impl<T> core::ops::deref::DerefMut for syrp_thread::SpinLockGuard<'_, T>
+pub fn syrp_thread::SpinLockGuard<'_, T>::deref_mut(&mut self) -> &mut T
+impl<T> core::ops::drop::Drop for syrp_thread::SpinLockGuard<'_, T>
+pub fn syrp_thread::SpinLockGuard<'_, T>::drop(&mut self)
+pub struct syrp_thread::ThreadBuilder
+impl syrp_thread::ThreadBuilder
+pub fn syrp_thread::ThreadBuilder::drop_timeout(self, core::time::Duration) -> Self
+pub fn syrp_thread::ThreadBuilder::priority(self, syrp_thread::priority::Priority) -> Self
+pub fn syrp_thread::ThreadBuilder::realtime(self, syrp_thread::priority::RealtimeOptions) -> Self
+pub fn syrp_thread::ThreadBuilder::spawn<F>(self, F) -> core::result::Result<syrp_thread::ThreadHandle, syrp_thread::ThreadError> where F: core::ops::function::FnOnce(&syrp_thread::ThreadContext) + core::marker::Send + 'static
+pub fn syrp_thread::ThreadBuilder::stack_size(self, usize) -> Self
+pub struct syrp_thread::ThreadContext
+impl syrp_thread::ThreadContext
+pub fn syrp_thread::ThreadContext::thread_should_exit(&self) -> bool
+pub fn syrp_thread::ThreadContext::wait(&self, core::option::Option<core::time::Duration>) -> bool
+pub struct syrp_thread::ThreadHandle
+impl syrp_thread::ThreadHandle
+pub fn syrp_thread::ThreadHandle::id(&self) -> std::thread::id::ThreadId
+pub fn syrp_thread::ThreadHandle::is_running(&self) -> bool
+pub fn syrp_thread::ThreadHandle::name(&self) -> core::option::Option<&str>
+pub fn syrp_thread::ThreadHandle::notify(&self)
+pub fn syrp_thread::ThreadHandle::priority_status(&self) -> syrp_thread::priority::SchedulingStatus
+pub fn syrp_thread::ThreadHandle::realtime_status(&self) -> syrp_thread::priority::SchedulingStatus
+pub fn syrp_thread::ThreadHandle::signal_thread_should_exit(&self)
+pub fn syrp_thread::ThreadHandle::stop(self, core::time::Duration) -> core::result::Result<syrp_thread::Stopped, syrp_thread::ThreadError>
+pub fn syrp_thread::ThreadHandle::wait_for_thread_to_exit(&self, core::option::Option<core::time::Duration>) -> bool
+impl core::ops::drop::Drop for syrp_thread::ThreadHandle
+pub fn syrp_thread::ThreadHandle::drop(&mut self)
+pub struct syrp_thread::ThreadPool
+impl syrp_thread::ThreadPool
+pub fn syrp_thread::ThreadPool::add_fn<F>(&self, F) -> syrp_thread::JobHandle where F: core::ops::function::FnMut(&syrp_thread::JobContext) -> syrp_thread::JobStatus + core::marker::Send + 'static
+pub fn syrp_thread::ThreadPool::add_job(&self, impl syrp_thread::ThreadPoolJob) -> syrp_thread::JobHandle
+pub fn syrp_thread::ThreadPool::contains(&self, syrp_thread::JobHandle) -> bool
+pub fn syrp_thread::ThreadPool::is_job_running(&self, syrp_thread::JobHandle) -> bool
+pub fn syrp_thread::ThreadPool::move_job_to_front(&self, syrp_thread::JobHandle) -> bool
+pub fn syrp_thread::ThreadPool::new(syrp_thread::ThreadPoolOptions) -> core::result::Result<Self, syrp_thread::ThreadError>
+pub fn syrp_thread::ThreadPool::num_jobs(&self) -> usize
+pub fn syrp_thread::ThreadPool::num_threads(&self) -> usize
+pub fn syrp_thread::ThreadPool::remove_all_jobs(&self, bool, core::option::Option<core::time::Duration>, impl core::ops::function::FnMut(syrp_thread::JobHandle, &str) -> bool) -> core::result::Result<(), syrp_thread::ThreadError>
+pub fn syrp_thread::ThreadPool::remove_job(&self, syrp_thread::JobHandle, bool, core::option::Option<core::time::Duration>) -> core::result::Result<(), syrp_thread::ThreadError>
+pub fn syrp_thread::ThreadPool::wait_for_job_to_finish(&self, syrp_thread::JobHandle, core::option::Option<core::time::Duration>) -> bool
+impl core::fmt::Debug for syrp_thread::ThreadPool
+pub fn syrp_thread::ThreadPool::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::ops::drop::Drop for syrp_thread::ThreadPool
+pub fn syrp_thread::ThreadPool::drop(&mut self)
+pub struct syrp_thread::ThreadPoolOptions
+pub syrp_thread::ThreadPoolOptions::num_threads: usize
+pub syrp_thread::ThreadPoolOptions::priority: core::option::Option<syrp_thread::priority::Priority>
+pub syrp_thread::ThreadPoolOptions::stack_size: core::option::Option<usize>
+pub syrp_thread::ThreadPoolOptions::thread_name: alloc::string::String
+impl core::default::Default for syrp_thread::ThreadPoolOptions
+pub fn syrp_thread::ThreadPoolOptions::default() -> Self
+pub struct syrp_thread::WaitableEvent
+impl syrp_thread::WaitableEvent
+pub fn syrp_thread::WaitableEvent::new(bool) -> Self
+pub fn syrp_thread::WaitableEvent::reset(&self)
+pub fn syrp_thread::WaitableEvent::signal(&self)
+pub fn syrp_thread::WaitableEvent::wait(&self, core::option::Option<core::time::Duration>) -> bool
+impl core::default::Default for syrp_thread::WaitableEvent
+pub fn syrp_thread::WaitableEvent::default() -> Self
+pub const syrp_thread::DEFAULT_DROP_TIMEOUT: core::time::Duration
+pub const syrp_thread::MAX_REALTIME_PRIORITY: u8
+pub trait syrp_thread::ThreadPoolJob: core::marker::Send + 'static
+pub fn syrp_thread::ThreadPoolJob::name(&self) -> &str
+pub fn syrp_thread::ThreadPoolJob::run_job(&mut self, &syrp_thread::JobContext) -> syrp_thread::JobStatus
+pub fn syrp_thread::current_thread_id() -> std::thread::id::ThreadId
+pub fn syrp_thread::current_thread_name() -> core::option::Option<alloc::string::String>
+pub fn syrp_thread::set_current_thread_affinity_mask(u64) -> core::result::Result<(), syrp_thread::ThreadError>
+pub fn syrp_thread::set_current_thread_priority(syrp_thread::priority::Priority) -> core::result::Result<(), syrp_thread::ThreadError>
+pub fn syrp_thread::sleep(core::time::Duration)
+pub fn syrp_thread::yield_now()

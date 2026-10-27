@@ -1,0 +1,529 @@
+pub mod syrp_io
+#[non_exhaustive] pub enum syrp_io::IoErrorKind
+pub syrp_io::IoErrorKind::BufferFull
+pub syrp_io::IoErrorKind::EndOfStream
+pub syrp_io::IoErrorKind::InvalidData
+pub syrp_io::IoErrorKind::Io
+pub syrp_io::IoErrorKind::OutOfMemory
+pub struct syrp_io::BufferedInputStream<S: syrp_io::InputStream>
+impl<S: syrp_io::InputStream> syrp_io::BufferedInputStream<S>
+pub fn syrp_io::BufferedInputStream<S>::buffer_size(&self) -> usize
+pub fn syrp_io::BufferedInputStream<S>::get_ref(&self) -> &S
+pub fn syrp_io::BufferedInputStream<S>::into_inner(self) -> S
+pub fn syrp_io::BufferedInputStream<S>::new(S, usize) -> core::result::Result<Self, syrp_io::IoError>
+pub fn syrp_io::BufferedInputStream<S>::peek_byte(&mut self) -> core::result::Result<core::option::Option<u8>, syrp_io::IoError>
+impl<S: syrp_io::InputStream> alloc::io::read::Read for syrp_io::BufferedInputStream<S>
+pub fn syrp_io::BufferedInputStream<S>::read(&mut self, &mut [u8]) -> core::io::error::Result<usize>
+impl<S: syrp_io::InputStream> syrp_io::InputStream for syrp_io::BufferedInputStream<S>
+pub fn syrp_io::BufferedInputStream<S>::is_exhausted(&mut self) -> bool
+pub fn syrp_io::BufferedInputStream<S>::position(&self) -> u64
+pub fn syrp_io::BufferedInputStream<S>::read_bool(&mut self) -> core::result::Result<bool, syrp_io::IoError>
+pub fn syrp_io::BufferedInputStream<S>::read_compressed_int(&mut self) -> core::result::Result<i32, syrp_io::IoError>
+pub fn syrp_io::BufferedInputStream<S>::read_entire_stream_as_string(&mut self) -> core::result::Result<alloc::string::String, syrp_io::IoError>
+pub fn syrp_io::BufferedInputStream<S>::read_f32_be(&mut self) -> core::result::Result<f32, syrp_io::IoError>
+pub fn syrp_io::BufferedInputStream<S>::read_f32_le(&mut self) -> core::result::Result<f32, syrp_io::IoError>
+pub fn syrp_io::BufferedInputStream<S>::read_f64_be(&mut self) -> core::result::Result<f64, syrp_io::IoError>
+pub fn syrp_io::BufferedInputStream<S>::read_f64_le(&mut self) -> core::result::Result<f64, syrp_io::IoError>
+pub fn syrp_io::BufferedInputStream<S>::read_i16_be(&mut self) -> core::result::Result<i16, syrp_io::IoError>
+pub fn syrp_io::BufferedInputStream<S>::read_i16_le(&mut self) -> core::result::Result<i16, syrp_io::IoError>
+pub fn syrp_io::BufferedInputStream<S>::read_i32_be(&mut self) -> core::result::Result<i32, syrp_io::IoError>
+pub fn syrp_io::BufferedInputStream<S>::read_i32_le(&mut self) -> core::result::Result<i32, syrp_io::IoError>
+pub fn syrp_io::BufferedInputStream<S>::read_i64_be(&mut self) -> core::result::Result<i64, syrp_io::IoError>
+pub fn syrp_io::BufferedInputStream<S>::read_i64_le(&mut self) -> core::result::Result<i64, syrp_io::IoError>
+pub fn syrp_io::BufferedInputStream<S>::read_into_memory_block(&mut self, &mut syrp_io::MemoryBlock, core::option::Option<u64>) -> core::result::Result<u64, syrp_io::IoError>
+pub fn syrp_io::BufferedInputStream<S>::read_next_line(&mut self) -> core::result::Result<alloc::string::String, syrp_io::IoError>
+pub fn syrp_io::BufferedInputStream<S>::read_string(&mut self) -> core::result::Result<alloc::string::String, syrp_io::IoError>
+pub fn syrp_io::BufferedInputStream<S>::read_u8(&mut self) -> core::result::Result<u8, syrp_io::IoError>
+pub fn syrp_io::BufferedInputStream<S>::set_position(&mut self, u64) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::BufferedInputStream<S>::skip_next_bytes(&mut self, u64) -> core::result::Result<u64, syrp_io::IoError>
+pub fn syrp_io::BufferedInputStream<S>::total_length(&mut self) -> core::option::Option<u64>
+pub struct syrp_io::IoError
+impl syrp_io::IoError
+pub const fn syrp_io::IoError::bytes_copied(&self) -> core::option::Option<u64>
+pub const fn syrp_io::IoError::kind(&self) -> syrp_io::IoErrorKind
+pub const fn syrp_io::IoError::new(syrp_io::IoErrorKind) -> Self
+impl core::convert::From<core::io::error::Error> for syrp_io::IoError
+pub fn syrp_io::IoError::from(core::io::error::Error) -> Self
+impl core::convert::From<syrp_io::IoError> for core::io::error::Error
+pub fn core::io::error::Error::from(syrp_io::IoError) -> Self
+impl core::error::Error for syrp_io::IoError
+pub fn syrp_io::IoError::source(&self) -> core::option::Option<&(dyn core::error::Error + 'static)>
+impl core::fmt::Display for syrp_io::IoError
+pub fn syrp_io::IoError::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl syrp_error::Diagnostic for syrp_io::IoError
+pub fn syrp_io::IoError::code(&self) -> syrp_error::ErrorCode
+pub struct syrp_io::MemoryBlock
+impl syrp_io::MemoryBlock
+pub fn syrp_io::MemoryBlock::append(&mut self, &[u8])
+pub fn syrp_io::MemoryBlock::as_view(&self) -> &[u8]
+pub fn syrp_io::MemoryBlock::bit_range(&self, usize, usize) -> u32
+pub fn syrp_io::MemoryBlock::copy_from(&mut self, &[u8], isize)
+pub fn syrp_io::MemoryBlock::copy_to(&self, &mut [u8], isize)
+pub fn syrp_io::MemoryBlock::ensure_size(&mut self, usize) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::MemoryBlock::fill(&mut self, u8)
+pub fn syrp_io::MemoryBlock::from_slice(&[u8]) -> Self
+pub fn syrp_io::MemoryBlock::insert(&mut self, usize, &[u8])
+pub fn syrp_io::MemoryBlock::into_vec(self) -> alloc::vec::Vec<u8>
+pub fn syrp_io::MemoryBlock::is_empty(&self) -> bool
+pub fn syrp_io::MemoryBlock::len(&self) -> usize
+pub const fn syrp_io::MemoryBlock::new() -> Self
+pub fn syrp_io::MemoryBlock::remove_section(&mut self, usize, usize)
+pub fn syrp_io::MemoryBlock::replace_all(&mut self, &[u8])
+pub fn syrp_io::MemoryBlock::set_bit_range(&mut self, usize, usize, u32)
+pub fn syrp_io::MemoryBlock::set_size(&mut self, usize, bool) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::MemoryBlock::swap_with(&mut self, &mut syrp_io::MemoryBlock)
+pub fn syrp_io::MemoryBlock::to_string_lossy(&self) -> alloc::string::String
+pub fn syrp_io::MemoryBlock::with_size(usize, bool) -> core::result::Result<Self, syrp_io::IoError>
+impl core::convert::From<alloc::vec::Vec<u8>> for syrp_io::MemoryBlock
+pub fn syrp_io::MemoryBlock::from(alloc::vec::Vec<u8>) -> Self
+impl core::ops::deref::Deref for syrp_io::MemoryBlock
+pub type syrp_io::MemoryBlock::Target = [u8]
+pub fn syrp_io::MemoryBlock::deref(&self) -> &[u8]
+impl core::ops::deref::DerefMut for syrp_io::MemoryBlock
+pub fn syrp_io::MemoryBlock::deref_mut(&mut self) -> &mut [u8]
+pub struct syrp_io::MemoryInputStream<'a>
+impl syrp_io::MemoryInputStream<'static>
+pub fn syrp_io::MemoryInputStream<'static>::from_block(syrp_io::MemoryBlock) -> Self
+pub fn syrp_io::MemoryInputStream<'static>::from_vec(alloc::vec::Vec<u8>) -> Self
+impl<'a> syrp_io::MemoryInputStream<'a>
+pub fn syrp_io::MemoryInputStream<'a>::data(&self) -> &[u8]
+pub fn syrp_io::MemoryInputStream<'a>::new(&'a [u8]) -> Self
+impl alloc::io::read::Read for syrp_io::MemoryInputStream<'_>
+pub fn syrp_io::MemoryInputStream<'_>::read(&mut self, &mut [u8]) -> core::io::error::Result<usize>
+impl syrp_io::InputStream for syrp_io::MemoryInputStream<'_>
+pub fn syrp_io::MemoryInputStream<'_>::is_exhausted(&mut self) -> bool
+pub fn syrp_io::MemoryInputStream<'_>::position(&self) -> u64
+pub fn syrp_io::MemoryInputStream<'_>::read_bool(&mut self) -> core::result::Result<bool, syrp_io::IoError>
+pub fn syrp_io::MemoryInputStream<'_>::read_compressed_int(&mut self) -> core::result::Result<i32, syrp_io::IoError>
+pub fn syrp_io::MemoryInputStream<'_>::read_entire_stream_as_string(&mut self) -> core::result::Result<alloc::string::String, syrp_io::IoError>
+pub fn syrp_io::MemoryInputStream<'_>::read_f32_be(&mut self) -> core::result::Result<f32, syrp_io::IoError>
+pub fn syrp_io::MemoryInputStream<'_>::read_f32_le(&mut self) -> core::result::Result<f32, syrp_io::IoError>
+pub fn syrp_io::MemoryInputStream<'_>::read_f64_be(&mut self) -> core::result::Result<f64, syrp_io::IoError>
+pub fn syrp_io::MemoryInputStream<'_>::read_f64_le(&mut self) -> core::result::Result<f64, syrp_io::IoError>
+pub fn syrp_io::MemoryInputStream<'_>::read_i16_be(&mut self) -> core::result::Result<i16, syrp_io::IoError>
+pub fn syrp_io::MemoryInputStream<'_>::read_i16_le(&mut self) -> core::result::Result<i16, syrp_io::IoError>
+pub fn syrp_io::MemoryInputStream<'_>::read_i32_be(&mut self) -> core::result::Result<i32, syrp_io::IoError>
+pub fn syrp_io::MemoryInputStream<'_>::read_i32_le(&mut self) -> core::result::Result<i32, syrp_io::IoError>
+pub fn syrp_io::MemoryInputStream<'_>::read_i64_be(&mut self) -> core::result::Result<i64, syrp_io::IoError>
+pub fn syrp_io::MemoryInputStream<'_>::read_i64_le(&mut self) -> core::result::Result<i64, syrp_io::IoError>
+pub fn syrp_io::MemoryInputStream<'_>::read_into_memory_block(&mut self, &mut syrp_io::MemoryBlock, core::option::Option<u64>) -> core::result::Result<u64, syrp_io::IoError>
+pub fn syrp_io::MemoryInputStream<'_>::read_next_line(&mut self) -> core::result::Result<alloc::string::String, syrp_io::IoError>
+pub fn syrp_io::MemoryInputStream<'_>::read_string(&mut self) -> core::result::Result<alloc::string::String, syrp_io::IoError>
+pub fn syrp_io::MemoryInputStream<'_>::read_u8(&mut self) -> core::result::Result<u8, syrp_io::IoError>
+pub fn syrp_io::MemoryInputStream<'_>::set_position(&mut self, u64) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::MemoryInputStream<'_>::skip_next_bytes(&mut self, u64) -> core::result::Result<u64, syrp_io::IoError>
+pub fn syrp_io::MemoryInputStream<'_>::total_length(&mut self) -> core::option::Option<u64>
+pub struct syrp_io::MemoryOutputStream<'a>
+impl syrp_io::MemoryOutputStream<'static>
+pub fn syrp_io::MemoryOutputStream<'static>::new() -> Self
+impl<'a> syrp_io::MemoryOutputStream<'a>
+pub fn syrp_io::MemoryOutputStream<'a>::appending_to(&'a mut syrp_io::MemoryBlock) -> Self
+pub fn syrp_io::MemoryOutputStream<'a>::data(&self) -> &[u8]
+pub fn syrp_io::MemoryOutputStream<'a>::into_memory_block(self) -> syrp_io::MemoryBlock
+pub fn syrp_io::MemoryOutputStream<'a>::is_empty(&self) -> bool
+pub fn syrp_io::MemoryOutputStream<'a>::len(&self) -> usize
+pub fn syrp_io::MemoryOutputStream<'a>::over_slice(&'a mut [u8]) -> Self
+pub fn syrp_io::MemoryOutputStream<'a>::preallocate(&mut self, usize) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::MemoryOutputStream<'a>::reset(&mut self)
+pub fn syrp_io::MemoryOutputStream<'a>::to_utf8_string(&self) -> alloc::string::String
+impl core::default::Default for syrp_io::MemoryOutputStream<'static>
+pub fn syrp_io::MemoryOutputStream<'static>::default() -> Self
+impl core::io::write::Write for syrp_io::MemoryOutputStream<'_>
+pub fn syrp_io::MemoryOutputStream<'_>::flush(&mut self) -> core::io::error::Result<()>
+pub fn syrp_io::MemoryOutputStream<'_>::write(&mut self, &[u8]) -> core::io::error::Result<usize>
+impl syrp_io::OutputStream for syrp_io::MemoryOutputStream<'_>
+pub fn syrp_io::MemoryOutputStream<'_>::new_line(&self) -> &str
+pub fn syrp_io::MemoryOutputStream<'_>::position(&self) -> u64
+pub fn syrp_io::MemoryOutputStream<'_>::set_new_line(&mut self, &str)
+pub fn syrp_io::MemoryOutputStream<'_>::set_position(&mut self, u64) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::MemoryOutputStream<'_>::write_bool(&mut self, bool) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::MemoryOutputStream<'_>::write_compressed_int(&mut self, i32) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::MemoryOutputStream<'_>::write_f32_be(&mut self, f32) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::MemoryOutputStream<'_>::write_f32_le(&mut self, f32) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::MemoryOutputStream<'_>::write_f64_be(&mut self, f64) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::MemoryOutputStream<'_>::write_f64_le(&mut self, f64) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::MemoryOutputStream<'_>::write_from_input_stream(&mut self, &mut dyn syrp_io::InputStream, core::option::Option<u64>) -> core::result::Result<u64, syrp_io::IoError>
+pub fn syrp_io::MemoryOutputStream<'_>::write_i16_be(&mut self, i16) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::MemoryOutputStream<'_>::write_i16_le(&mut self, i16) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::MemoryOutputStream<'_>::write_i32_be(&mut self, i32) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::MemoryOutputStream<'_>::write_i32_le(&mut self, i32) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::MemoryOutputStream<'_>::write_i64_be(&mut self, i64) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::MemoryOutputStream<'_>::write_i64_le(&mut self, i64) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::MemoryOutputStream<'_>::write_new_line(&mut self) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::MemoryOutputStream<'_>::write_repeated_byte(&mut self, u8, u64) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::MemoryOutputStream<'_>::write_string(&mut self, &str) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::MemoryOutputStream<'_>::write_text(&mut self, &str, bool, bool, core::option::Option<&str>) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::MemoryOutputStream<'_>::write_u8(&mut self, u8) -> core::result::Result<(), syrp_io::IoError>
+pub struct syrp_io::StdInputStream<R: alloc::io::read::Read + core::io::seek::Seek>
+impl<R: alloc::io::read::Read + core::io::seek::Seek> syrp_io::StdInputStream<R>
+pub fn syrp_io::StdInputStream<R>::get_ref(&self) -> &R
+pub fn syrp_io::StdInputStream<R>::into_inner(self) -> R
+pub fn syrp_io::StdInputStream<R>::new(R) -> core::result::Result<Self, syrp_io::IoError>
+impl<R: alloc::io::read::Read + core::io::seek::Seek> alloc::io::read::Read for syrp_io::StdInputStream<R>
+pub fn syrp_io::StdInputStream<R>::read(&mut self, &mut [u8]) -> core::io::error::Result<usize>
+impl<R: alloc::io::read::Read + core::io::seek::Seek> syrp_io::InputStream for syrp_io::StdInputStream<R>
+pub fn syrp_io::StdInputStream<R>::is_exhausted(&mut self) -> bool
+pub fn syrp_io::StdInputStream<R>::position(&self) -> u64
+pub fn syrp_io::StdInputStream<R>::read_bool(&mut self) -> core::result::Result<bool, syrp_io::IoError>
+pub fn syrp_io::StdInputStream<R>::read_compressed_int(&mut self) -> core::result::Result<i32, syrp_io::IoError>
+pub fn syrp_io::StdInputStream<R>::read_entire_stream_as_string(&mut self) -> core::result::Result<alloc::string::String, syrp_io::IoError>
+pub fn syrp_io::StdInputStream<R>::read_f32_be(&mut self) -> core::result::Result<f32, syrp_io::IoError>
+pub fn syrp_io::StdInputStream<R>::read_f32_le(&mut self) -> core::result::Result<f32, syrp_io::IoError>
+pub fn syrp_io::StdInputStream<R>::read_f64_be(&mut self) -> core::result::Result<f64, syrp_io::IoError>
+pub fn syrp_io::StdInputStream<R>::read_f64_le(&mut self) -> core::result::Result<f64, syrp_io::IoError>
+pub fn syrp_io::StdInputStream<R>::read_i16_be(&mut self) -> core::result::Result<i16, syrp_io::IoError>
+pub fn syrp_io::StdInputStream<R>::read_i16_le(&mut self) -> core::result::Result<i16, syrp_io::IoError>
+pub fn syrp_io::StdInputStream<R>::read_i32_be(&mut self) -> core::result::Result<i32, syrp_io::IoError>
+pub fn syrp_io::StdInputStream<R>::read_i32_le(&mut self) -> core::result::Result<i32, syrp_io::IoError>
+pub fn syrp_io::StdInputStream<R>::read_i64_be(&mut self) -> core::result::Result<i64, syrp_io::IoError>
+pub fn syrp_io::StdInputStream<R>::read_i64_le(&mut self) -> core::result::Result<i64, syrp_io::IoError>
+pub fn syrp_io::StdInputStream<R>::read_into_memory_block(&mut self, &mut syrp_io::MemoryBlock, core::option::Option<u64>) -> core::result::Result<u64, syrp_io::IoError>
+pub fn syrp_io::StdInputStream<R>::read_next_line(&mut self) -> core::result::Result<alloc::string::String, syrp_io::IoError>
+pub fn syrp_io::StdInputStream<R>::read_string(&mut self) -> core::result::Result<alloc::string::String, syrp_io::IoError>
+pub fn syrp_io::StdInputStream<R>::read_u8(&mut self) -> core::result::Result<u8, syrp_io::IoError>
+pub fn syrp_io::StdInputStream<R>::set_position(&mut self, u64) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::StdInputStream<R>::skip_next_bytes(&mut self, u64) -> core::result::Result<u64, syrp_io::IoError>
+pub fn syrp_io::StdInputStream<R>::total_length(&mut self) -> core::option::Option<u64>
+pub struct syrp_io::StdOutputStream<W: core::io::write::Write + core::io::seek::Seek>
+impl<W: core::io::write::Write + core::io::seek::Seek> syrp_io::StdOutputStream<W>
+pub fn syrp_io::StdOutputStream<W>::get_ref(&self) -> &W
+pub fn syrp_io::StdOutputStream<W>::into_inner(self) -> W
+pub fn syrp_io::StdOutputStream<W>::new(W) -> core::result::Result<Self, syrp_io::IoError>
+impl<W: core::io::write::Write + core::io::seek::Seek> core::io::write::Write for syrp_io::StdOutputStream<W>
+pub fn syrp_io::StdOutputStream<W>::flush(&mut self) -> core::io::error::Result<()>
+pub fn syrp_io::StdOutputStream<W>::write(&mut self, &[u8]) -> core::io::error::Result<usize>
+impl<W: core::io::write::Write + core::io::seek::Seek> syrp_io::OutputStream for syrp_io::StdOutputStream<W>
+pub fn syrp_io::StdOutputStream<W>::new_line(&self) -> &str
+pub fn syrp_io::StdOutputStream<W>::position(&self) -> u64
+pub fn syrp_io::StdOutputStream<W>::set_new_line(&mut self, &str)
+pub fn syrp_io::StdOutputStream<W>::set_position(&mut self, u64) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::StdOutputStream<W>::write_bool(&mut self, bool) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::StdOutputStream<W>::write_compressed_int(&mut self, i32) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::StdOutputStream<W>::write_f32_be(&mut self, f32) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::StdOutputStream<W>::write_f32_le(&mut self, f32) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::StdOutputStream<W>::write_f64_be(&mut self, f64) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::StdOutputStream<W>::write_f64_le(&mut self, f64) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::StdOutputStream<W>::write_from_input_stream(&mut self, &mut dyn syrp_io::InputStream, core::option::Option<u64>) -> core::result::Result<u64, syrp_io::IoError>
+pub fn syrp_io::StdOutputStream<W>::write_i16_be(&mut self, i16) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::StdOutputStream<W>::write_i16_le(&mut self, i16) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::StdOutputStream<W>::write_i32_be(&mut self, i32) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::StdOutputStream<W>::write_i32_le(&mut self, i32) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::StdOutputStream<W>::write_i64_be(&mut self, i64) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::StdOutputStream<W>::write_i64_le(&mut self, i64) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::StdOutputStream<W>::write_new_line(&mut self) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::StdOutputStream<W>::write_repeated_byte(&mut self, u8, u64) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::StdOutputStream<W>::write_string(&mut self, &str) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::StdOutputStream<W>::write_text(&mut self, &str, bool, bool, core::option::Option<&str>) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::StdOutputStream<W>::write_u8(&mut self, u8) -> core::result::Result<(), syrp_io::IoError>
+pub struct syrp_io::SubregionStream<S: syrp_io::InputStream>
+impl<S: syrp_io::InputStream> syrp_io::SubregionStream<S>
+pub fn syrp_io::SubregionStream<S>::get_ref(&self) -> &S
+pub fn syrp_io::SubregionStream<S>::into_inner(self) -> S
+pub fn syrp_io::SubregionStream<S>::new(S, u64, core::option::Option<u64>) -> core::result::Result<Self, syrp_io::IoError>
+pub fn syrp_io::SubregionStream<S>::start(&self) -> u64
+impl<S: syrp_io::InputStream> alloc::io::read::Read for syrp_io::SubregionStream<S>
+pub fn syrp_io::SubregionStream<S>::read(&mut self, &mut [u8]) -> core::io::error::Result<usize>
+impl<S: syrp_io::InputStream> syrp_io::InputStream for syrp_io::SubregionStream<S>
+pub fn syrp_io::SubregionStream<S>::is_exhausted(&mut self) -> bool
+pub fn syrp_io::SubregionStream<S>::position(&self) -> u64
+pub fn syrp_io::SubregionStream<S>::read_bool(&mut self) -> core::result::Result<bool, syrp_io::IoError>
+pub fn syrp_io::SubregionStream<S>::read_compressed_int(&mut self) -> core::result::Result<i32, syrp_io::IoError>
+pub fn syrp_io::SubregionStream<S>::read_entire_stream_as_string(&mut self) -> core::result::Result<alloc::string::String, syrp_io::IoError>
+pub fn syrp_io::SubregionStream<S>::read_f32_be(&mut self) -> core::result::Result<f32, syrp_io::IoError>
+pub fn syrp_io::SubregionStream<S>::read_f32_le(&mut self) -> core::result::Result<f32, syrp_io::IoError>
+pub fn syrp_io::SubregionStream<S>::read_f64_be(&mut self) -> core::result::Result<f64, syrp_io::IoError>
+pub fn syrp_io::SubregionStream<S>::read_f64_le(&mut self) -> core::result::Result<f64, syrp_io::IoError>
+pub fn syrp_io::SubregionStream<S>::read_i16_be(&mut self) -> core::result::Result<i16, syrp_io::IoError>
+pub fn syrp_io::SubregionStream<S>::read_i16_le(&mut self) -> core::result::Result<i16, syrp_io::IoError>
+pub fn syrp_io::SubregionStream<S>::read_i32_be(&mut self) -> core::result::Result<i32, syrp_io::IoError>
+pub fn syrp_io::SubregionStream<S>::read_i32_le(&mut self) -> core::result::Result<i32, syrp_io::IoError>
+pub fn syrp_io::SubregionStream<S>::read_i64_be(&mut self) -> core::result::Result<i64, syrp_io::IoError>
+pub fn syrp_io::SubregionStream<S>::read_i64_le(&mut self) -> core::result::Result<i64, syrp_io::IoError>
+pub fn syrp_io::SubregionStream<S>::read_into_memory_block(&mut self, &mut syrp_io::MemoryBlock, core::option::Option<u64>) -> core::result::Result<u64, syrp_io::IoError>
+pub fn syrp_io::SubregionStream<S>::read_next_line(&mut self) -> core::result::Result<alloc::string::String, syrp_io::IoError>
+pub fn syrp_io::SubregionStream<S>::read_string(&mut self) -> core::result::Result<alloc::string::String, syrp_io::IoError>
+pub fn syrp_io::SubregionStream<S>::read_u8(&mut self) -> core::result::Result<u8, syrp_io::IoError>
+pub fn syrp_io::SubregionStream<S>::set_position(&mut self, u64) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::SubregionStream<S>::skip_next_bytes(&mut self, u64) -> core::result::Result<u64, syrp_io::IoError>
+pub fn syrp_io::SubregionStream<S>::total_length(&mut self) -> core::option::Option<u64>
+pub const syrp_io::DEFAULT_NEW_LINE: &str
+pub trait syrp_io::InputSource
+pub fn syrp_io::InputSource::create_input_stream(&self) -> core::result::Result<alloc::boxed::Box<(dyn syrp_io::InputStream + core::marker::Send)>, syrp_io::IoError>
+pub fn syrp_io::InputSource::create_input_stream_for(&self, &str) -> core::result::Result<alloc::boxed::Box<(dyn syrp_io::InputStream + core::marker::Send)>, syrp_io::IoError>
+pub fn syrp_io::InputSource::hash_code(&self) -> u64
+pub trait syrp_io::InputStream: alloc::io::read::Read
+pub fn syrp_io::InputStream::is_exhausted(&mut self) -> bool
+pub fn syrp_io::InputStream::position(&self) -> u64
+pub fn syrp_io::InputStream::read_bool(&mut self) -> core::result::Result<bool, syrp_io::IoError>
+pub fn syrp_io::InputStream::read_compressed_int(&mut self) -> core::result::Result<i32, syrp_io::IoError>
+pub fn syrp_io::InputStream::read_entire_stream_as_string(&mut self) -> core::result::Result<alloc::string::String, syrp_io::IoError>
+pub fn syrp_io::InputStream::read_f32_be(&mut self) -> core::result::Result<f32, syrp_io::IoError>
+pub fn syrp_io::InputStream::read_f32_le(&mut self) -> core::result::Result<f32, syrp_io::IoError>
+pub fn syrp_io::InputStream::read_f64_be(&mut self) -> core::result::Result<f64, syrp_io::IoError>
+pub fn syrp_io::InputStream::read_f64_le(&mut self) -> core::result::Result<f64, syrp_io::IoError>
+pub fn syrp_io::InputStream::read_i16_be(&mut self) -> core::result::Result<i16, syrp_io::IoError>
+pub fn syrp_io::InputStream::read_i16_le(&mut self) -> core::result::Result<i16, syrp_io::IoError>
+pub fn syrp_io::InputStream::read_i32_be(&mut self) -> core::result::Result<i32, syrp_io::IoError>
+pub fn syrp_io::InputStream::read_i32_le(&mut self) -> core::result::Result<i32, syrp_io::IoError>
+pub fn syrp_io::InputStream::read_i64_be(&mut self) -> core::result::Result<i64, syrp_io::IoError>
+pub fn syrp_io::InputStream::read_i64_le(&mut self) -> core::result::Result<i64, syrp_io::IoError>
+pub fn syrp_io::InputStream::read_into_memory_block(&mut self, &mut syrp_io::MemoryBlock, core::option::Option<u64>) -> core::result::Result<u64, syrp_io::IoError>
+pub fn syrp_io::InputStream::read_next_line(&mut self) -> core::result::Result<alloc::string::String, syrp_io::IoError>
+pub fn syrp_io::InputStream::read_string(&mut self) -> core::result::Result<alloc::string::String, syrp_io::IoError>
+pub fn syrp_io::InputStream::read_u8(&mut self) -> core::result::Result<u8, syrp_io::IoError>
+pub fn syrp_io::InputStream::set_position(&mut self, u64) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::InputStream::skip_next_bytes(&mut self, u64) -> core::result::Result<u64, syrp_io::IoError>
+pub fn syrp_io::InputStream::total_length(&mut self) -> core::option::Option<u64>
+impl syrp_io::InputStream for syrp_io::MemoryInputStream<'_>
+pub fn syrp_io::MemoryInputStream<'_>::is_exhausted(&mut self) -> bool
+pub fn syrp_io::MemoryInputStream<'_>::position(&self) -> u64
+pub fn syrp_io::MemoryInputStream<'_>::read_bool(&mut self) -> core::result::Result<bool, syrp_io::IoError>
+pub fn syrp_io::MemoryInputStream<'_>::read_compressed_int(&mut self) -> core::result::Result<i32, syrp_io::IoError>
+pub fn syrp_io::MemoryInputStream<'_>::read_entire_stream_as_string(&mut self) -> core::result::Result<alloc::string::String, syrp_io::IoError>
+pub fn syrp_io::MemoryInputStream<'_>::read_f32_be(&mut self) -> core::result::Result<f32, syrp_io::IoError>
+pub fn syrp_io::MemoryInputStream<'_>::read_f32_le(&mut self) -> core::result::Result<f32, syrp_io::IoError>
+pub fn syrp_io::MemoryInputStream<'_>::read_f64_be(&mut self) -> core::result::Result<f64, syrp_io::IoError>
+pub fn syrp_io::MemoryInputStream<'_>::read_f64_le(&mut self) -> core::result::Result<f64, syrp_io::IoError>
+pub fn syrp_io::MemoryInputStream<'_>::read_i16_be(&mut self) -> core::result::Result<i16, syrp_io::IoError>
+pub fn syrp_io::MemoryInputStream<'_>::read_i16_le(&mut self) -> core::result::Result<i16, syrp_io::IoError>
+pub fn syrp_io::MemoryInputStream<'_>::read_i32_be(&mut self) -> core::result::Result<i32, syrp_io::IoError>
+pub fn syrp_io::MemoryInputStream<'_>::read_i32_le(&mut self) -> core::result::Result<i32, syrp_io::IoError>
+pub fn syrp_io::MemoryInputStream<'_>::read_i64_be(&mut self) -> core::result::Result<i64, syrp_io::IoError>
+pub fn syrp_io::MemoryInputStream<'_>::read_i64_le(&mut self) -> core::result::Result<i64, syrp_io::IoError>
+pub fn syrp_io::MemoryInputStream<'_>::read_into_memory_block(&mut self, &mut syrp_io::MemoryBlock, core::option::Option<u64>) -> core::result::Result<u64, syrp_io::IoError>
+pub fn syrp_io::MemoryInputStream<'_>::read_next_line(&mut self) -> core::result::Result<alloc::string::String, syrp_io::IoError>
+pub fn syrp_io::MemoryInputStream<'_>::read_string(&mut self) -> core::result::Result<alloc::string::String, syrp_io::IoError>
+pub fn syrp_io::MemoryInputStream<'_>::read_u8(&mut self) -> core::result::Result<u8, syrp_io::IoError>
+pub fn syrp_io::MemoryInputStream<'_>::set_position(&mut self, u64) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::MemoryInputStream<'_>::skip_next_bytes(&mut self, u64) -> core::result::Result<u64, syrp_io::IoError>
+pub fn syrp_io::MemoryInputStream<'_>::total_length(&mut self) -> core::option::Option<u64>
+impl<R: alloc::io::read::Read + core::io::seek::Seek> syrp_io::InputStream for syrp_io::StdInputStream<R>
+pub fn syrp_io::StdInputStream<R>::is_exhausted(&mut self) -> bool
+pub fn syrp_io::StdInputStream<R>::position(&self) -> u64
+pub fn syrp_io::StdInputStream<R>::read_bool(&mut self) -> core::result::Result<bool, syrp_io::IoError>
+pub fn syrp_io::StdInputStream<R>::read_compressed_int(&mut self) -> core::result::Result<i32, syrp_io::IoError>
+pub fn syrp_io::StdInputStream<R>::read_entire_stream_as_string(&mut self) -> core::result::Result<alloc::string::String, syrp_io::IoError>
+pub fn syrp_io::StdInputStream<R>::read_f32_be(&mut self) -> core::result::Result<f32, syrp_io::IoError>
+pub fn syrp_io::StdInputStream<R>::read_f32_le(&mut self) -> core::result::Result<f32, syrp_io::IoError>
+pub fn syrp_io::StdInputStream<R>::read_f64_be(&mut self) -> core::result::Result<f64, syrp_io::IoError>
+pub fn syrp_io::StdInputStream<R>::read_f64_le(&mut self) -> core::result::Result<f64, syrp_io::IoError>
+pub fn syrp_io::StdInputStream<R>::read_i16_be(&mut self) -> core::result::Result<i16, syrp_io::IoError>
+pub fn syrp_io::StdInputStream<R>::read_i16_le(&mut self) -> core::result::Result<i16, syrp_io::IoError>
+pub fn syrp_io::StdInputStream<R>::read_i32_be(&mut self) -> core::result::Result<i32, syrp_io::IoError>
+pub fn syrp_io::StdInputStream<R>::read_i32_le(&mut self) -> core::result::Result<i32, syrp_io::IoError>
+pub fn syrp_io::StdInputStream<R>::read_i64_be(&mut self) -> core::result::Result<i64, syrp_io::IoError>
+pub fn syrp_io::StdInputStream<R>::read_i64_le(&mut self) -> core::result::Result<i64, syrp_io::IoError>
+pub fn syrp_io::StdInputStream<R>::read_into_memory_block(&mut self, &mut syrp_io::MemoryBlock, core::option::Option<u64>) -> core::result::Result<u64, syrp_io::IoError>
+pub fn syrp_io::StdInputStream<R>::read_next_line(&mut self) -> core::result::Result<alloc::string::String, syrp_io::IoError>
+pub fn syrp_io::StdInputStream<R>::read_string(&mut self) -> core::result::Result<alloc::string::String, syrp_io::IoError>
+pub fn syrp_io::StdInputStream<R>::read_u8(&mut self) -> core::result::Result<u8, syrp_io::IoError>
+pub fn syrp_io::StdInputStream<R>::set_position(&mut self, u64) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::StdInputStream<R>::skip_next_bytes(&mut self, u64) -> core::result::Result<u64, syrp_io::IoError>
+pub fn syrp_io::StdInputStream<R>::total_length(&mut self) -> core::option::Option<u64>
+impl<S: syrp_io::InputStream + ?core::marker::Sized> syrp_io::InputStream for &mut S
+pub fn &mut S::is_exhausted(&mut self) -> bool
+pub fn &mut S::position(&self) -> u64
+pub fn &mut S::read_bool(&mut self) -> core::result::Result<bool, syrp_io::IoError>
+pub fn &mut S::read_compressed_int(&mut self) -> core::result::Result<i32, syrp_io::IoError>
+pub fn &mut S::read_entire_stream_as_string(&mut self) -> core::result::Result<alloc::string::String, syrp_io::IoError>
+pub fn &mut S::read_f32_be(&mut self) -> core::result::Result<f32, syrp_io::IoError>
+pub fn &mut S::read_f32_le(&mut self) -> core::result::Result<f32, syrp_io::IoError>
+pub fn &mut S::read_f64_be(&mut self) -> core::result::Result<f64, syrp_io::IoError>
+pub fn &mut S::read_f64_le(&mut self) -> core::result::Result<f64, syrp_io::IoError>
+pub fn &mut S::read_i16_be(&mut self) -> core::result::Result<i16, syrp_io::IoError>
+pub fn &mut S::read_i16_le(&mut self) -> core::result::Result<i16, syrp_io::IoError>
+pub fn &mut S::read_i32_be(&mut self) -> core::result::Result<i32, syrp_io::IoError>
+pub fn &mut S::read_i32_le(&mut self) -> core::result::Result<i32, syrp_io::IoError>
+pub fn &mut S::read_i64_be(&mut self) -> core::result::Result<i64, syrp_io::IoError>
+pub fn &mut S::read_i64_le(&mut self) -> core::result::Result<i64, syrp_io::IoError>
+pub fn &mut S::read_into_memory_block(&mut self, &mut syrp_io::MemoryBlock, core::option::Option<u64>) -> core::result::Result<u64, syrp_io::IoError>
+pub fn &mut S::read_next_line(&mut self) -> core::result::Result<alloc::string::String, syrp_io::IoError>
+pub fn &mut S::read_string(&mut self) -> core::result::Result<alloc::string::String, syrp_io::IoError>
+pub fn &mut S::read_u8(&mut self) -> core::result::Result<u8, syrp_io::IoError>
+pub fn &mut S::set_position(&mut self, u64) -> core::result::Result<(), syrp_io::IoError>
+pub fn &mut S::skip_next_bytes(&mut self, u64) -> core::result::Result<u64, syrp_io::IoError>
+pub fn &mut S::total_length(&mut self) -> core::option::Option<u64>
+impl<S: syrp_io::InputStream + ?core::marker::Sized> syrp_io::InputStream for alloc::boxed::Box<S>
+pub fn alloc::boxed::Box<S>::is_exhausted(&mut self) -> bool
+pub fn alloc::boxed::Box<S>::position(&self) -> u64
+pub fn alloc::boxed::Box<S>::read_bool(&mut self) -> core::result::Result<bool, syrp_io::IoError>
+pub fn alloc::boxed::Box<S>::read_compressed_int(&mut self) -> core::result::Result<i32, syrp_io::IoError>
+pub fn alloc::boxed::Box<S>::read_entire_stream_as_string(&mut self) -> core::result::Result<alloc::string::String, syrp_io::IoError>
+pub fn alloc::boxed::Box<S>::read_f32_be(&mut self) -> core::result::Result<f32, syrp_io::IoError>
+pub fn alloc::boxed::Box<S>::read_f32_le(&mut self) -> core::result::Result<f32, syrp_io::IoError>
+pub fn alloc::boxed::Box<S>::read_f64_be(&mut self) -> core::result::Result<f64, syrp_io::IoError>
+pub fn alloc::boxed::Box<S>::read_f64_le(&mut self) -> core::result::Result<f64, syrp_io::IoError>
+pub fn alloc::boxed::Box<S>::read_i16_be(&mut self) -> core::result::Result<i16, syrp_io::IoError>
+pub fn alloc::boxed::Box<S>::read_i16_le(&mut self) -> core::result::Result<i16, syrp_io::IoError>
+pub fn alloc::boxed::Box<S>::read_i32_be(&mut self) -> core::result::Result<i32, syrp_io::IoError>
+pub fn alloc::boxed::Box<S>::read_i32_le(&mut self) -> core::result::Result<i32, syrp_io::IoError>
+pub fn alloc::boxed::Box<S>::read_i64_be(&mut self) -> core::result::Result<i64, syrp_io::IoError>
+pub fn alloc::boxed::Box<S>::read_i64_le(&mut self) -> core::result::Result<i64, syrp_io::IoError>
+pub fn alloc::boxed::Box<S>::read_into_memory_block(&mut self, &mut syrp_io::MemoryBlock, core::option::Option<u64>) -> core::result::Result<u64, syrp_io::IoError>
+pub fn alloc::boxed::Box<S>::read_next_line(&mut self) -> core::result::Result<alloc::string::String, syrp_io::IoError>
+pub fn alloc::boxed::Box<S>::read_string(&mut self) -> core::result::Result<alloc::string::String, syrp_io::IoError>
+pub fn alloc::boxed::Box<S>::read_u8(&mut self) -> core::result::Result<u8, syrp_io::IoError>
+pub fn alloc::boxed::Box<S>::set_position(&mut self, u64) -> core::result::Result<(), syrp_io::IoError>
+pub fn alloc::boxed::Box<S>::skip_next_bytes(&mut self, u64) -> core::result::Result<u64, syrp_io::IoError>
+pub fn alloc::boxed::Box<S>::total_length(&mut self) -> core::option::Option<u64>
+impl<S: syrp_io::InputStream> syrp_io::InputStream for syrp_io::BufferedInputStream<S>
+pub fn syrp_io::BufferedInputStream<S>::is_exhausted(&mut self) -> bool
+pub fn syrp_io::BufferedInputStream<S>::position(&self) -> u64
+pub fn syrp_io::BufferedInputStream<S>::read_bool(&mut self) -> core::result::Result<bool, syrp_io::IoError>
+pub fn syrp_io::BufferedInputStream<S>::read_compressed_int(&mut self) -> core::result::Result<i32, syrp_io::IoError>
+pub fn syrp_io::BufferedInputStream<S>::read_entire_stream_as_string(&mut self) -> core::result::Result<alloc::string::String, syrp_io::IoError>
+pub fn syrp_io::BufferedInputStream<S>::read_f32_be(&mut self) -> core::result::Result<f32, syrp_io::IoError>
+pub fn syrp_io::BufferedInputStream<S>::read_f32_le(&mut self) -> core::result::Result<f32, syrp_io::IoError>
+pub fn syrp_io::BufferedInputStream<S>::read_f64_be(&mut self) -> core::result::Result<f64, syrp_io::IoError>
+pub fn syrp_io::BufferedInputStream<S>::read_f64_le(&mut self) -> core::result::Result<f64, syrp_io::IoError>
+pub fn syrp_io::BufferedInputStream<S>::read_i16_be(&mut self) -> core::result::Result<i16, syrp_io::IoError>
+pub fn syrp_io::BufferedInputStream<S>::read_i16_le(&mut self) -> core::result::Result<i16, syrp_io::IoError>
+pub fn syrp_io::BufferedInputStream<S>::read_i32_be(&mut self) -> core::result::Result<i32, syrp_io::IoError>
+pub fn syrp_io::BufferedInputStream<S>::read_i32_le(&mut self) -> core::result::Result<i32, syrp_io::IoError>
+pub fn syrp_io::BufferedInputStream<S>::read_i64_be(&mut self) -> core::result::Result<i64, syrp_io::IoError>
+pub fn syrp_io::BufferedInputStream<S>::read_i64_le(&mut self) -> core::result::Result<i64, syrp_io::IoError>
+pub fn syrp_io::BufferedInputStream<S>::read_into_memory_block(&mut self, &mut syrp_io::MemoryBlock, core::option::Option<u64>) -> core::result::Result<u64, syrp_io::IoError>
+pub fn syrp_io::BufferedInputStream<S>::read_next_line(&mut self) -> core::result::Result<alloc::string::String, syrp_io::IoError>
+pub fn syrp_io::BufferedInputStream<S>::read_string(&mut self) -> core::result::Result<alloc::string::String, syrp_io::IoError>
+pub fn syrp_io::BufferedInputStream<S>::read_u8(&mut self) -> core::result::Result<u8, syrp_io::IoError>
+pub fn syrp_io::BufferedInputStream<S>::set_position(&mut self, u64) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::BufferedInputStream<S>::skip_next_bytes(&mut self, u64) -> core::result::Result<u64, syrp_io::IoError>
+pub fn syrp_io::BufferedInputStream<S>::total_length(&mut self) -> core::option::Option<u64>
+impl<S: syrp_io::InputStream> syrp_io::InputStream for syrp_io::SubregionStream<S>
+pub fn syrp_io::SubregionStream<S>::is_exhausted(&mut self) -> bool
+pub fn syrp_io::SubregionStream<S>::position(&self) -> u64
+pub fn syrp_io::SubregionStream<S>::read_bool(&mut self) -> core::result::Result<bool, syrp_io::IoError>
+pub fn syrp_io::SubregionStream<S>::read_compressed_int(&mut self) -> core::result::Result<i32, syrp_io::IoError>
+pub fn syrp_io::SubregionStream<S>::read_entire_stream_as_string(&mut self) -> core::result::Result<alloc::string::String, syrp_io::IoError>
+pub fn syrp_io::SubregionStream<S>::read_f32_be(&mut self) -> core::result::Result<f32, syrp_io::IoError>
+pub fn syrp_io::SubregionStream<S>::read_f32_le(&mut self) -> core::result::Result<f32, syrp_io::IoError>
+pub fn syrp_io::SubregionStream<S>::read_f64_be(&mut self) -> core::result::Result<f64, syrp_io::IoError>
+pub fn syrp_io::SubregionStream<S>::read_f64_le(&mut self) -> core::result::Result<f64, syrp_io::IoError>
+pub fn syrp_io::SubregionStream<S>::read_i16_be(&mut self) -> core::result::Result<i16, syrp_io::IoError>
+pub fn syrp_io::SubregionStream<S>::read_i16_le(&mut self) -> core::result::Result<i16, syrp_io::IoError>
+pub fn syrp_io::SubregionStream<S>::read_i32_be(&mut self) -> core::result::Result<i32, syrp_io::IoError>
+pub fn syrp_io::SubregionStream<S>::read_i32_le(&mut self) -> core::result::Result<i32, syrp_io::IoError>
+pub fn syrp_io::SubregionStream<S>::read_i64_be(&mut self) -> core::result::Result<i64, syrp_io::IoError>
+pub fn syrp_io::SubregionStream<S>::read_i64_le(&mut self) -> core::result::Result<i64, syrp_io::IoError>
+pub fn syrp_io::SubregionStream<S>::read_into_memory_block(&mut self, &mut syrp_io::MemoryBlock, core::option::Option<u64>) -> core::result::Result<u64, syrp_io::IoError>
+pub fn syrp_io::SubregionStream<S>::read_next_line(&mut self) -> core::result::Result<alloc::string::String, syrp_io::IoError>
+pub fn syrp_io::SubregionStream<S>::read_string(&mut self) -> core::result::Result<alloc::string::String, syrp_io::IoError>
+pub fn syrp_io::SubregionStream<S>::read_u8(&mut self) -> core::result::Result<u8, syrp_io::IoError>
+pub fn syrp_io::SubregionStream<S>::set_position(&mut self, u64) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::SubregionStream<S>::skip_next_bytes(&mut self, u64) -> core::result::Result<u64, syrp_io::IoError>
+pub fn syrp_io::SubregionStream<S>::total_length(&mut self) -> core::option::Option<u64>
+pub trait syrp_io::OutputStream: core::io::write::Write
+pub fn syrp_io::OutputStream::new_line(&self) -> &str
+pub fn syrp_io::OutputStream::position(&self) -> u64
+pub fn syrp_io::OutputStream::set_new_line(&mut self, &str)
+pub fn syrp_io::OutputStream::set_position(&mut self, u64) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::OutputStream::write_bool(&mut self, bool) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::OutputStream::write_compressed_int(&mut self, i32) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::OutputStream::write_f32_be(&mut self, f32) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::OutputStream::write_f32_le(&mut self, f32) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::OutputStream::write_f64_be(&mut self, f64) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::OutputStream::write_f64_le(&mut self, f64) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::OutputStream::write_from_input_stream(&mut self, &mut dyn syrp_io::InputStream, core::option::Option<u64>) -> core::result::Result<u64, syrp_io::IoError>
+pub fn syrp_io::OutputStream::write_i16_be(&mut self, i16) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::OutputStream::write_i16_le(&mut self, i16) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::OutputStream::write_i32_be(&mut self, i32) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::OutputStream::write_i32_le(&mut self, i32) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::OutputStream::write_i64_be(&mut self, i64) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::OutputStream::write_i64_le(&mut self, i64) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::OutputStream::write_new_line(&mut self) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::OutputStream::write_repeated_byte(&mut self, u8, u64) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::OutputStream::write_string(&mut self, &str) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::OutputStream::write_text(&mut self, &str, bool, bool, core::option::Option<&str>) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::OutputStream::write_u8(&mut self, u8) -> core::result::Result<(), syrp_io::IoError>
+impl syrp_io::OutputStream for syrp_io::MemoryOutputStream<'_>
+pub fn syrp_io::MemoryOutputStream<'_>::new_line(&self) -> &str
+pub fn syrp_io::MemoryOutputStream<'_>::position(&self) -> u64
+pub fn syrp_io::MemoryOutputStream<'_>::set_new_line(&mut self, &str)
+pub fn syrp_io::MemoryOutputStream<'_>::set_position(&mut self, u64) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::MemoryOutputStream<'_>::write_bool(&mut self, bool) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::MemoryOutputStream<'_>::write_compressed_int(&mut self, i32) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::MemoryOutputStream<'_>::write_f32_be(&mut self, f32) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::MemoryOutputStream<'_>::write_f32_le(&mut self, f32) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::MemoryOutputStream<'_>::write_f64_be(&mut self, f64) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::MemoryOutputStream<'_>::write_f64_le(&mut self, f64) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::MemoryOutputStream<'_>::write_from_input_stream(&mut self, &mut dyn syrp_io::InputStream, core::option::Option<u64>) -> core::result::Result<u64, syrp_io::IoError>
+pub fn syrp_io::MemoryOutputStream<'_>::write_i16_be(&mut self, i16) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::MemoryOutputStream<'_>::write_i16_le(&mut self, i16) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::MemoryOutputStream<'_>::write_i32_be(&mut self, i32) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::MemoryOutputStream<'_>::write_i32_le(&mut self, i32) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::MemoryOutputStream<'_>::write_i64_be(&mut self, i64) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::MemoryOutputStream<'_>::write_i64_le(&mut self, i64) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::MemoryOutputStream<'_>::write_new_line(&mut self) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::MemoryOutputStream<'_>::write_repeated_byte(&mut self, u8, u64) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::MemoryOutputStream<'_>::write_string(&mut self, &str) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::MemoryOutputStream<'_>::write_text(&mut self, &str, bool, bool, core::option::Option<&str>) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::MemoryOutputStream<'_>::write_u8(&mut self, u8) -> core::result::Result<(), syrp_io::IoError>
+impl<S: syrp_io::OutputStream + ?core::marker::Sized> syrp_io::OutputStream for &mut S
+pub fn &mut S::new_line(&self) -> &str
+pub fn &mut S::position(&self) -> u64
+pub fn &mut S::set_new_line(&mut self, &str)
+pub fn &mut S::set_position(&mut self, u64) -> core::result::Result<(), syrp_io::IoError>
+pub fn &mut S::write_bool(&mut self, bool) -> core::result::Result<(), syrp_io::IoError>
+pub fn &mut S::write_compressed_int(&mut self, i32) -> core::result::Result<(), syrp_io::IoError>
+pub fn &mut S::write_f32_be(&mut self, f32) -> core::result::Result<(), syrp_io::IoError>
+pub fn &mut S::write_f32_le(&mut self, f32) -> core::result::Result<(), syrp_io::IoError>
+pub fn &mut S::write_f64_be(&mut self, f64) -> core::result::Result<(), syrp_io::IoError>
+pub fn &mut S::write_f64_le(&mut self, f64) -> core::result::Result<(), syrp_io::IoError>
+pub fn &mut S::write_from_input_stream(&mut self, &mut dyn syrp_io::InputStream, core::option::Option<u64>) -> core::result::Result<u64, syrp_io::IoError>
+pub fn &mut S::write_i16_be(&mut self, i16) -> core::result::Result<(), syrp_io::IoError>
+pub fn &mut S::write_i16_le(&mut self, i16) -> core::result::Result<(), syrp_io::IoError>
+pub fn &mut S::write_i32_be(&mut self, i32) -> core::result::Result<(), syrp_io::IoError>
+pub fn &mut S::write_i32_le(&mut self, i32) -> core::result::Result<(), syrp_io::IoError>
+pub fn &mut S::write_i64_be(&mut self, i64) -> core::result::Result<(), syrp_io::IoError>
+pub fn &mut S::write_i64_le(&mut self, i64) -> core::result::Result<(), syrp_io::IoError>
+pub fn &mut S::write_new_line(&mut self) -> core::result::Result<(), syrp_io::IoError>
+pub fn &mut S::write_repeated_byte(&mut self, u8, u64) -> core::result::Result<(), syrp_io::IoError>
+pub fn &mut S::write_string(&mut self, &str) -> core::result::Result<(), syrp_io::IoError>
+pub fn &mut S::write_text(&mut self, &str, bool, bool, core::option::Option<&str>) -> core::result::Result<(), syrp_io::IoError>
+pub fn &mut S::write_u8(&mut self, u8) -> core::result::Result<(), syrp_io::IoError>
+impl<S: syrp_io::OutputStream + ?core::marker::Sized> syrp_io::OutputStream for alloc::boxed::Box<S>
+pub fn alloc::boxed::Box<S>::new_line(&self) -> &str
+pub fn alloc::boxed::Box<S>::position(&self) -> u64
+pub fn alloc::boxed::Box<S>::set_new_line(&mut self, &str)
+pub fn alloc::boxed::Box<S>::set_position(&mut self, u64) -> core::result::Result<(), syrp_io::IoError>
+pub fn alloc::boxed::Box<S>::write_bool(&mut self, bool) -> core::result::Result<(), syrp_io::IoError>
+pub fn alloc::boxed::Box<S>::write_compressed_int(&mut self, i32) -> core::result::Result<(), syrp_io::IoError>
+pub fn alloc::boxed::Box<S>::write_f32_be(&mut self, f32) -> core::result::Result<(), syrp_io::IoError>
+pub fn alloc::boxed::Box<S>::write_f32_le(&mut self, f32) -> core::result::Result<(), syrp_io::IoError>
+pub fn alloc::boxed::Box<S>::write_f64_be(&mut self, f64) -> core::result::Result<(), syrp_io::IoError>
+pub fn alloc::boxed::Box<S>::write_f64_le(&mut self, f64) -> core::result::Result<(), syrp_io::IoError>
+pub fn alloc::boxed::Box<S>::write_from_input_stream(&mut self, &mut dyn syrp_io::InputStream, core::option::Option<u64>) -> core::result::Result<u64, syrp_io::IoError>
+pub fn alloc::boxed::Box<S>::write_i16_be(&mut self, i16) -> core::result::Result<(), syrp_io::IoError>
+pub fn alloc::boxed::Box<S>::write_i16_le(&mut self, i16) -> core::result::Result<(), syrp_io::IoError>
+pub fn alloc::boxed::Box<S>::write_i32_be(&mut self, i32) -> core::result::Result<(), syrp_io::IoError>
+pub fn alloc::boxed::Box<S>::write_i32_le(&mut self, i32) -> core::result::Result<(), syrp_io::IoError>
+pub fn alloc::boxed::Box<S>::write_i64_be(&mut self, i64) -> core::result::Result<(), syrp_io::IoError>
+pub fn alloc::boxed::Box<S>::write_i64_le(&mut self, i64) -> core::result::Result<(), syrp_io::IoError>
+pub fn alloc::boxed::Box<S>::write_new_line(&mut self) -> core::result::Result<(), syrp_io::IoError>
+pub fn alloc::boxed::Box<S>::write_repeated_byte(&mut self, u8, u64) -> core::result::Result<(), syrp_io::IoError>
+pub fn alloc::boxed::Box<S>::write_string(&mut self, &str) -> core::result::Result<(), syrp_io::IoError>
+pub fn alloc::boxed::Box<S>::write_text(&mut self, &str, bool, bool, core::option::Option<&str>) -> core::result::Result<(), syrp_io::IoError>
+pub fn alloc::boxed::Box<S>::write_u8(&mut self, u8) -> core::result::Result<(), syrp_io::IoError>
+impl<W: core::io::write::Write + core::io::seek::Seek> syrp_io::OutputStream for syrp_io::StdOutputStream<W>
+pub fn syrp_io::StdOutputStream<W>::new_line(&self) -> &str
+pub fn syrp_io::StdOutputStream<W>::position(&self) -> u64
+pub fn syrp_io::StdOutputStream<W>::set_new_line(&mut self, &str)
+pub fn syrp_io::StdOutputStream<W>::set_position(&mut self, u64) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::StdOutputStream<W>::write_bool(&mut self, bool) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::StdOutputStream<W>::write_compressed_int(&mut self, i32) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::StdOutputStream<W>::write_f32_be(&mut self, f32) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::StdOutputStream<W>::write_f32_le(&mut self, f32) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::StdOutputStream<W>::write_f64_be(&mut self, f64) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::StdOutputStream<W>::write_f64_le(&mut self, f64) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::StdOutputStream<W>::write_from_input_stream(&mut self, &mut dyn syrp_io::InputStream, core::option::Option<u64>) -> core::result::Result<u64, syrp_io::IoError>
+pub fn syrp_io::StdOutputStream<W>::write_i16_be(&mut self, i16) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::StdOutputStream<W>::write_i16_le(&mut self, i16) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::StdOutputStream<W>::write_i32_be(&mut self, i32) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::StdOutputStream<W>::write_i32_le(&mut self, i32) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::StdOutputStream<W>::write_i64_be(&mut self, i64) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::StdOutputStream<W>::write_i64_le(&mut self, i64) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::StdOutputStream<W>::write_new_line(&mut self) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::StdOutputStream<W>::write_repeated_byte(&mut self, u8, u64) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::StdOutputStream<W>::write_string(&mut self, &str) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::StdOutputStream<W>::write_text(&mut self, &str, bool, bool, core::option::Option<&str>) -> core::result::Result<(), syrp_io::IoError>
+pub fn syrp_io::StdOutputStream<W>::write_u8(&mut self, u8) -> core::result::Result<(), syrp_io::IoError>

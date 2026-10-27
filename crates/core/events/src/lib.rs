@@ -6,6 +6,7 @@
 //! `ManualLoop`) runs on it unchanged, and adds what only an owned loop has: [`run`],
 //! [`run_for`], [`dispatch_pending`], [`with_token`] and a [`QuitHandle`]. On Linux it is an
 //! `epoll` loop, and peers add their file descriptors with `EventLoop::add_fd`.
+//! Display peers take over VBlank callbacks with [`EventLoop::vblank_driver`].
 //!
 //! [`run`]: EventLoop::run
 //! [`run_for`]: EventLoop::run_for
@@ -25,8 +26,10 @@
 mod error;
 mod event_loop;
 mod os;
+mod vblank;
 
 pub use error::EventsError;
 pub use event_loop::{EventLoop, QuitHandle};
 #[cfg(target_os = "linux")]
 pub use os::epoll::{FdFn, FdGuard, Interest, Readiness};
+pub use vblank::VBlankDriver;

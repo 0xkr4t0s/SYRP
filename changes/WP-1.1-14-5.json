@@ -1,0 +1,1 @@
+{"wp": "WP-1.1-14", "kind": "fixed", "summary": "syrp-events: the b2 test for a timer made inside a callback reads the clock before creating the timer, so it no longer races the precise macOS kqueue timer."}

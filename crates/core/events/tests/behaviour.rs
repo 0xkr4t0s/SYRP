@@ -221,3 +221,30 @@ fn b9_errors_are_catalogued_in_errors_loop_toml() {
         assert!(catalogue.contains(&format!("code = \"{code}\"")));
     }
 }
+
+#[test]
+fn b8_migration_page_maps_message_manager_and_records_the_lock_deviation() {
+    let page = include_str!("../../../../docs/migration/message-manager.md");
+    let lines: Vec<&str> = page.lines().collect(); // CRLF-safe on Windows checkouts
+    assert_eq!(lines.first(), Some(&"---"));
+    assert!(lines.contains(&"juce: juce::MessageManager"));
+    for (juce, syrp) in [
+        ("`MessageManager::callAsync (fn)`", "post(Task::new(fn))"),
+        (
+            "`MessageManager::callFunctionOnMessageThread (fn, data)`",
+            "post_and_wait",
+        ),
+        (
+            "`MessageManager::isThisTheMessageThread()`",
+            "is_message_thread",
+        ),
+        ("`CallbackMessage`", "post(Task::new"),
+        ("`Message` and `MessageListener", "post"),
+        ("`MessageManagerLock`", "Not provided"),
+    ] {
+        let row = lines.iter().find(|l| l.starts_with(&format!("| {juce}")));
+        let row = row.unwrap_or_else(|| panic!("no row for {juce}"));
+        assert!(row.contains(syrp), "{juce} should map to {syrp}");
+    }
+    assert!(lines.contains(&"## No MessageManagerLock"));
+}

@@ -1,0 +1,1 @@
+{"wp": "WP-1.1-14", "kind": "added", "summary": "syrp-events (increment 4, final): EventLoop::vblank_driver(peer) -> VBlankDriver, which stops the 60 Hz VBlank fallback for that peer and fires its callbacks with the peer's refresh times, and the MessageManager migration page (docs/migration/message-manager.md)."}
