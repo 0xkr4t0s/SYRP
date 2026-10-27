@@ -6,9 +6,9 @@ traits over `std::io::Read`/`Write` with JUCE's positioned, typed API; `StdInput
 `StdOutputStream` adapt any `Read + Seek`/`Write + Seek`. `MemoryBlock` is JUCE's
 `MemoryBlock`. `IoError` (codes in `errors/io.toml`) converts both ways with `std::io::Error`.
 `MemoryInputStream`/`MemoryOutputStream` stream over bytes in memory and `InputSource` opens
-fresh streams on demand. Modules: `error`, `input`, `output`, `memory_block`, `memory_stream`,
-`source`. Later increments add `buffered` and `subregion` here (WP-1.1-03), files (WP-1.1-04)
-and zip/gzip (WP-1.1-05).
+fresh streams on demand. `BufferedInputStream` reads ahead over another stream and
+`SubregionStream` shows a window of one. Modules: `error`, `input`, `output`, `memory_block`,
+`memory_stream`, `buffered`, `subregion`, `source`. Files are WP-1.1-04, zip/gzip WP-1.1-05.
 
 ## Ledger rows
 juce_core/InputStream, juce_core/OutputStream, juce_core/MemoryBlock,
@@ -26,6 +26,11 @@ juce_core/SubregionStream, juce_core/InputSource
 - `MemoryInputStream::set_position` past the end clips to the end (Syrp's choice).
   `MemoryOutputStream::set_position` past `len()` zero-fills up to the new position at once
   (Syrp's choice, pinned by `b4_output_set_position_past_end_zero_fills_syrp_choice`).
+- `BufferedInputStream` serves seeks inside its block (end included) without touching the
+  source; other seeks reach the source at once. `peek_byte` is `None` at the end (JUCE: zero).
+  `into_inner` leaves the source wherever the last refill put it.
+- `SubregionStream` clips its length to a source of known length, clips seeks to the window,
+  and never reads past the window's end.
 - A fixed-slice `MemoryOutputStream` write or seek that does not fit changes nothing and is
   `SYRP-IO-0002`; growth failures are `SYRP-IO-0005`.
 - `MemoryBlock` never panics on out-of-range offsets (clips; `copy_to` zero-fills) and never
@@ -59,5 +64,5 @@ B2 and B3 use proptest (typed round trips; `MemoryBlock` against a `Vec<u8>` mod
 - `write_text` with `write_bom` writes `FF FE` for UTF-16 only; UTF-8 never gets a BOM.
 
 ## Known gaps
-WP-1.1-03 is in progress; B1, B2, B3, B4, B6 and the error codes of B7 are done. Still to
-come: B5 `BufferedInputStream` and `SubregionStream`, and the Miri run.
+B1 to B7 are done. Miri has not been run locally (no nightly toolchain here); the nightly CI
+job covers it.
