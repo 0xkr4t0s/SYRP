@@ -1,0 +1,1 @@
+{"wp": "WP-2.1-17", "kind": "added", "summary": "syrp-format-aiff: MARK, INST and text metadata reading, and AIFF / AIFF-C fl32 writing with markers, loops, text and raw chunks plus AiffAudioFormat::unwritable_items (increment 2: B3-B4)."}

@@ -87,3 +87,49 @@ pub fn read_all(r: &mut dyn AudioReader) -> Vec<f64> {
     out.truncate(ch * n);
     out
 }
+
+/// An in-memory sink whose bytes stay readable after the writer takes it.
+#[derive(Clone, Default)]
+pub struct Shared(pub std::sync::Arc<std::sync::Mutex<Cursor<Vec<u8>>>>);
+
+impl std::io::Write for Shared {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        self.0.lock().unwrap().write(buf)
+    }
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+
+impl std::io::Seek for Shared {
+    fn seek(&mut self, pos: std::io::SeekFrom) -> std::io::Result<u64> {
+        self.0.lock().unwrap().seek(pos)
+    }
+}
+
+impl Shared {
+    pub fn bytes(&self) -> Vec<u8> {
+        self.0.lock().unwrap().get_ref().clone()
+    }
+}
+
+/// Writes `data` (channel-major, `channels` channels) with `options` and returns the file.
+pub fn write_file(
+    options: &syrp_format_api::WriterOptions,
+    channels: usize,
+    data: &[f32],
+) -> Vec<u8> {
+    let sink = Shared::default();
+    let mut w = AiffAudioFormat::new()
+        .create_writer(Box::new(sink.clone()), options)
+        .unwrap();
+    let n = data.len() / channels;
+    w.write(
+        syrp_audio_api::AudioBlock::new(data, channels, n, n)
+            .unwrap()
+            .into(),
+    )
+    .unwrap();
+    w.finish().unwrap();
+    sink.bytes()
+}
