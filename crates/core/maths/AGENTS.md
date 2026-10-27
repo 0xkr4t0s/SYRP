@@ -37,6 +37,11 @@ juce_core/BigInteger
 - `BigInteger` text: bases 2, 8, 10 and 16 only; anything else, empty text or a non-digit is
   `MathsError::InvalidBaseOrDigit` (`SYRP-MATHS-0002`). `to_le_bytes` drops high zero bytes
   and the sign; `from_le_bytes` accepts any bytes and is never negative.
+- `BigInteger` number theory: results are in `0..|modulus|`; modulus signs are ignored. Not
+  constant-time (fine for `Primes`/`RSAKey` key generation, not for secret-dependent timing).
+  `montgomeryMultiplication` is left out: its documented contract is not specified enough.
+- `parity/scenarios/maths/big_integer/` (owned with this crate) holds inputs only;
+  `tests/big_integer_scenarios.rs` checks they cover every op in `scenario.schema.json`.
 
 ## Thread affinity
 `Range`, `NormalisableRange`, `Random` and `StatisticsAccumulator` are `RtSafe`: any thread,
@@ -56,9 +61,9 @@ values and algebraic identities for large ones. `tests/no_alloc.rs` installs
 `syrp_rt::GuardedAllocator`; keep it its own test binary.
 
 ## Known gaps
-All WP-1.1-11 behaviours (B1-B6) are covered. WP-1.1-16 increments 1-2 cover BigInteger B1-B4;
-number theory (B5) and the parity scenarios (B6) come in increment 3.
-`Expression` is a later WP. Multiplication is schoolbook (no Karatsuba).
+All WP-1.1-11 behaviours (B1-B6) are covered. All WP-1.1-16 behaviours (B1-B6) are covered;
+the scenarios have no reference outputs until the harness runs them. `Expression` is a later
+WP. Multiplication is schoolbook (no Karatsuba); division is long division.
 
 ## Open questions
 - Are capturing closures ever needed for custom `NormalisableRange` mappings? JUCE accepts
@@ -74,3 +79,7 @@ number theory (B5) and the parity scenarios (B6) come in increment 3.
 - `BigInteger::to_string_radix`: hex is lowercase, the `-` goes before the zero padding and is
   not counted in `minimum_digits`, and an unsupported base is an error (Syrp's choices; the
   JUCE documentation does not say). `to_le_bytes` of zero is empty.
+- `BigInteger::exponent_modulo`: a zero modulus gives zero and a negative exponent raises the
+  modular inverse (zero when there is none); `inverse_modulo` with modulus 1 is `Some(0)`.
+  Syrp's choices, pinned by `b5_exponent_modulo_syrp_choices` and
+  `b5_inverse_and_gcd_edge_cases`; the scenarios use positive moduli only.
