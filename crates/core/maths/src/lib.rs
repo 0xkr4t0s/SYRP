@@ -9,7 +9,7 @@
 //!   [`round_to_int`] and the [`MathConstants`] for `f32` and `f64`.
 //! - [`Random`]: a seedable SplitMix64 generator, and the shared [`system_random`].
 //! - [`StatisticsAccumulator`]: running mean, variance, minimum and maximum (Welford).
-//! - [`BigInteger`]: an arbitrary-size signed integer with arithmetic and division.
+//! - [`BigInteger`]: an arbitrary-size signed integer with arithmetic and bit operations.
 //!
 //! Nothing here allocates except [`BigInteger`], [`Random::with_entropy`] and
 //! [`system_random`]. `Range`,
@@ -62,7 +62,7 @@ unsafe impl syrp_rt::RtSafe for Random {}
 // accessors are arithmetic only.
 unsafe impl<T: Float + syrp_rt::RtSafe> syrp_rt::RtSafe for StatisticsAccumulator<T> {}
 
-/// Errors from building the numeric types in this crate.
+/// Errors from building or parsing the numeric types in this crate.
 ///
 /// ```
 /// use syrp_error::Diagnostic;
@@ -74,12 +74,18 @@ unsafe impl<T: Float + syrp_rt::RtSafe> syrp_rt::RtSafe for StatisticsAccumulato
 pub enum MathsError {
     /// A `NormalisableRange` argument is out of its legal domain (`SYRP-MATHS-0001`).
     InvalidRange,
+    /// A `BigInteger` text base other than 2, 8, 10 or 16, or text that is not a number in
+    /// that base (`SYRP-MATHS-0002`).
+    InvalidBaseOrDigit,
 }
 
 impl fmt::Display for MathsError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(match self {
             MathsError::InvalidRange => "invalid NormalisableRange parameters",
+            MathsError::InvalidBaseOrDigit => {
+                "unsupported base or invalid digit in BigInteger text"
+            }
         })
     }
 }
@@ -90,6 +96,7 @@ impl Diagnostic for MathsError {
     fn code(&self) -> ErrorCode {
         ErrorCode::new(match self {
             MathsError::InvalidRange => "SYRP-MATHS-0001",
+            MathsError::InvalidBaseOrDigit => "SYRP-MATHS-0002",
         })
     }
 }

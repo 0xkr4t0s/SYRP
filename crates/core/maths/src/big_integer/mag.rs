@@ -73,8 +73,21 @@ pub(super) fn mul(a: &[u64], b: &[u64]) -> Vec<u64> {
     out
 }
 
+/// `v = v * m + a` in place, for single limbs `m` and `a`.
+pub(super) fn mul_add_limb(v: &mut Vec<u64>, m: u64, a: u64) {
+    let mut carry = u128::from(a);
+    for x in v.iter_mut() {
+        let t = u128::from(*x) * u128::from(m) + carry;
+        *x = t as u64;
+        carry = t >> 64;
+    }
+    if carry != 0 {
+        v.push(carry as u64);
+    }
+}
+
 /// `(a / d, a % d)` for a single non-zero limb `d`.
-fn div_rem_limb(a: &[u64], d: u64) -> (Vec<u64>, u64) {
+pub(super) fn div_rem_limb(a: &[u64], d: u64) -> (Vec<u64>, u64) {
     let mut q = vec![0_u64; a.len()];
     let mut rem = 0_u128;
     let d = u128::from(d);
@@ -158,8 +171,10 @@ pub(super) fn shl(a: &[u64], bits: u64) -> Vec<u64> {
     }
     let limbs = usize::try_from(bits / 64).expect("shift exceeds the address space");
     let s = (bits % 64) as u32;
-    let mut out = vec![0_u64; limbs];
-    out.reserve(a.len() + 1);
+    // The low zero limbs are part of the result, so they are allocated once together
+    // with the shifted limbs rather than grown afterwards.
+    let mut out = Vec::with_capacity(limbs + a.len() + 1);
+    out.resize(limbs, 0);
     if s == 0 {
         out.extend_from_slice(a);
     } else {
