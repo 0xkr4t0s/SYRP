@@ -1314,6 +1314,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "syrp-midi-utils"
+version = "0.0.1"
+dependencies = [
+ "proptest",
+ "syrp-error",
+ "syrp-midi",
+ "syrp-rt",
+]
+
+[[package]]
 name = "syrp-net"
 version = "0.0.1"
 dependencies = [

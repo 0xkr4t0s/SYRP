@@ -1,0 +1,1 @@
+{"wp": "WP-2.1-07", "kind": "added", "summary": "syrp-midi-utils: crate skeleton (message, file and ump modules; file/ump test and bench stubs for WP-2.1-08 and WP-2.1-09) and MIDI message helpers: named meta events and readers, float velocity, note names and frequencies, controller and General MIDI names, channel mode messages (increment 1: B1, B5)."}
