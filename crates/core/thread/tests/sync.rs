@@ -47,19 +47,33 @@ fn b3_auto_reset_wakes_exactly_one_of_several_waiters() {
             let (e, woken, start) = (Arc::clone(&e), Arc::clone(&woken), Arc::clone(&start));
             std::thread::spawn(move || {
                 start.wait();
-                if e.wait(Some(Duration::from_millis(300))) {
-                    woken.fetch_add(1, Ordering::SeqCst);
-                }
+                assert!(
+                    e.wait(Some(LONG)),
+                    "every waiter is released by its own signal"
+                );
+                woken.fetch_add(1, Ordering::SeqCst);
             })
         })
         .collect();
     start.wait();
     std::thread::sleep(Duration::from_millis(20));
-    e.signal();
+    // Each signal lets exactly one waiter through, however slowly the others are scheduled.
+    for expected in 1..=4 {
+        e.signal();
+        let deadline = Instant::now() + LONG;
+        while woken.load(Ordering::SeqCst) < expected {
+            assert!(
+                Instant::now() < deadline,
+                "signal {expected} released nobody"
+            );
+            std::thread::yield_now();
+        }
+        std::thread::sleep(Duration::from_millis(20));
+        assert_eq!(woken.load(Ordering::SeqCst), expected);
+    }
     for w in waiters {
         w.join().unwrap();
     }
-    assert_eq!(woken.load(Ordering::SeqCst), 1);
     assert!(!e.wait(Some(Duration::ZERO)));
 }
 
@@ -133,18 +147,21 @@ fn b5_lock_gives_mutual_exclusion_across_threads() {
 
 #[test]
 fn b5_lock_waits_for_a_holder_that_sleeps() {
-    let lock = Arc::new(SpinLock::new(()));
+    let lock = Arc::new(SpinLock::new(None::<Instant>));
     let held = Arc::new(Barrier::new(2));
     let (l, h) = (Arc::clone(&lock), Arc::clone(&held));
     let holder = std::thread::spawn(move || {
-        let _g = l.lock();
+        let mut g = l.lock();
         h.wait();
         std::thread::sleep(Duration::from_millis(30));
+        *g = Some(Instant::now());
     });
     held.wait();
-    let start = Instant::now();
-    drop(lock.lock());
-    assert!(start.elapsed() >= Duration::from_millis(10));
+    let g = lock.lock();
+    let acquired = Instant::now();
+    let released = g.expect("the holder finished before this thread got the lock");
+    assert!(acquired >= released);
+    drop(g);
     holder.join().unwrap();
 }
 

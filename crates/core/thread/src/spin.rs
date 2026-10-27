@@ -2,6 +2,7 @@
 //! [`SpinLock`]: a lock for very short critical sections that never sleeps in the kernel.
 
 use std::fmt;
+use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 use std::sync::atomic::Ordering;
 
@@ -126,7 +127,10 @@ impl<T> SpinLock<T> {
             .compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)
             .is_ok()
             // Lazily: a guard built on failure would unlock someone else's lock when dropped.
-            .then(|| SpinLockGuard { lock: self })
+            .then(|| SpinLockGuard {
+                lock: self,
+                _marker: PhantomData,
+            })
     }
 
     /// Consumes the lock and returns the value.
@@ -149,10 +153,21 @@ impl<T> SpinLock<T> {
 /// } // released here
 /// assert_eq!(*lock.lock(), "held");
 /// ```
+///
+/// A guard is `Sync` only when `T` is, so a shared `&guard` cannot hand a `!Sync` value to
+/// another thread:
+///
+/// ```compile_fail
+/// fn is_sync<S: Sync>(_: &S) {}
+/// let lock = syrp_thread::SpinLock::new(std::cell::Cell::new(0u8));
+/// is_sync(&lock.lock());
+/// ```
 #[doc(alias = "juce::SpinLock::ScopedLockType")]
 #[must_use = "the lock is released as soon as the guard drops"]
 pub struct SpinLockGuard<'a, T> {
     lock: &'a SpinLock<T>,
+    // Gives the guard `&mut T`'s auto traits: `Sync` needs `T: Sync`, not just `T: Send`.
+    _marker: PhantomData<&'a mut T>,
 }
 
 impl<T> Deref for SpinLockGuard<'_, T> {
