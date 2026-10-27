@@ -79,3 +79,44 @@ pub fn read_all_f32(r: &mut dyn AudioReader) -> Vec<Vec<f32>> {
     r.read(block.into(), 0).unwrap();
     buf.chunks(n.max(1)).map(|c| c[..n].to_vec()).collect()
 }
+
+/// A seekable in-memory sink that stays readable after the writer that owns it is gone.
+#[derive(Clone, Default)]
+pub struct Shared(std::sync::Arc<std::sync::Mutex<Cursor<Vec<u8>>>>);
+
+impl Shared {
+    pub fn bytes(&self) -> Vec<u8> {
+        self.0.lock().unwrap().get_ref().clone()
+    }
+}
+
+impl std::io::Write for Shared {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        self.0.lock().unwrap().write(buf)
+    }
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+
+impl std::io::Seek for Shared {
+    fn seek(&mut self, pos: std::io::SeekFrom) -> std::io::Result<u64> {
+        self.0.lock().unwrap().seek(pos)
+    }
+}
+
+/// Writes channel-major `channels` with `options` through `wav` and returns the file.
+pub fn write_file(
+    wav: WavAudioFormat,
+    options: &syrp_format_api::WriterOptions,
+    channels: &[Vec<f32>],
+) -> Vec<u8> {
+    let sink = Shared::default();
+    let mut w = wav.create_writer(Box::new(sink.clone()), options).unwrap();
+    let n = channels[0].len();
+    let flat: Vec<f32> = channels.concat();
+    let block = syrp_audio_api::AudioBlock::new(&flat, channels.len(), n, n).unwrap();
+    w.write(block.into()).unwrap();
+    w.finish().unwrap();
+    sink.bytes()
+}

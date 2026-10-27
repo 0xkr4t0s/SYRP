@@ -10,7 +10,7 @@
 //!   `axml`, `Trkn` and `cart` are kept byte for byte as `Other`.
 //! - [`WavError`]: the codec's coded errors (`SYRP-FORMAT-0006` onwards).
 //!
-//! WP-2.1-14 lands in increments: the writer comes next.
+//! WP-2.1-14 lands in increments: robustness tests and parity scenarios come last.
 //!
 //! The layouts come from public specifications only: Microsoft's RIFF and
 //! `WAVEFORMATEXTENSIBLE` documentation, EBU Tech 3285 (BWF), EBU Tech 3306 (RF64) and
@@ -27,8 +27,10 @@
 mod error;
 mod layout;
 mod meta;
+mod meta_write;
 mod reader;
 mod riff;
+mod writer;
 
 pub use error::WavError;
 pub use reader::WavReader;
@@ -145,15 +147,21 @@ impl AudioFormat for WavAudioFormat {
         Ok(Box::new(WavReader::open(input)?))
     }
 
-    /// Checks `options` against [`AudioFormat::check_spec`]; the encoder itself arrives in the
-    /// next increment of WP-2.1-14 (B4), and until then this returns `SYRP-FORMAT-0003`.
+    /// A writer for 8, 16, 24 or 32-bit integer or 32-bit float samples at a whole sample
+    /// rate. Up to two channels of up to 16 bits get the plain `fmt ` layout, anything else
+    /// `WAVE_FORMAT_EXTENSIBLE` with a channel mask. Metadata chunks go between `fmt ` and
+    /// `data` (Syrp's choice); `finish` patches the sizes, or rewrites the header as RF64
+    /// when the RIFF size passes [`rf64_threshold`](WavAudioFormat::rf64_threshold).
     fn create_writer(
         &self,
         output: Box<dyn WriteSeek>,
         options: &WriterOptions,
     ) -> Result<Box<dyn AudioWriter>, FormatError> {
         self.check_spec(options.spec())?;
-        drop(output);
-        Err(FormatError::unsupported("WAV writing (WP-2.1-14 B4)"))
+        Ok(Box::new(writer::WavWriter::create(
+            output,
+            options,
+            self.rf64_threshold,
+        )?))
     }
 }

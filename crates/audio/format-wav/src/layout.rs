@@ -127,6 +127,39 @@ pub(crate) fn from_mask(mask: Option<u32>, count: u16) -> Result<Layout, WavErro
     identity(discrete, n)
 }
 
+/// The mask for writing `set` and, for each file channel in ascending bit order, the
+/// canonical channel it holds. Discrete layouts get mask 0 and keep their order. The inverse
+/// of [`from_mask`]: the surround pair goes to the side bits when the layout has a rear pair.
+pub(crate) fn to_mask(set: ChannelSet) -> Result<(u32, Vec<usize>), WavError> {
+    let n = set.channel_count();
+    let has_rear = set.index_of(Speaker::LeftRearSurround).is_some();
+    let mut bits = Vec::new();
+    bits.try_reserve_exact(n)
+        .map_err(|_| WavError::OutOfMemory)?;
+    for (i, s) in set.speakers().enumerate() {
+        let bit = match s {
+            Speaker::Left => FRONT_LEFT,
+            Speaker::Right => FRONT_RIGHT,
+            Speaker::Centre => FRONT_CENTER,
+            Speaker::Lfe => LOW_FREQUENCY,
+            Speaker::LeftSurround if has_rear => SIDE_LEFT,
+            Speaker::RightSurround if has_rear => SIDE_RIGHT,
+            Speaker::LeftSurround | Speaker::LeftRearSurround => BACK_LEFT,
+            Speaker::RightSurround | Speaker::RightRearSurround => BACK_RIGHT,
+            Speaker::CentreSurround => BACK_CENTER,
+            Speaker::TopFrontLeft => TOP_FRONT_LEFT,
+            Speaker::TopFrontRight => TOP_FRONT_RIGHT,
+            Speaker::TopRearLeft => TOP_BACK_LEFT,
+            Speaker::TopRearRight => TOP_BACK_RIGHT,
+            _ => return Ok((0, identity(set, n)?.file_index)),
+        };
+        bits.push((bit, i));
+    }
+    bits.sort_unstable();
+    let mask = bits.iter().fold(0, |m, &(b, _)| m | b);
+    Ok((mask, bits.into_iter().map(|(_, i)| i).collect()))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -137,6 +170,24 @@ mod tests {
         assert_eq!(l.channels, ChannelSet::surround_7_1());
         // File order: L R C LFE BL BR SL SR. Canonical: L R C LFE Ls Rs Lrs Rrs.
         assert_eq!(l.file_index, [0, 1, 2, 3, 6, 7, 4, 5]);
+    }
+
+    #[test]
+    fn b4_every_named_layout_round_trips_through_its_mask() {
+        for set in NAMED {
+            let (mask, order) = to_mask(set).expect("fits");
+            let back =
+                from_mask(Some(mask), u16::try_from(order.len()).expect("small")).expect("fits");
+            assert_eq!(back.channels, set, "{mask:#x}");
+            // Reading file channel order[j] into canonical slot order[j] undoes the writer.
+            for (canonical, &file) in back.file_index.iter().enumerate() {
+                assert_eq!(order[file], canonical);
+            }
+        }
+        assert_eq!(
+            to_mask(ChannelSet::discrete(3)).expect("fits"),
+            (0, vec![0, 1, 2])
+        );
     }
 
     #[test]
