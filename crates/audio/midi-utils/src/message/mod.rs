@@ -255,7 +255,7 @@ pub fn midi_channel_meta_event_channel<M: MidiData + ?Sized>(message: &M) -> Opt
 ///
 /// Values are clamped to 0.0..=1.0 and scaled by 127 with rounding. Syrp's choice: a velocity
 /// above zero never rounds down to 0, so a quiet note on stays a note on. NaN is out of range.
-fn velocity_byte(velocity: f32) -> Result<u8, MidiError> {
+pub(crate) fn velocity_byte(velocity: f32) -> Result<u8, MidiError> {
     if velocity.is_nan() {
         return Err(MidiError::ValueOutOfRange);
     }

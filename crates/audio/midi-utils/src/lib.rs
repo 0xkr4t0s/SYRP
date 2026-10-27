@@ -4,13 +4,14 @@
 //!
 //! - [`message`]: helpers over [`syrp_midi::MidiMessage`]: named meta events, float
 //!   velocity, note names and frequencies, controller and General MIDI names.
+//! - [`keyboard`]: [`MidiKeyboardState`], per-channel key state shared lock-free between a
+//!   UI thread and the audio thread.
 //! - [`sequence`]: [`MidiMessageSequence`], a time-ordered event list whose note ons are
 //!   paired with their note offs by index.
 //! - [`file`](mod@file): Standard MIDI Files (WP-2.1-08).
 //! - [`ump`]: MIDI 1.0 and MIDI 2.0 translation and UMP dispatchers (WP-2.1-09).
 //!
-//! `MidiKeyboardState` and the RPN detector and generator arrive in later increments of
-//! WP-2.1-07.
+//! The RPN detector and generator arrive in the last increment of WP-2.1-07.
 //!
 //! ```
 //! use syrp_midi::MidiData;
@@ -22,8 +23,10 @@
 //! ```
 
 pub mod file;
+pub mod keyboard;
 pub mod message;
 pub mod sequence;
 pub mod ump;
 
+pub use keyboard::{KeyboardError, MidiKeyboardState, MidiKeyboardStateListener};
 pub use sequence::{MidiEventHolder, MidiMessageSequence, SequenceError};

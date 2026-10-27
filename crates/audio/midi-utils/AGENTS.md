@@ -11,11 +11,11 @@ Module and file owners (WP-2.1-08 and WP-2.1-09 never edit `Cargo.toml`, `lib.rs
 
 | Path | Owner |
 |---|---|
-| `src/message/`, `src/sequence.rs`, `tests/message.rs`, `tests/sequence.rs` | WP-2.1-07 |
+| `src/message/`, `src/sequence.rs`, `src/keyboard.rs` and their `tests/*.rs` | WP-2.1-07 |
 | `src/file/`, `tests/file.rs` (stub until it lands) | WP-2.1-08 |
 | `src/ump/`, `tests/ump.rs`, `benches/ump.rs` (stubs until it lands) | WP-2.1-09 |
 
-WP-2.1-07 adds `keyboard` and `rpn` in later increments.
+WP-2.1-07 adds `rpn` in its last increment.
 
 ## Ledger rows
 juce_audio_basics/MidiMessageSequence, juce_audio_basics/MidiKeyboardState,
@@ -34,12 +34,23 @@ juce_audio_basics/MidiRPNMessage (WP-2.1-07). WP-2.1-08 and WP-2.1-09 list their
   matches are indices; every edit remaps them, so a match always names the same event or is
   cleared when that event is deleted. Merges reserve with `try_reserve_exact` first and fail
   with `SYRP-MIDI-0006`, leaving the sequence unchanged; bad indices are `SYRP-MIDI-0005`.
+- `MidiKeyboardState`: one `AtomicU16` per note (bit `c - 1` = channel `c`). UI key events
+  go through a `syrp_rt::spsc` queue of `QUEUE_CAPACITY` (2048) raw 3-byte messages; each
+  queue end sits in a private `Claim` (one compare-exchange, never blocks): the only
+  `unsafe` in the crate (an `unsafe impl Sync` and one block). A UI event updates the state
+  only after it is queued (`SYRP-MIDI-0007` when full, state unchanged). Injected events are
+  not fed back into the state. Listeners are added with `&mut self`, before sharing.
 - Name tables follow the MIDI 1.0 and General MIDI Level 1 lists; the wording is Syrp's.
 
 ## Thread affinity
 `message`: builders allocate (they return `MidiMessage`), so message thread only; readers,
 `controller_name` and the General MIDI names are RT-safe (no allocation), `note_name`
 allocates. `sequence`: message thread (edits allocate); `&self` reads are any-thread.
+`keyboard`: `MidiKeyboardState` is `Send + Sync`. RT-safe (when the listeners are):
+`process_next_midi_buffer`, `process_next_midi_event`, `is_note_on*` (`tests/keyboard.rs`
+proves it under `syrp_rt::no_alloc`). UI thread: `note_on`, `note_off`, `all_notes_off` (they
+may wait for another UI thread). `new`, `add_listener`, `remove_listener`: message thread.
+Listener callbacks run on the thread that changed the state.
 
 ## Stability
 experimental
@@ -53,5 +64,5 @@ Test binaries may install `syrp_rt::GuardedAllocator` (dev-dependency) to prove 
 paths with `syrp_rt::no_alloc`; `proptest` is a dev-dependency.
 
 ## Known gaps
-WP-2.1-07 increments 1 and 2 (B1, B2 and the B5 layout). Next: `MidiKeyboardState` (B3),
-RPN (B4).
+WP-2.1-07 increments 1 to 3 (B1 to B3 and the B5 layout). Next: RPN (B4).
+`MidiKeyboardState` has no `reset()` yet, and listeners cannot be added after sharing.

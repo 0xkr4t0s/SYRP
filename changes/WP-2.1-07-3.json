@@ -1,0 +1,1 @@
+{"wp": "WP-2.1-07", "kind": "added", "summary": "syrp-midi-utils: MidiKeyboardState, per-channel key state in atomics shared by a UI thread and the audio thread; UI key events reach the audio thread through a syrp_rt SPSC queue and are injected by process_next_midi_buffer without allocating; error SYRP-MIDI-0007 (increment 3: B3)."}

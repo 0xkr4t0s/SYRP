@@ -42,3 +42,10 @@ title = "Out of memory for a MIDI sequence"
 severity = "error"
 cause = "The allocator could not provide room for the events that a syrp-midi-utils MidiMessageSequence add, merge or extract call needed. The sequence is unchanged."
 fix = "Free memory or split the work into smaller sequences. Very large inputs (for example a huge MIDI file merged at once) are the usual cause."
+
+[[error]]
+code = "SYRP-MIDI-0007"
+title = "MidiKeyboardState event queue full"
+severity = "error"
+cause = "MidiKeyboardState::note_on or note_off (or all_notes_off) found the fixed queue of UI key events waiting for the audio thread full: process_next_midi_buffer has not run for a long time. The key state is unchanged."
+fix = "Call process_next_midi_buffer on the audio thread every block; it empties the queue. If no audio is running, do not press keys through the shared state, or create a new MidiKeyboardState."
