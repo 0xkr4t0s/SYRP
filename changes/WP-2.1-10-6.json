@@ -1,0 +1,1 @@
+{"wp": "WP-2.1-10", "kind": "added", "summary": "syrp-dsp-core: Matrix (identity, Toeplitz, Hankel, arithmetic, transpose, solve) and Polynomial (lane-generic evaluate, sum, product, gain), and SYRP-DSP-0004 (increment 6: B6 second part)."}

@@ -1,14 +1,12 @@
 # syrp-dsp-core
 
 ## Purpose
-Layer L3, the base of JUCE's `juce_dsp` (master plan §4.9, §5.2; WP-2.1-10). It holds the
-processor model every `syrp-dsp-*` crate implements: `DspSpec` (JUCE's `ProcessSpec`),
-`ProcessContext` (replacing and non-replacing), the `DspProcessor<S>` trait, `ProcessorChain`,
-`ProcessorDuplicator` with its shared state and `ProcessorWrapper`; then `Fft` (wrapping
-`rustfft` 6.4 and `realfft` 3.5), `WindowingFunction` and `special::bessel_i0`; then `LookupTable`, `LookupTableTransform`, `FastMathApproximations`,
-`Phase` and `LogRampedValue`. The last increment of the same WP adds `Matrix`, `Polynomial`,
-the elliptic special functions, the `SIMDRegister` map and the FFT bench. `AudioBlock` is
-`syrp-audio-api`'s view; `SIMDRegister` is answered by `syrp-simd` packs.
+Layer L3, the base of JUCE's `juce_dsp` (master plan §4.9, §5.2; WP-2.1-10): the processor
+model every `syrp-dsp-*` crate implements (`DspSpec`, `ProcessContext`, `DspProcessor<S>`,
+`ProcessorChain`, `ProcessorDuplicator`, `ProcessorWrapper`), `Fft` (wrapping `rustfft` 6.4
+and `realfft` 3.5), `WindowingFunction`, lookup tables, `FastMathApproximations`, `Phase`,
+`LogRampedValue`, `Matrix`, `Polynomial` and `special`. `AudioBlock` is `syrp-audio-api`'s
+view; `SIMDRegister` is answered by `syrp-simd` packs.
 
 ## Ledger rows
 juce_dsp/dsp::ProcessContextReplacing, juce_dsp/dsp::ProcessContextNonReplacing,
@@ -16,8 +14,9 @@ juce_dsp/dsp::ProcessorBase, juce_dsp/dsp::ProcessorChain, juce_dsp/dsp::Process
 juce_dsp/dsp::ProcessorDuplicator, juce_dsp/dsp::ProcessorState, juce_dsp/dsp::FFT,
 juce_dsp/dsp::WindowingFunction, juce_dsp/dsp::LookupTable,
 juce_dsp/dsp::LookupTableTransform, juce_dsp/dsp::FastMathApproximations,
-juce_dsp/dsp::LogRampedValue, juce_dsp/dsp::Phase.
-Later increments: dsp::SIMDRegister, dsp::Matrix, dsp::Polynomial, dsp::SpecialFunctions.
+juce_dsp/dsp::LogRampedValue, juce_dsp/dsp::Phase, juce_dsp/dsp::Matrix,
+juce_dsp/dsp::Polynomial.
+Later increment: dsp::SIMDRegister, dsp::SpecialFunctions (elliptic part).
 
 ## Invariants
 - ADR 0003: no public fields; per-instance DSP is generic over `S: DspSample` (a sealed
@@ -55,14 +54,17 @@ Choices made where the JUCE documentation is silent, each pinned by a test:
   midpoint level (rising) or `1 - g(1 - t)` (falling); defaults `-12` dB, rising.
 - `LookupTableTransform::calculate_max_relative_error` uses the absolute error where the
   function is zero.
+- `Polynomial`: coefficient `i` multiplies `x^i`; `order()` is the degree (count - 1).
+- `Matrix::is_null_matrix` is a shape test (no elements); `toeplitz` is symmetric.
 
 ## Thread affinity
 Any thread. RT-safe: every `ProcessContext` method, `DspProcessor::process`/`reset` of the
 chain, duplicator and wrapper, `Fft::perform*`, `WindowingFunction::multiply_with_windowing_table`
 and `fill_windowing_tables_into`, table reads, every `FastMathApproximations` function,
-`Phase` and `LogRampedValue`, and all accessors. Not RT-safe: `prepare` (allocates),
+`Phase`, `LogRampedValue`, `Polynomial::evaluate`, and all accessors. Not RT-safe: `prepare` (allocates),
 `ProcessorDuplicator::new`, `Fft::new`, `WindowingFunction::new`/`fill_windowing_tables`,
-table `new`/`initialise`/`calculate_max_relative_error` (may allocate) and dropping any of them.
+table `new`/`initialise`/`calculate_max_relative_error`, every `Matrix` constructor and
+operator and `Polynomial` builder (allocate) and dropping any of them.
 
 ## Stability
 experimental
@@ -76,6 +78,7 @@ cargo syrp wp check WP-2.1-10
 Tests install `syrp_rt::GuardedAllocator` and wrap `process` in `syrp_rt::no_alloc`.
 
 ## Known gaps
-- Last WP-2.1-10 increment: `Matrix`, `Polynomial`, the elliptic special functions, the `SIMDRegister` → `syrp_simd` map and the Callgrind FFT bench (B5–B7).
+- Last WP-2.1-10 increment: the elliptic special functions, the `SIMDRegister` →
+  `syrp_simd` map and the Callgrind FFT bench (B6–B7).
 - `Fft` is `f32` only, like JUCE's.
 - `ProcessorChain` holds at most 8 members (nest chains for more).

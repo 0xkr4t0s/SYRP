@@ -94,7 +94,7 @@ pack_impl!(F32x4, F32x8, F64x2, F64x4);
 /// assert_eq!(f32::from_f64(0.1), 0.1_f32);
 /// assert_eq!(0.5_f32.to_f64(), 0.5);
 /// ```
-pub trait DspFloat: DspSample<Element = Self> {
+pub trait DspFloat: DspSample<Element = Self> + PartialOrd {
     /// `value` rounded to the nearest `Self`.
     ///
     /// ```

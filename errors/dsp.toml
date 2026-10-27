@@ -20,3 +20,10 @@ title = "Invalid lookup table parameters"
 severity = "error"
 cause = "LookupTable::new or initialise was asked for fewer than 2 points, or LookupTableTransform::new, initialise or calculate_max_relative_error for an input range that is not finite or whose minimum is not below its maximum."
 fix = "Use at least 2 points (typically 64 to 4096) and a finite range with min < max."
+
+[[error]]
+code = "SYRP-DSP-0004"
+title = "Matrix data does not fit its shape"
+severity = "error"
+cause = "Matrix::from_row_major got a slice whose length is not rows * columns, Matrix::toeplitz a vector shorter than the size, or Matrix::hankel a vector shorter than offset + 2 * (size - 1) + 1."
+fix = "Pass exactly rows * columns elements in row-major order, or a longer vector for the Toeplitz and Hankel builders."

@@ -46,6 +46,9 @@ pub enum DspError {
         /// The requested number of points.
         num_points: usize,
     },
+    /// A [`Matrix`](crate::Matrix) builder got data of the wrong length for the shape
+    /// (`SYRP-DSP-0004`).
+    MatrixShape,
 }
 
 impl fmt::Display for DspError {
@@ -65,6 +68,7 @@ impl fmt::Display for DspError {
                 "a lookup table needs at least 2 points and a finite range with min < max \
                  (got {num_points} points)"
             ),
+            Self::MatrixShape => write!(f, "the data does not fit the requested matrix shape"),
         }
     }
 }
@@ -77,6 +81,7 @@ impl Diagnostic for DspError {
             Self::CannotAllocate { .. } => ErrorCode::new("SYRP-DSP-0001"),
             Self::OrderTooLarge { .. } => ErrorCode::new("SYRP-DSP-0002"),
             Self::InvalidTable { .. } => ErrorCode::new("SYRP-DSP-0003"),
+            Self::MatrixShape => ErrorCode::new("SYRP-DSP-0004"),
         }
     }
 }
