@@ -1,0 +1,15 @@
+# Error catalogue: threading layer (syrp-thread). Codes are permanent: never reuse or renumber one.
+
+[[error]]
+code = "SYRP-THREAD-0001"
+title = "Thread did not stop in time"
+severity = "error"
+cause = "ThreadHandle::stop raised the exit signal and the thread body did not return within the timeout. Rust cannot kill a thread, so the thread was left running, detached. Dropping a handle does the same after its drop timeout (5 s by default) without reporting it."
+fix = "Make the body poll ThreadContext::thread_should_exit and sleep with ThreadContext::wait, which the exit signal wakes, or pass a longer timeout."
+
+[[error]]
+code = "SYRP-THREAD-0002"
+title = "Thread creation failed"
+severity = "error"
+cause = "The operating system refused to create a thread for ThreadBuilder::spawn or Thread::launch, usually because of a resource limit (thread count, memory for the stack)."
+fix = "Use a smaller stack size or fewer threads; the message carries the OS error code."

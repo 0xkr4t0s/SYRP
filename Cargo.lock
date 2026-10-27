@@ -1420,6 +1420,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "syrp-thread"
+version = "0.0.1"
+dependencies = [
+ "syrp-error",
+]
+
+[[package]]
 name = "syrp-var"
 version = "0.0.1"
 dependencies = [
