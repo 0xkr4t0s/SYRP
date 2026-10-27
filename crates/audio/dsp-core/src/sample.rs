@@ -11,8 +11,10 @@ mod sealed {
 /// A [`Sample`] whose element type audio views can hold (`f32` or `f64`), with lane access.
 ///
 /// It is implemented for exactly the `syrp-simd` sample types (`f32`, `f64`, [`F32x4`],
-/// [`F32x8`], [`F64x2`], [`F64x4`]) and is sealed. `ProcessorDuplicator` uses it to pack
+/// [`F32x8`], [`F64x2`], [`F64x4`]) and is sealed. [`ProcessorDuplicator`] uses it to pack
 /// channels into lanes and back.
+///
+/// [`ProcessorDuplicator`]: crate::ProcessorDuplicator
 ///
 /// ```
 /// use syrp_dsp_core::DspSample;

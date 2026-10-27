@@ -1,0 +1,1 @@
+{"wp": "WP-2.1-10", "kind": "added", "summary": "syrp-dsp-core: ProcessorChain (tuples of up to 8 processors, per-member bypass), ProcessorDuplicator (channels packed into SIMD lanes for lane-generic processors) and ProcessorWrapper (increment 2: B2)."}
