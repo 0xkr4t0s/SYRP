@@ -65,6 +65,13 @@ Syrp keeps `basc` (and `trns`, `cate`) as `Other(id, bytes)`; no typed mapping y
   does not give JUCE's values.
 - Channel layout: 1 → mono, 2 → stereo, otherwise `discrete(n)`.
 
+## Parity scenarios
+`parity/scenarios/formats/aiff/` (schema `scenario.schema.json`): `read/*.json` embed every B5
+catalogue file (`tests/common/files.rs`), malformed ones included (`bad_*`, `choice_*`);
+`write/*.json` write 8/16/24/32-bit integer and 32-bit float with cues, loops and text and
+re-read. `b6_scenarios_hold_the_test_files` keeps them in sync (`SYRP_BLESS=1` regenerates).
+Inputs only; the oracle supplies expected outputs.
+
 ## Thread affinity
 `AiffAudioFormat` is `Send + Sync`; readers are `Send` and used by one thread at a time. Not
 RT-safe (I/O and allocation).
@@ -75,9 +82,10 @@ experimental
 ## How to test
 ```sh
 cargo syrp test --crate syrp-format-aiff
+PROPTEST_CASES=20000 cargo test -p syrp-format-aiff --test fuzz   # longer fuzz run
 ```
+`tests/fuzz.rs` installs a counting global allocator (one test per binary on purpose).
 
 ## Known gaps
-Round-trip and fuzz tests (B5) and parity scenarios (B6) arrive in the third increment of
-WP-2.1-17. No compressed AIFF-C codecs (`ima4`, `ulaw`, `alaw`), no
+No compressed AIFF-C codecs (`ima4`, `ulaw`, `alaw`), no
 memory-mapped reader.
