@@ -1,0 +1,31 @@
+{
+  "id": "formats/wav/read_containers",
+  "title": "Chunk walking, streamed and truncated sizes, RF64 and BW64",
+  "juce_tag": "9.0.4",
+  "tolerance": "exact",
+  "wp": "WP-2.1-14",
+  "ledger_rows": ["juce_audio_formats/WavAudioFormat"],
+  "docs": [{"page": "WavAudioFormat", "member": "createReaderFor", "says": "Creates a reader for a WAV stream; returns nullptr when the stream is not a format it can read."}, {"page": "AudioFormatReader", "member": "read", "says": "Integer samples are converted to floats in the range -1 to 1 when the destination is floating point."}],
+  "files": {
+    "odd_and_unknown_chunks": {"chunks": [{"id": "zzzz", "hex": "010203"}, {"id": "fmt ", "hex": "01000100401f0000803e000002001000"}, {"id": "odd!", "hex": "09"}, {"id": "data", "hex": "0020"}, {"id": "tail", "hex": "0707070707"}]},
+    "fmt_after_data": {"chunks": [{"id": "data", "hex": "6400"}, {"id": "fmt ", "hex": "01000100401f0000803e000002001000"}]},
+    "metadata_after_data": {"chunks": [{"id": "fmt ", "hex": "01000100401f0000803e000002001000"}, {"id": "data", "hex": "0100"}, {"id": "LIST", "hex": "494e464f49434d54050000006c6174650000"}]},
+    "streamed_unset_sizes": {"chunks": [{"id": "fmt ", "hex": "01000100401f0000803e000002001000"}, {"id": "data", "hex": "010002000300", "size": 4294967295}], "riff_size": 4294967295},
+    "streamed_zero_sizes": {"chunks": [{"id": "fmt ", "hex": "01000100401f0000803e000002001000"}, {"id": "data", "hex": "010002000300", "size": 0}], "riff_size": 0},
+    "data_past_end": {"chunks": [{"id": "fmt ", "hex": "01000200401f0000007d000004001000"}, {"id": "data", "hex": "01000200030004000500", "size": 1000}]},
+    "odd_byte_after_last_frame": {"chunks": [{"id": "fmt ", "hex": "01000100401f0000803e000002001000"}, {"id": "data", "hex": "0700080001"}]},
+    "rf64": {"chunks": [{"id": "ds64", "hex": "00000000000000000600000000000000030000000000000000000000"}, {"id": "fmt ", "hex": "01000100401f0000803e000002001000"}, {"id": "data", "hex": "6400c8002c01", "size": 4294967295}], "form": "RF64", "riff_size": 4294967295, "ds64_riff_size": "actual"},
+    "bw64": {"chunks": [{"id": "ds64", "hex": "00000000000000000600000000000000030000000000000000000000"}, {"id": "fmt ", "hex": "01000100401f0000803e000002001000"}, {"id": "data", "hex": "6400c8002c01", "size": 4294967295}], "form": "BW64", "riff_size": 4294967295, "ds64_riff_size": "actual"}
+  },
+  "steps": [
+    {"op": "read", "args": ["odd_and_unknown_chunks"]},
+    {"op": "read", "args": ["fmt_after_data"]},
+    {"op": "read", "args": ["metadata_after_data"]},
+    {"op": "read", "args": ["streamed_unset_sizes"]},
+    {"op": "read", "args": ["streamed_zero_sizes"]},
+    {"op": "read", "args": ["data_past_end"]},
+    {"op": "read", "args": ["odd_byte_after_last_frame"]},
+    {"op": "read", "args": ["rf64"]},
+    {"op": "read", "args": ["bw64"]}
+  ]
+}
