@@ -3,39 +3,13 @@
 
 mod common;
 
-use std::io::{Cursor, Seek, SeekFrom, Write};
-use std::sync::{Arc, Mutex};
+use std::io::Cursor;
 
 use common::*;
 use syrp_audio_api::{AudioBlock, ChannelSet};
 use syrp_format_api::{AudioFormat, AudioSpec, Metadata, MetadataItem, SampleKind, Tag};
 use syrp_format_api::{AudioWriter, WriterOptions};
 use syrp_format_flac::FlacAudioFormat;
-
-/// An output whose bytes the test can inspect while the writer still owns it.
-#[derive(Clone, Default)]
-struct Shared(Arc<Mutex<Cursor<Vec<u8>>>>);
-
-impl Write for Shared {
-    fn write(&mut self, b: &[u8]) -> std::io::Result<usize> {
-        self.0.lock().unwrap().write(b)
-    }
-    fn flush(&mut self) -> std::io::Result<()> {
-        Ok(())
-    }
-}
-
-impl Seek for Shared {
-    fn seek(&mut self, to: SeekFrom) -> std::io::Result<u64> {
-        self.0.lock().unwrap().seek(to)
-    }
-}
-
-impl Shared {
-    fn bytes(&self) -> Vec<u8> {
-        self.0.lock().unwrap().get_ref().clone()
-    }
-}
 
 fn spec(channels: u32, bits: u32) -> AudioSpec {
     AudioSpec::new(

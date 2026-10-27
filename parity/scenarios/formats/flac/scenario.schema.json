@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "parity/scenarios/formats/flac/scenario.schema.json",
+  "title": "FLAC reading and writing scenario",
+  "description": "Inputs only; expected outputs come solely from harness runs. The ramp signal of a `bits`-bit stream has, at frame i of channel c (both from 0), the integer ((i * (37 + 6c) + 1000c) mod 2^bits) - 2^(bits-1); writers receive it divided by 2^(bits-1) as 32-bit floats. A `read` step opens a file under this directory with FlacAudioFormat and records its sample rate, channel count, bit depth, length in frames and metadata values, then the samples of each range (start frame, frame count) as floats, channel after channel, zero outside the file. A `write` step writes the ramp with FlacAudioFormat at the given rate, channels, depth and quality index, opens the result with FlacAudioFormat and records the same things as `read` for the whole file. Decoded samples are compared, never encoded bytes, because two encoders may choose different frames. A quality index the implementation does not list is recorded as unsupported.",
+  "type": "object",
+  "required": ["id", "title", "juce_tag", "tolerance", "wp", "ledger_rows", "docs", "steps"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string" },
+    "title": { "type": "string" },
+    "juce_tag": { "const": "9.0.4" },
+    "tolerance": { "const": "exact" },
+    "wp": { "type": "string" },
+    "ledger_rows": { "type": "array", "items": { "type": "string" } },
+    "docs": {
+      "type": "array",
+      "items": { "type": "object", "required": ["page", "member", "says"] }
+    },
+    "steps": { "type": "array", "items": { "oneOf": [{ "$ref": "#/$defs/read" }, { "$ref": "#/$defs/write" }] } },
+    "notes": { "type": "string" }
+  },
+  "$defs": {
+    "read": {
+      "type": "object",
+      "required": ["op", "file", "ranges"],
+      "additionalProperties": false,
+      "properties": {
+        "op": { "const": "read" },
+        "file": { "type": "string", "pattern": "^inputs/[a-z0-9_]+\\.flac$" },
+        "ranges": {
+          "type": "array",
+          "items": { "type": "array", "prefixItems": [{ "type": "integer" }, { "type": "integer", "minimum": 1 }], "items": false }
+        }
+      }
+    },
+    "write": {
+      "type": "object",
+      "required": ["op", "sample_rate", "channels", "bits", "frames", "quality"],
+      "additionalProperties": false,
+      "properties": {
+        "op": { "const": "write" },
+        "sample_rate": { "type": "integer" },
+        "channels": { "type": "integer", "minimum": 1, "maximum": 8 },
+        "bits": { "enum": [16, 24] },
+        "frames": { "type": "integer", "minimum": 1 },
+        "quality": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}
