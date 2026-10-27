@@ -1,0 +1,1 @@
+{"wp": "WP-1.1-14", "kind": "added", "summary": "syrp-events (increment 2): the Linux epoll backend (non-blocking eventfd wake, epoll_wait timeout for timers) replacing the interim condvar on Linux, and EventLoop::add_fd(fd, Interest, callback) -> FdGuard with Interest and Readiness for peers and IPC."}

@@ -4,7 +4,8 @@
 //! [`EventLoop`] is the loop an app runs on its main thread. It implements
 //! [`syrp_loop_api::MessageLoop`], so code written against the contract (and tested on
 //! `ManualLoop`) runs on it unchanged, and adds what only an owned loop has: [`run`],
-//! [`run_for`], [`dispatch_pending`], [`with_token`] and a [`QuitHandle`].
+//! [`run_for`], [`dispatch_pending`], [`with_token`] and a [`QuitHandle`]. On Linux it is an
+//! `epoll` loop, and peers add their file descriptors with `EventLoop::add_fd`.
 //!
 //! [`run`]: EventLoop::run
 //! [`run_for`]: EventLoop::run_for
@@ -27,3 +28,5 @@ mod os;
 
 pub use error::EventsError;
 pub use event_loop::{EventLoop, QuitHandle};
+#[cfg(target_os = "linux")]
+pub use os::epoll::{FdFn, FdGuard, Interest, Readiness};

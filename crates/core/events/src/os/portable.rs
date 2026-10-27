@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only OR BUSL-1.1
-//! The interim backend for Linux and Windows until their `epoll` (B4) and Win32 (B6) backends:
-//! a flag and a condition variable, with no OS event sources. On Windows a loop holds a 1 ms
+//! The interim backend for Windows until its Win32 backend (B6): a flag and a condition variable, with no OS event sources. On Windows a loop holds a 1 ms
 //! system timer resolution (`timeBeginPeriod`), because condition-variable timeouts otherwise
 //! follow the 15.6 ms system tick. Other targets get `UnsupportedTarget`.
 
@@ -18,7 +17,7 @@ pub(crate) struct Waker {
 
 impl Waker {
     pub(crate) fn new() -> Result<Self, EventsError> {
-        if cfg!(not(any(target_os = "linux", target_os = "windows"))) {
+        if cfg!(not(target_os = "windows")) {
             return Err(EventsError::UnsupportedTarget);
         }
         Ok(Waker {

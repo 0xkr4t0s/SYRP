@@ -4,7 +4,8 @@
 The owned desktop message loops (master plan §5.5, kind 1): `EventLoop`, the loop an app runs
 on its main thread. It implements the frozen `syrp_loop_api::MessageLoop` contract through the
 implementer hooks (`TaskSender::new`, `CallbackGuard::new`, `MessageThread::new_unchecked`) and
-adds `run`, `run_for`, `dispatch_pending`, `with_token`, `now` and `QuitHandle`. Covers JUCE's MessageManager (`callAsync`, `callFunctionOnMessageThread`,
+adds `run`, `run_for`, `dispatch_pending`, `with_token`, `now`, `QuitHandle` and, on Linux,
+`add_fd`. Covers JUCE's MessageManager (`callAsync`, `callFunctionOnMessageThread`,
 `isThisTheMessageThread`), CallbackMessage, Message and MessageListener. Behaviour comes from
 the WP spec and public JUCE documentation only. Layout: `src/event_loop.rs` is the
 platform-neutral core (queue, timer schedule, dispatch pass); `src/os/` holds the backends.
@@ -43,9 +44,10 @@ cargo check -p syrp-events --target x86_64-pc-windows-msvc
 there, never in two places. Timing tests use loose bounds.
 
 ## Known gaps
-WP-1.1-14 increment 1 (B1-B3, B9 codes). Every backend is interim, with no OS event sources:
-a condvar on Linux, a condvar under `timeBeginPeriod(1)` on Windows, and a `kqueue` with a
-`NOTE_CRITICAL` timer on macOS (Darwin coalesces ordinary timed waits). The `epoll` backend
-with `add_fd` (B4), `CFRunLoop` (B5) and Win32 (B6) replace them.
+WP-1.1-14 increments 1-2 (B1-B4, B9 codes). Linux runs the real `epoll` backend
+(`src/os/epoll.rs`: non-blocking `eventfd` wake, `epoll_wait` timeout rounded up to whole ms,
+`add_fd`). macOS and Windows are still interim, with no OS event sources: a `kqueue` with a
+`NOTE_CRITICAL` timer on macOS (Darwin coalesces ordinary timed waits) and a condvar under
+`timeBeginPeriod(1)` on Windows. `CFRunLoop` (B5) and Win32 (B6) replace them.
 `on_vblank` always uses the 60 Hz fallback timer; `VBlankDriver` (B7) and the migration page
 (B8) follow. `errors/loop.toml` codes 0004-0006 are in the existing domain.
