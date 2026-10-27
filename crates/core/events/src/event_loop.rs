@@ -51,6 +51,8 @@ enum Callback {
 struct Slot {
     period: Duration,
     f: Option<Callback>,
+    /// The display peer of a VBlank callback; `None` for plain timers.
+    peer: Option<PeerId>,
 }
 
 /// Timers by id, plus the schedule ordered by (due time, creation id).
@@ -58,6 +60,24 @@ struct Slot {
 struct Timers {
     slots: HashMap<u64, Slot>,
     order: BTreeSet<(Duration, u64)>,
+    /// Live `VBlankDriver`s per peer; a driven peer's callbacks are out of `order`.
+    driven: HashMap<PeerId, usize>,
+}
+
+impl Timers {
+    fn is_driven(&self, peer: Option<PeerId>) -> bool {
+        peer.is_some_and(|p| self.driven.contains_key(&p))
+    }
+
+    /// The ids of `peer`'s VBlank callbacks, in creation order.
+    fn peer_ids(&self, peer: PeerId) -> Vec<u64> {
+        let mut ids: Vec<u64> = (self.slots.iter())
+            .filter(|(_, s)| s.peer == Some(peer))
+            .map(|(&id, _)| id)
+            .collect();
+        ids.sort_unstable();
+        ids
+    }
 }
 
 pub(crate) struct Inner {
@@ -103,6 +123,63 @@ impl Inner {
         ran += EventLoop::fire_timers(self, mt);
         self.rearm();
         ran
+    }
+
+    pub(crate) fn is_message_thread(&self) -> bool {
+        self.sender.is_message_thread()
+    }
+
+    /// Starts a driver for `peer`: its fallback timers leave the schedule.
+    pub(crate) fn drive(&self, peer: PeerId) {
+        let mut t = self.timers.borrow_mut();
+        *t.driven.entry(peer).or_default() += 1;
+        let ids = t.peer_ids(peer);
+        t.order.retain(|(_, id)| !ids.contains(id));
+    }
+
+    /// Ends a driver for `peer`; after the last one its fallback timers resume, first due one
+    /// refresh period from now.
+    pub(crate) fn undrive(&self, peer: PeerId) {
+        let due = self.now() + FALLBACK_REFRESH;
+        {
+            let mut t = self.timers.borrow_mut();
+            let Some(n) = t.driven.get_mut(&peer) else {
+                return;
+            };
+            *n -= 1;
+            if *n > 0 {
+                return;
+            }
+            t.driven.remove(&peer);
+            for id in t.peer_ids(peer) {
+                t.order.insert((due, id));
+            }
+        }
+        self.rearm();
+    }
+
+    /// Calls `peer`'s VBlank callbacks once each with `at`, in creation order. Returns how
+    /// many ran.
+    pub(crate) fn fire_vblank(&self, peer: PeerId, at: Duration, mt: &MessageThread<'_>) -> usize {
+        let ids = self.timers.borrow().peer_ids(peer);
+        let mut fired = 0;
+        for id in ids {
+            let taken = (self.timers.borrow_mut().slots.get_mut(&id)).and_then(|s| s.f.take());
+            let Some(mut f) = taken else { continue };
+            if let Callback::VBlank(cb) = &mut f {
+                cb(mt, at);
+                fired += 1;
+            }
+            let mut t = self.timers.borrow_mut();
+            match t.slots.get_mut(&id) {
+                Some(slot) => slot.f = Some(f),
+                None => {
+                    drop(t); // the guard was dropped in the callback; drop it outside the borrow
+                    drop(f);
+                }
+            }
+        }
+        fired
     }
 }
 
@@ -313,7 +390,6 @@ impl EventLoop {
         f(&mt)
     }
 
-    #[cfg(target_os = "linux")]
     pub(crate) fn inner(&self) -> &Rc<Inner> {
         &self.inner
     }
@@ -372,7 +448,11 @@ impl EventLoop {
             let mut t = timers.borrow_mut();
             if let Some(slot) = t.slots.get_mut(&id) {
                 slot.f = Some(f);
-                t.order.insert((next_due(due, period, now), id));
+                // A driver made in the callback takes over from the fallback timer.
+                let peer = slot.peer;
+                if !t.is_driven(peer) {
+                    t.order.insert((next_due(due, period, now), id));
+                }
             } else {
                 drop(t); // the guard was dropped in the callback; drop it outside the borrow
                 drop(f);
@@ -380,15 +460,24 @@ impl EventLoop {
         }
         fired
     }
-    fn add_timer(&self, period: Duration, f: Callback) -> CallbackGuard {
+    fn add_timer(&self, period: Duration, f: Callback, peer: Option<PeerId>) -> CallbackGuard {
         let period = period.max(MIN_PERIOD);
         let id = self.inner.next_id.get();
         self.inner.next_id.set(id + 1);
         let due = self.now() + period;
         {
             let mut t = self.inner.timers.borrow_mut();
-            t.slots.insert(id, Slot { period, f: Some(f) });
-            t.order.insert((due, id));
+            t.slots.insert(
+                id,
+                Slot {
+                    period,
+                    f: Some(f),
+                    peer,
+                },
+            );
+            if !t.is_driven(peer) {
+                t.order.insert((due, id));
+            }
         }
         self.inner.rearm();
         let weak: Weak<Inner> = Rc::downgrade(&self.inner);
@@ -421,13 +510,14 @@ impl MessageLoop for EventLoop {
     }
 
     fn timer(&self, period: Duration, f: TimerFn) -> TimerGuard {
-        self.add_timer(period, Callback::Timer(f))
+        self.add_timer(period, Callback::Timer(f), None)
     }
 
-    /// Until a peer drives refreshes itself, a 60 Hz fallback timer calls `f` with each
-    /// refresh time on the loop's timer clock ([`EventLoop::now`]).
-    fn on_vblank(&self, _peer: PeerId, f: VBlankFn) -> VBlankGuard {
-        self.add_timer(FALLBACK_REFRESH, Callback::VBlank(f))
+    /// While no [`VBlankDriver`](crate::VBlankDriver) exists for `peer`, a 60 Hz fallback
+    /// timer calls `f` with each refresh time on the loop's timer clock ([`EventLoop::now`]);
+    /// while one does, the driver's `fire` calls it.
+    fn on_vblank(&self, peer: PeerId, f: VBlankFn) -> VBlankGuard {
+        self.add_timer(FALLBACK_REFRESH, Callback::VBlank(f), Some(peer))
     }
 }
 
