@@ -1,0 +1,27 @@
+[package]
+name = "syrp-events"
+description = "Owned desktop message loops for Syrp: the EventLoop that implements syrp-loop-api's MessageLoop on epoll (Linux), CFRunLoop (macOS) and Win32."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "AGPL-3.0-only OR BUSL-1.1"
+repository.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[package.metadata.syrp]
+layer = "L2"
+wp = "WP-1.1-14"
+
+[dependencies]
+syrp-error = { version = "0.0.1", path = "../../foundation/error" }
+syrp-loop-api = { version = "0.0.1", path = "../../contracts/loop-api" }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+libc = { version = "0.2.186", default-features = false }
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61.2", features = ["Win32_Media"] }
+
+[lints]
+workspace = true

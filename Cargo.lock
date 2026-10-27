@@ -1233,6 +1233,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "syrp-events"
+version = "0.0.1"
+dependencies = [
+ "libc",
+ "syrp-error",
+ "syrp-loop-api",
+ "windows-sys",
+]
+
+[[package]]
 name = "syrp-format-api"
 version = "0.0.1"
 dependencies = [
