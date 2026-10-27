@@ -8,7 +8,8 @@
 //! - [`Priority`] and [`RealtimeOptions`] map onto each OS's scheduler; see [`priority`] for
 //!   the table. Refusals are reported through [`SchedulingStatus`] and never stop the thread.
 //! - [`WaitableEvent`] is an auto- or manual-reset signal to wait on, and [`SpinLock`] a lock
-//!   for very short sections. JUCE's other locks map to `std` (see `docs/migration/locks.md`).
+//!   for very short sections. [`ThreadPool`] runs [`ThreadPoolJob`]s and closures on a fixed
+//!   set of workers. JUCE's other locks map to `std` (see `docs/migration/locks.md`).
 //!
 //! ```
 //! use std::time::Duration;
@@ -27,6 +28,7 @@
 mod error;
 mod event;
 mod os;
+mod pool;
 pub mod priority;
 mod spin;
 mod sync;
@@ -34,6 +36,7 @@ mod thread;
 
 pub use error::ThreadError;
 pub use event::WaitableEvent;
+pub use pool::{JobContext, JobHandle, JobStatus, ThreadPool, ThreadPoolJob, ThreadPoolOptions};
 pub use priority::{
     MAX_REALTIME_PRIORITY, Priority, RealtimeOptions, SchedulingStatus,
     set_current_thread_affinity_mask, set_current_thread_priority,

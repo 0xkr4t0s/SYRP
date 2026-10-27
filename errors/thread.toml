@@ -41,3 +41,10 @@ title = "Invalid realtime options"
 severity = "error"
 cause = "ThreadBuilder::spawn was given RealtimeOptions with a zero processing period, a zero expected work time, or a work time longer than the period."
 fix = "Give a non-zero period and a non-zero work time no longer than the period, or leave either unset."
+
+[[error]]
+code = "SYRP-THREAD-0007"
+title = "Thread pool job did not finish in time"
+severity = "error"
+cause = "ThreadPool::remove_job or remove_all_jobs waited for a running job and it did not return within the timeout. Jobs cannot be killed: the job keeps running, will not run again, and leaves the pool when it returns."
+fix = "Pass interrupt = true and make the job check JobContext::should_exit and return soon after it turns true, or pass a longer timeout."

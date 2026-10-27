@@ -1454,6 +1454,7 @@ dependencies = [
  "libc",
  "loom",
  "syrp-error",
+ "syrp-sys",
  "windows-sys",
 ]
 

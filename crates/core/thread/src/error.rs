@@ -54,6 +54,14 @@ pub enum ThreadError {
         /// Which rule the options broke.
         reason: &'static str,
     },
+    /// SYRP-THREAD-0007: a [`ThreadPool`](crate::ThreadPool) remove call waited for a
+    /// running job and it did not return within the timeout. The job still leaves the pool
+    /// when it returns, and is not run again.
+    #[non_exhaustive]
+    JobTimedOut {
+        /// How long the call waited.
+        timeout: Duration,
+    },
 }
 
 impl ThreadError {
@@ -71,6 +79,7 @@ impl Diagnostic for ThreadError {
             Self::AffinityUnsupported => "SYRP-THREAD-0004",
             Self::AffinityRefused { .. } => "SYRP-THREAD-0005",
             Self::InvalidRealtimeOptions { .. } => "SYRP-THREAD-0006",
+            Self::JobTimedOut { .. } => "SYRP-THREAD-0007",
         })
     }
 
@@ -86,6 +95,9 @@ impl Diagnostic for ThreadError {
             Self::AffinityUnsupported => "macOS has no thread affinity; skip the call".into(),
             Self::InvalidRealtimeOptions { .. } => {
                 "keep the expected work time non-zero and no longer than the period".into()
+            }
+            Self::JobTimedOut { .. } => {
+                "pass `interrupt = true` and have the job check `ctx.should_exit()`".into()
             }
         })
     }
@@ -127,6 +139,10 @@ impl fmt::Display for ThreadError {
             Self::InvalidRealtimeOptions { reason } => {
                 write!(f, "{code}: invalid realtime options: {reason}")
             }
+            Self::JobTimedOut { timeout } => write!(
+                f,
+                "{code}: the pool job did not return within {timeout:?}; it leaves the pool when it does"
+            ),
         }
     }
 }
