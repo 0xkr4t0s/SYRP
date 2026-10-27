@@ -1393,6 +1393,7 @@ version = "0.0.1"
 dependencies = [
  "claxon",
  "flacenc",
+ "proptest",
  "syrp-audio-api",
  "syrp-error",
  "syrp-format-api",

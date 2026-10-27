@@ -20,5 +20,8 @@ syrp-format-api = { version = "0.0.1", path = "../../contracts/format-api" }
 claxon = "=0.4.3"
 flacenc = { version = "=0.5.1", default-features = false }
 
+[dev-dependencies]
+proptest = { version = "1.5", default-features = false, features = ["std"] }
+
 [lints]
 workspace = true

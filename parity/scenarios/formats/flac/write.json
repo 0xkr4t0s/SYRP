@@ -1,0 +1,35 @@
+{
+  "id": "formats/flac/write",
+  "title": "FLAC written at each depth and quality decodes to the ramp",
+  "juce_tag": "9.0.4",
+  "tolerance": "exact",
+  "wp": "WP-2.1-15",
+  "ledger_rows": ["juce_audio_formats/FlacAudioFormat"],
+  "docs": [
+    {"page": "FlacAudioFormat", "member": "FlacAudioFormat", "says": "Reads and writes the lossless-compression FLAC audio format."},
+    {"page": "FlacAudioFormat", "member": "getQualityOptions", "says": "Returns the list of qualities usable when writing; the index is passed to createWriterFor."}
+  ],
+  "steps": [
+    {"op": "write", "sample_rate": 48000, "channels": 2, "bits": 16, "frames": 5000, "quality": 0},
+    {"op": "write", "sample_rate": 48000, "channels": 2, "bits": 16, "frames": 5000, "quality": 1},
+    {"op": "write", "sample_rate": 48000, "channels": 2, "bits": 16, "frames": 5000, "quality": 2},
+    {"op": "write", "sample_rate": 48000, "channels": 2, "bits": 16, "frames": 5000, "quality": 3},
+    {"op": "write", "sample_rate": 48000, "channels": 2, "bits": 16, "frames": 5000, "quality": 4},
+    {"op": "write", "sample_rate": 48000, "channels": 2, "bits": 16, "frames": 5000, "quality": 5},
+    {"op": "write", "sample_rate": 48000, "channels": 2, "bits": 16, "frames": 5000, "quality": 6},
+    {"op": "write", "sample_rate": 48000, "channels": 2, "bits": 16, "frames": 5000, "quality": 7},
+    {"op": "write", "sample_rate": 48000, "channels": 2, "bits": 16, "frames": 5000, "quality": 8},
+    {"op": "write", "sample_rate": 48000, "channels": 2, "bits": 24, "frames": 5000, "quality": 0},
+    {"op": "write", "sample_rate": 48000, "channels": 2, "bits": 24, "frames": 5000, "quality": 1},
+    {"op": "write", "sample_rate": 48000, "channels": 2, "bits": 24, "frames": 5000, "quality": 2},
+    {"op": "write", "sample_rate": 48000, "channels": 2, "bits": 24, "frames": 5000, "quality": 3},
+    {"op": "write", "sample_rate": 48000, "channels": 2, "bits": 24, "frames": 5000, "quality": 4},
+    {"op": "write", "sample_rate": 48000, "channels": 2, "bits": 24, "frames": 5000, "quality": 5},
+    {"op": "write", "sample_rate": 48000, "channels": 2, "bits": 24, "frames": 5000, "quality": 6},
+    {"op": "write", "sample_rate": 48000, "channels": 2, "bits": 24, "frames": 5000, "quality": 7},
+    {"op": "write", "sample_rate": 48000, "channels": 2, "bits": 24, "frames": 5000, "quality": 8},
+    {"op": "write", "sample_rate": 44100, "channels": 1, "bits": 16, "frames": 1, "quality": 5},
+    {"op": "write", "sample_rate": 96000, "channels": 8, "bits": 24, "frames": 4097, "quality": 5}
+  ],
+  "notes": "Depths 16 and 24 and quality indices 0 to 8 are Syrp's lists; the documentation names neither, so the harness records which ones JUCE accepts."
+}

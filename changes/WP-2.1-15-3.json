@@ -1,0 +1,1 @@
+{"wp": "WP-2.1-15", "kind": "added", "summary": "syrp-format-flac: round-trip, metadata, seek and damaged-file proptests, and FLAC parity scenarios with writer-made inputs (increment 3, final: B5-B6)."}

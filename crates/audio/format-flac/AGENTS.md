@@ -16,7 +16,9 @@ Ogg FLAC, the format manager and memory-mapped readers are out of scope.
 | `source.rs` | Buffered source with an absolute byte position, implementing `claxon`'s `ReadBytes` |
 
 ## Ledger rows
-juce_audio_formats/FlacAudioFormat
+juce_audio_formats/FlacAudioFormat. Scenarios: `parity/scenarios/formats/flac/` (`read.json`
+reads the writer-made files in `inputs/`; `write.json` writes the ramp at depths 16 and 24 and
+quality indices 0 to 8), compared on decoded samples at the `exact` profile.
 
 ## Invariants
 - Samples are divided by 2^(bits − 1) (WP-2.1-02 B2's rule, implemented locally: format crates
@@ -46,7 +48,10 @@ experimental
 ## How to test
 ```sh
 cargo syrp test --crate syrp-format-flac
+SYRP_BLESS=1 cargo test -p syrp-format-flac --test scenarios   # after a writer change
 ```
+`tests/props.rs` holds the B5 proptests (24 cases each; `PROPTEST_CASES` does not override the
+in-file count, so raise it there for a long fuzz run).
 Test streams come from `flacenc` and the B4 writer, plus metadata blocks
 built from RFC 9639's layout in `tests/common/mod.rs`; nothing is copied from elsewhere.
 
@@ -74,5 +79,5 @@ built from RFC 9639's layout in `tests/common/mod.rs`; nothing is copied from el
   bits). Other depths, including 32-bit, are refused with `SYRP-FORMAT-0003`.
 - Writing: 16 and 24-bit only (`flacenc` 0.5 cannot write 32-bit; 8, 12 and 20 are not
   offered). No `SEEKTABLE`, `CUESHEET` or `PICTURE` is written.
-- The round-trip, seek and corruption proptests (B5) and the parity scenarios (B6) arrive in
-  the next increment of WP-2.1-15.
+- The parity scenarios have no harness outputs yet (WP-0.1-11); `cargo deny check` has not
+  been run locally for the two dependencies (CI gate G5 runs it).
