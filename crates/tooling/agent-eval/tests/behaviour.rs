@@ -109,7 +109,9 @@ fn b3_command_template_runs_the_agent_with_substituted_paths() {
 
 #[test]
 fn b3_agent_past_the_time_limit_fails() {
-    let dir = synthetic("b3-timeout", &[("slow", "true", 1)]);
+    // A 5 s limit: it covers the setup phase too, and 1 s was not enough for a bash start on a
+    // loaded Windows runner. The agent sleeps 30 s, so it still overruns.
+    let dir = synthetic("b3-timeout", &[("slow", "true", 5)]);
     let tasks = load_tasks(&dir).unwrap();
     let report = run(
         &tasks,
