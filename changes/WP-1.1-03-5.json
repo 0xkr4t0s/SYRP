@@ -1,0 +1,1 @@
+{"wp": "WP-1.1-03", "kind": "added", "summary": "syrp-io (fifth increment, final): BufferedInputStream with a configurable buffer and peek_byte, serving seeks inside its block without re-reading the source; SubregionStream, a window onto part of another stream with relative positions and a clipped length."}
