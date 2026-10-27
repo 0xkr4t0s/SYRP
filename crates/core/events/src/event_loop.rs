@@ -151,8 +151,11 @@ impl Inner {
                 return;
             }
             t.driven.remove(&peer);
+            // A callback taken out for firing is rescheduled by its own firing loop.
             for id in t.peer_ids(peer) {
-                t.order.insert((due, id));
+                if t.slots.get(&id).is_some_and(|s| s.f.is_some()) {
+                    t.order.insert((due, id));
+                }
             }
         }
         self.rearm();

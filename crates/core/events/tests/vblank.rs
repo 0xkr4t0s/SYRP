@@ -104,3 +104,26 @@ fn b7_a_driver_outliving_its_loop_does_nothing() {
     drop(lp);
     assert_eq!(driver.fire(ms(1)), 0);
 }
+
+#[test]
+fn b7_a_driver_made_and_dropped_in_the_fallback_callback_keeps_the_rate() {
+    // Regression: dropping the driver re-scheduled the callback while it was firing, and the
+    // fallback then scheduled it again, doubling the rate for good.
+    let lp = Rc::new(EventLoop::new().unwrap());
+    let peer = PeerId::from_raw(1);
+    let calls = Rc::new(Cell::new(0u32));
+    let (c, weak) = (calls.clone(), Rc::downgrade(&lp));
+    let _g = lp.on_vblank(
+        peer,
+        Box::new(move |_mt, _at| {
+            c.set(c.get() + 1);
+            if c.get() == 1 {
+                let lp = weak.upgrade().unwrap();
+                drop(lp.vblank_driver(peer));
+            }
+        }),
+    );
+    lp.run_for(ms(500));
+    // 500 ms at 60 Hz is 30 refreshes; a doubled rate gives about 58.
+    assert!((10..=40).contains(&calls.get()), "fired {}", calls.get());
+}
