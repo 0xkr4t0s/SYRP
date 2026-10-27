@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "parity/scenarios/maths/big_integer/scenario.schema.json",
+  "title": "BigInteger operation scenario",
+  "description": "Inputs only. Named values are parsed from their text, then each step runs on its own and the runner records what it returns, in order. Expected outputs come solely from harness runs. A step never changes a named value: an operation that changes its target (setBit, negate, setNegative, the *Range and insertBit ops, divideBy) runs on a copy, and the runner records the copy afterwards. Records: BigInteger results as signed base-16 text (lowercase), integers and booleans as JSON, compare as its sign (-1, 0 or 1), divideBy as [quotient, remainder], toMemoryBlock as its bytes in hex, low byte first, and parseString failures as whatever the implementation reports.",
+  "type": "object",
+  "required": ["id", "title", "juce_tag", "tolerance", "wp", "ledger_rows", "docs", "values", "steps"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string" },
+    "title": { "type": "string" },
+    "juce_tag": { "const": "9.0.4" },
+    "tolerance": { "const": "exact" },
+    "wp": { "type": "string" },
+    "ledger_rows": { "type": "array", "items": { "type": "string" } },
+    "docs": {
+      "type": "array",
+      "items": { "type": "object", "required": ["page", "member", "says"] }
+    },
+    "values": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["base", "text"],
+        "properties": {
+          "base": { "enum": [2, 8, 10, 16] },
+          "text": { "type": "string", "pattern": "^-?[0-9a-f]+$" }
+        }
+      }
+    },
+    "steps": { "type": "array", "items": { "$ref": "#/$defs/step" } },
+    "notes": { "type": "string" }
+  },
+  "$defs": {
+    "step": {
+      "type": "object",
+      "required": ["op", "args"],
+      "additionalProperties": false,
+      "properties": {
+        "op": {
+          "enum": [
+            "add", "subtract", "multiply", "divide", "modulo", "divideBy", "compare",
+            "isZero", "isOne", "isNegative", "setNegative", "negate", "toInt64",
+            "getBit", "setBit", "clearBit", "flipBit", "setRange", "insertBit", "getBitRange",
+            "getBitRangeAsInt", "setBitRangeAsInt", "getHighestBit", "findNextSetBit",
+            "findNextClearBit", "countNumberOfSetBits", "shiftLeft", "shiftRight",
+            "bitwiseAnd", "bitwiseOr", "bitwiseXor",
+            "toString", "parseString", "toMemoryBlock", "loadFromMemoryBlock",
+            "exponentModulo", "inverseModulo", "findGreatestCommonDivisor"
+          ],
+          "description": "Arguments by op: add/subtract/multiply/divide/modulo/divideBy/compare/bitwise*/findGreatestCommonDivisor(a, b); isZero/isOne/isNegative/negate/toInt64/getHighestBit/countNumberOfSetBits/toMemoryBlock(a); setNegative(a, bool); getBit/clearBit/flipBit(a, bit); setBit/insertBit(a, bit, bool); setRange(a, start, count, bool); getBitRange/getBitRangeAsInt(a, start, count); setBitRangeAsInt(a, start, count, int); findNextSetBit/findNextClearBit(a, from); shiftLeft/shiftRight(a, bits); toString(a, base, minimum_digits); parseString(literal text, base); loadFromMemoryBlock(literal bytes in hex, low byte first); exponentModulo(a, exponent, modulus); inverseModulo(a, modulus). a, b, exponent and modulus name entries of values."
+        },
+        "args": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              { "type": "string", "description": "the name of an entry in values" },
+              { "type": "integer" },
+              { "type": "boolean" },
+              { "type": "object", "required": ["literal"], "properties": { "literal": { "type": "string" } } }
+            ]
+          }
+        }
+      }
+    }
+  }
+}
