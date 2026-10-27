@@ -5,15 +5,16 @@ Layer L3 WAV codec (WP-2.1-14, master plan §4.2): `WavAudioFormat` implements t
 `syrp-format-api` contract for RIFF WAVE, `WAVE_FORMAT_EXTENSIBLE` and RF64/BW64. Covers JUCE's
 `WavAudioFormat`. Built from public layouts only: Microsoft RIFF and `WAVEFORMATEXTENSIBLE`
 docs, EBU Tech 3285 (BWF), EBU Tech 3306 (RF64), ITU-R BS.2088 (BW64). Delivered in stacked
-increments: B1–B2 plain RIFF, B2 extensible/masks/RF64 (this one), B3 metadata, B4 writer,
-B5–B6 tests and scenarios.
+increments: (1) B1–B2 plain RIFF; (2) B2 extensible/masks/RF64 and B3 metadata reading;
+(3) B4 writer; (4) B5–B6 robustness tests and parity scenarios.
 
 | Path | What |
 |---|---|
 | `src/riff.rs` | Chunk walk, `ds64`, `fmt ` parsing |
+| `src/meta.rs` | Metadata chunks → contract `Metadata` (B3) |
 | `src/layout.rs` | Channel mask ↔ `ChannelSet` (private table of Microsoft's speaker bits) |
 | `src/reader.rs` | `WavReader`, sample decoding |
-| `src/error.rs` | `WavError` (`SYRP-FORMAT-0006`..`0012`) |
+| `src/error.rs` | `WavError` (`SYRP-FORMAT-0006`..`0013`) |
 
 ## Ledger rows
 juce_audio_formats/WavAudioFormat
@@ -40,6 +41,17 @@ juce_audio_formats/WavAudioFormat
 - Back left/right map to the surround pair, or to the rear pair when the mask also has side
   speakers. A mask whose bit count differs from the channel count, that uses a bit with no
   contract speaker, or that forms no named layout gives a discrete layout in file order.
+- Metadata text drops trailing NULs and is UTF-8, else Latin-1
+  (`b3_text_drops_trailing_nuls_and_falls_back_to_latin1_syrp_choice`). A cue's label is its
+  `labl`, else its `note`; its position is the cue's sample offset field.
+- A `smpl` chunk with a loop type other than 0/1/2 is kept whole as `Other("smpl")` (the
+  contract's `LoopKind` has no `Other`; `b3_smpl_with_another_loop_type_is_kept_whole_as_other_syrp_choice`).
+- `bext` version/UMID/loudness/reserved bytes (346..602), when any is non-zero, travel as an
+  extra `Other("bext", whole chunk)` right after the `Bext` item.
+- Metadata chunks whose counts do not fit their size are `SYRP-FORMAT-0013` (strict); a
+  metadata chunk past the end of the input is skipped
+  (`b3_metadata_chunk_past_the_end_is_skipped_syrp_choice`). `JUNK`, `fact`, `LIST` types other
+  than `INFO`/`adtl`, and chunks JUCE's docs do not name are not reported.
 - `sample_rates()` is empty (any whole rate); `name()` is `"WAV file"`.
 - An unknown chunk that runs past the end ends the walk without an error.
 
@@ -57,6 +69,8 @@ cargo syrp wp check WP-2.1-14
 Test files are built byte by byte in `tests/common/mod.rs` from the public layouts.
 
 ## Known gaps
-- Metadata chunks (B3) and the writer (B4; `create_writer` returns `SYRP-FORMAT-0003`).
+- Writer (B4; `create_writer` returns `SYRP-FORMAT-0003` until then): next increment.
+- Contract gaps: `smpl` header fields (MIDI unity note, SMPTE), `ltxt`, and a `note` shadowed
+  by a `labl` are not reported.
 - Byte-flip/truncation proptest (B5) and parity scenarios (B6): final increment.
 - Not in this WP: Wave64, ADPCM and other compressed codecs, memory-mapped readers.

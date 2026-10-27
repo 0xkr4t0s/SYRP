@@ -5,9 +5,12 @@
 //! - [`WavAudioFormat`]: the format description and the factory for readers and writers.
 //! - [`WavReader`]: decodes integer PCM (8-bit unsigned, 16, 24 and 32-bit signed, and
 //!   narrower `valid_bits_per_sample`) and 32/64-bit IEEE float.
+//! - Metadata: `bext`, `cue ` with `LIST`/`adtl` labels, `smpl` loops and `LIST`/`INFO` text
+//!   become typed [`MetadataItem`](syrp_format_api::MetadataItem)s; `acid`, `inst`, `iXML`,
+//!   `axml`, `Trkn` and `cart` are kept byte for byte as `Other`.
 //! - [`WavError`]: the codec's coded errors (`SYRP-FORMAT-0006` onwards).
 //!
-//! WP-2.1-14 lands in increments: metadata chunks and the writer come next.
+//! WP-2.1-14 lands in increments: the writer comes next.
 //!
 //! The layouts come from public specifications only: Microsoft's RIFF and
 //! `WAVEFORMATEXTENSIBLE` documentation, EBU Tech 3285 (BWF), EBU Tech 3306 (RF64) and
@@ -23,6 +26,7 @@
 
 mod error;
 mod layout;
+mod meta;
 mod reader;
 mod riff;
 

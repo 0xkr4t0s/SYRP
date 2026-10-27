@@ -9,8 +9,8 @@ use syrp_format_api::{
 };
 
 use crate::WavError;
-use crate::layout;
 use crate::riff::{self, Fmt};
+use crate::{layout, meta};
 
 /// Bytes decoded per read call, rounded down to whole frames (at least one frame).
 const SCRATCH_BYTES: usize = 16 * 1024;
@@ -163,6 +163,7 @@ impl WavReader {
             kind,
         )
         .map_err(|_| WavError::bad_format("no stream matches these values"))?;
+        let metadata = meta::read(input.as_mut(), &riff.chunks, riff.len)?;
         let block_align = usize::from(fmt.block_align);
         let frames_per_read = (SCRATCH_BYTES / block_align).max(1);
         let mut scratch = Vec::new();
@@ -174,7 +175,7 @@ impl WavReader {
             input,
             spec,
             length: riff.data.size / u64::from(fmt.block_align),
-            metadata: Metadata::new(),
+            metadata,
             data_offset: riff.data.offset,
             block_align,
             sample_bytes: usize::from(fmt.container_bytes),

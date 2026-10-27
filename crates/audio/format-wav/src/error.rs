@@ -58,6 +58,12 @@ pub enum WavError {
     OutOfMemory,
     /// An `RF64`/`BW64` file has no valid `ds64` chunk first (`SYRP-FORMAT-0012`).
     BadDs64,
+    /// A metadata chunk's own counts or sizes do not fit it (`SYRP-FORMAT-0013`).
+    #[non_exhaustive]
+    BadMetadata {
+        /// The chunk's four-character id.
+        chunk: [u8; 4],
+    },
 }
 
 impl WavError {
@@ -88,6 +94,7 @@ impl fmt::Display for WavError {
                 write!(f, "WAV encoding 0x{tag:04X} is not supported")
             }
             Self::BadDs64 => f.write_str("RF64/BW64 file without a valid 'ds64' chunk"),
+            Self::BadMetadata { chunk } => write!(f, "metadata chunk '{}' is malformed", id(chunk)),
             Self::OutOfMemory => f.write_str("not enough memory for a size read from the file"),
         }
     }
@@ -119,6 +126,7 @@ impl Diagnostic for WavError {
             Self::UnsupportedEncoding { .. } => "SYRP-FORMAT-0010",
             Self::OutOfMemory => "SYRP-FORMAT-0011",
             Self::BadDs64 => "SYRP-FORMAT-0012",
+            Self::BadMetadata { .. } => "SYRP-FORMAT-0013",
         })
     }
 }
