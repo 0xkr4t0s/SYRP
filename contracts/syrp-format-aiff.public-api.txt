@@ -1,0 +1,15 @@
+pub mod syrp_format_aiff
+pub struct syrp_format_aiff::AiffAudioFormat
+impl syrp_format_aiff::AiffAudioFormat
+pub fn syrp_format_aiff::AiffAudioFormat::new() -> Self
+pub fn syrp_format_aiff::AiffAudioFormat::unwritable_items(&syrp_format_api::metadata::Metadata) -> alloc::vec::Vec<&syrp_format_api::metadata::MetadataItem>
+impl syrp_format_api::format::AudioFormat for syrp_format_aiff::AiffAudioFormat
+pub fn syrp_format_aiff::AiffAudioFormat::bit_depths(&self) -> &[u32]
+pub fn syrp_format_aiff::AiffAudioFormat::can_read(&self, &[u8]) -> bool
+pub fn syrp_format_aiff::AiffAudioFormat::create_reader(&self, alloc::boxed::Box<dyn syrp_format_api::format::ReadSeek>) -> core::result::Result<alloc::boxed::Box<dyn syrp_format_api::format::AudioReader>, syrp_format_api::FormatError>
+pub fn syrp_format_aiff::AiffAudioFormat::create_writer(&self, alloc::boxed::Box<dyn syrp_format_api::format::WriteSeek>, &syrp_format_api::spec::WriterOptions) -> core::result::Result<alloc::boxed::Box<dyn syrp_format_api::format::AudioWriter>, syrp_format_api::FormatError>
+pub fn syrp_format_aiff::AiffAudioFormat::file_extensions(&self) -> &[&str]
+pub fn syrp_format_aiff::AiffAudioFormat::name(&self) -> &str
+pub fn syrp_format_aiff::AiffAudioFormat::sample_rates(&self) -> &[u32]
+pub fn syrp_format_aiff::extended_to_f64([u8; 10]) -> core::result::Result<f64, syrp_format_api::FormatError>
+pub fn syrp_format_aiff::f64_to_extended(f64) -> core::result::Result<[u8; 10], syrp_format_api::FormatError>
