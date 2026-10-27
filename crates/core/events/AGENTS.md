@@ -44,7 +44,9 @@ there, never in two places. Timing tests use loose bounds.
 
 ## Known gaps
 WP-1.1-14 increment 1 (B1-B3, the B4 epoll/eventfd core, B9 codes). Next: B4's
-`add_fd(fd, Interest, callback) -> FdGuard` on the same epoll instance. macOS and Windows run an interim portable
-backend (condvar, no OS sources); the `CFRunLoop` (B5) and Win32 (B6) backends replace it.
+`add_fd(fd, Interest, callback) -> FdGuard` on the same epoll instance. macOS and Windows run interim
+backends with no OS sources: a `kqueue` with a `NOTE_CRITICAL` timer on macOS (Darwin coalesces
+ordinary timed waits), and a condvar under `timeBeginPeriod(1)` on Windows. The `CFRunLoop`
+(B5) and Win32 (B6) backends replace them.
 `on_vblank` always uses the 60 Hz fallback timer; `VBlankDriver` (B7) and the migration page
 (B8) follow. `errors/loop.toml` codes 0004-0006 are in the existing domain.

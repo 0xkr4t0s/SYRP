@@ -85,10 +85,6 @@ fn b1_with_token_runs_on_the_message_thread() {
 }
 
 #[test]
-#[cfg_attr(
-    windows,
-    ignore = "the interim Windows backend waits on a tick-granular condvar until B6 lands"
-)]
 fn b3_ten_ms_timer_over_300_ms_fires_20_to_31_times() {
     let lp = EventLoop::new().unwrap();
     let count = Rc::new(Cell::new(0));

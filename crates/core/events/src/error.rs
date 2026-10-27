@@ -35,7 +35,7 @@ pub enum EventsError {
 
 impl EventsError {
     /// The error for a failed OS call, taking the error number from `err`.
-    #[cfg_attr(not(target_os = "linux"), allow(dead_code))]
+    #[cfg_attr(not(any(target_os = "linux", target_os = "macos")), allow(dead_code))]
     pub(crate) fn os(call: &'static str, err: &io::Error) -> Self {
         Self::Os {
             call,

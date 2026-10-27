@@ -78,8 +78,8 @@ pub(crate) struct Inner {
 /// blocked) fires once and keeps its phase: unlike `ManualLoop::advance`, it never fires a
 /// burst to catch up.
 ///
-/// Backends: `epoll` on Linux. macOS and Windows currently use an interim portable backend
-/// (a condition variable, no file descriptors); the `CFRunLoop` and Win32 backends follow.
+/// Backends: `epoll` on Linux. macOS and Windows currently use interim backends (a `kqueue`
+/// on macOS, a condition variable on Windows); the `CFRunLoop` and Win32 backends follow.
 /// ```
 /// use std::time::Duration;
 /// use syrp_events::EventLoop;

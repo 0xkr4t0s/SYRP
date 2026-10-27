@@ -7,7 +7,12 @@ mod linux;
 #[cfg(target_os = "linux")]
 pub(crate) use linux::{Poller, Waker};
 
-#[cfg(not(target_os = "linux"))]
+#[cfg(target_os = "macos")]
+mod kqueue;
+#[cfg(target_os = "macos")]
+pub(crate) use kqueue::{Poller, Waker};
+
+#[cfg(not(any(target_os = "linux", target_os = "macos")))]
 mod portable;
-#[cfg(not(target_os = "linux"))]
+#[cfg(not(any(target_os = "linux", target_os = "macos")))]
 pub(crate) use portable::{Poller, Waker};

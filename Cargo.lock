@@ -1239,6 +1239,7 @@ dependencies = [
  "libc",
  "syrp-error",
  "syrp-loop-api",
+ "windows-sys",
 ]
 
 [[package]]

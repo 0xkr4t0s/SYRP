@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only OR BUSL-1.1
-//! The interim backend for macOS and Windows until their `CFRunLoop` and Win32 backends land:
-//! a flag and a condition variable, with no OS event sources. Other targets get
-//! `UnsupportedTarget`.
+//! The interim backend for Windows until the Win32 one (B6): a flag and a condition variable,
+//! with no OS event sources. While a loop exists it asks for a 1 ms system timer resolution
+//! (`timeBeginPeriod`), because condition-variable timeouts otherwise follow the 15.6 ms
+//! system tick. Other targets get `UnsupportedTarget`.
 
 use std::sync::{Condvar, Mutex, PoisonError};
 use std::time::Duration;
@@ -17,7 +18,7 @@ pub(crate) struct Waker {
 
 impl Waker {
     pub(crate) fn new() -> Result<Self, EventsError> {
-        if cfg!(not(any(target_os = "macos", target_os = "windows"))) {
+        if cfg!(not(target_os = "windows")) {
             return Err(EventsError::UnsupportedTarget);
         }
         Ok(Waker {
@@ -36,6 +37,12 @@ pub(crate) struct Poller;
 
 impl Poller {
     pub(crate) fn new(_waker: &Waker) -> Result<Self, EventsError> {
+        // SAFETY: timeBeginPeriod takes a plain integer; `Drop` makes the matching
+        // timeEndPeriod call. A refusal only leaves the coarser default resolution.
+        #[cfg(windows)]
+        unsafe {
+            windows_sys::Win32::Media::timeBeginPeriod(1);
+        }
         Ok(Poller)
     }
 
@@ -57,5 +64,15 @@ impl Poller {
         };
         *woken = false;
         0
+    }
+}
+
+impl Drop for Poller {
+    fn drop(&mut self) {
+        // SAFETY: ends the timeBeginPeriod(1) request made in `new`.
+        #[cfg(windows)]
+        unsafe {
+            windows_sys::Win32::Media::timeEndPeriod(1);
+        }
     }
 }
