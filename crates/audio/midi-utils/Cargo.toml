@@ -1,0 +1,31 @@
+[package]
+name = "syrp-midi-utils"
+description = "Syrp MIDI utilities: message helpers, MidiMessageSequence, MidiKeyboardState, RPN parsing and generation, MidiFile and UMP translation."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license = "AGPL-3.0-only OR BUSL-1.1"
+repository.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[package.metadata.syrp]
+layer = "L3"
+wp = "WP-2.1-07"
+
+[dependencies]
+syrp-error = { version = "0.0.1", path = "../../foundation/error" }
+syrp-midi = { version = "0.0.1", path = "../../contracts/midi" }
+syrp-rt = { version = "0.0.1", path = "../../foundation/rt" }
+
+[dev-dependencies]
+proptest = { version = "1.5", default-features = false, features = ["std"] }
+# For `syrp_rt::GuardedAllocator` and `no_alloc` in test binaries (also a normal dependency).
+syrp-rt = { version = "0.0.1", path = "../../foundation/rt" }
+
+[[bench]]
+name = "ump"
+harness = false
+
+[lints]
+workspace = true
