@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only OR BUSL-1.1
-//! [`StreamingSocket`] (TCP), [`SocketOptions`] and [`Readiness`].
+//! [`StreamingSocket`] (TCP).
 
 use std::io::{self, Read};
 use std::net::{SocketAddr, ToSocketAddrs};
@@ -8,7 +8,7 @@ use std::time::{Duration, Instant};
 
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 
-use crate::{IpAddress, NetError};
+use crate::{IpAddress, NetError, Readiness, SocketOptions};
 
 /// How long one blocking wait lasts before it checks again whether the socket was closed.
 pub(crate) const SLICE: Duration = Duration::from_millis(50);
@@ -19,104 +19,6 @@ pub(crate) const SLICE: Duration = Duration::from_millis(50);
 const SEND_FLAGS: libc::c_int = libc::MSG_NOSIGNAL;
 #[cfg(not(any(target_os = "linux", target_os = "android")))]
 const SEND_FLAGS: i32 = 0;
-
-/// Options applied when a socket is created (JUCE's `SocketOptions`). Unset sizes keep the
-/// OS default; the OS may round or clamp a size it is given.
-///
-/// ```
-/// use syrp_net::SocketOptions;
-/// let o = SocketOptions::new().with_receive_buffer_size(64 * 1024);
-/// assert_eq!(o.receive_buffer_size(), Some(64 * 1024));
-/// assert_eq!(o.send_buffer_size(), None);
-/// ```
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub struct SocketOptions {
-    receive_buffer_size: Option<usize>,
-    send_buffer_size: Option<usize>,
-}
-
-impl SocketOptions {
-    /// Options that keep every OS default.
-    ///
-    /// ```
-    /// use syrp_net::SocketOptions;
-    /// assert_eq!(SocketOptions::new(), SocketOptions::default());
-    /// ```
-    pub const fn new() -> Self {
-        Self {
-            receive_buffer_size: None,
-            send_buffer_size: None,
-        }
-    }
-
-    /// These options with `SO_RCVBUF` set to `bytes`.
-    ///
-    /// ```
-    /// use syrp_net::SocketOptions;
-    /// assert_eq!(SocketOptions::new().with_receive_buffer_size(4096).receive_buffer_size(), Some(4096));
-    /// ```
-    #[must_use]
-    pub const fn with_receive_buffer_size(mut self, bytes: usize) -> Self {
-        self.receive_buffer_size = Some(bytes);
-        self
-    }
-
-    /// These options with `SO_SNDBUF` set to `bytes`.
-    ///
-    /// ```
-    /// use syrp_net::SocketOptions;
-    /// assert_eq!(SocketOptions::new().with_send_buffer_size(4096).send_buffer_size(), Some(4096));
-    /// ```
-    #[must_use]
-    pub const fn with_send_buffer_size(mut self, bytes: usize) -> Self {
-        self.send_buffer_size = Some(bytes);
-        self
-    }
-
-    /// The receive buffer size to request, if any.
-    ///
-    /// ```
-    /// assert_eq!(syrp_net::SocketOptions::new().receive_buffer_size(), None);
-    /// ```
-    pub const fn receive_buffer_size(&self) -> Option<usize> {
-        self.receive_buffer_size
-    }
-
-    /// The send buffer size to request, if any.
-    ///
-    /// ```
-    /// assert_eq!(syrp_net::SocketOptions::new().send_buffer_size(), None);
-    /// ```
-    pub const fn send_buffer_size(&self) -> Option<usize> {
-        self.send_buffer_size
-    }
-
-    pub(crate) fn apply(&self, sock: &Socket) -> io::Result<()> {
-        if let Some(n) = self.receive_buffer_size {
-            sock.set_recv_buffer_size(n)?;
-        }
-        if let Some(n) = self.send_buffer_size {
-            sock.set_send_buffer_size(n)?;
-        }
-        Ok(())
-    }
-}
-
-/// The outcome of [`StreamingSocket::wait_until_ready`]; failures are `Err`.
-///
-/// ```
-/// use syrp_net::Readiness;
-/// assert_ne!(Readiness::Ready, Readiness::TimedOut);
-/// ```
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-#[non_exhaustive]
-pub enum Readiness {
-    /// The socket can be read or written (or has hit end of stream or an error, which the
-    /// next read or write reports).
-    Ready,
-    /// The timeout passed first.
-    TimedOut,
-}
 
 /// A TCP socket: either a connection or a listener (JUCE's `StreamingSocket`).
 ///
@@ -529,9 +431,20 @@ pub(crate) fn resolve(host: &str, port: u16) -> Result<Vec<SocketAddr>, NetError
     Ok(addrs)
 }
 
+/// Applies `options` to a new socket.
+pub(crate) fn apply_options(options: SocketOptions, sock: &Socket) -> io::Result<()> {
+    if let Some(n) = options.receive_buffer_size() {
+        sock.set_recv_buffer_size(n)?;
+    }
+    if let Some(n) = options.send_buffer_size() {
+        sock.set_send_buffer_size(n)?;
+    }
+    Ok(())
+}
+
 fn new_socket(addr: SocketAddr, options: SocketOptions) -> io::Result<Socket> {
     let sock = Socket::new(Domain::for_address(addr), Type::STREAM, Some(Protocol::TCP))?;
-    options.apply(&sock)?;
+    apply_options(options, &sock)?;
     no_sigpipe(&sock)?;
     Ok(sock)
 }

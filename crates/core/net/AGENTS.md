@@ -18,6 +18,8 @@ juce_core/SocketOptions, juce_core/NamedPipe
 - All OS interface code is in `src/ifaces.rs`: `getifaddrs` on Linux, Android and Apple,
   `GetAdaptersAddresses` on Windows (IPv4 broadcast computed from the on-link prefix).
   Other targets return `NetError::Unsupported`.
+- `SocketOptions` and `Readiness` (`src/options.rs`) exist on every target; keep the method
+  signatures in `src/unsupported.rs` identical to the Unix and Windows types.
 - Socket addresses from the OS are read with `read_unaligned`; every `unsafe` block has a
   `// SAFETY:` comment (clippy `undocumented_unsafe_blocks`).
 - `StreamingSocket` (`src/socket.rs`, socket2) takes `&self` everywhere; blocking waits poll
@@ -51,9 +53,8 @@ Tests use loopback only and never a real network. Enumeration tests assert that 
 listed, never a count of other interfaces.
 
 ## Known gaps
-WP-1.1-10 increment 4 (B1-B5). Still to come (B6): the `wasm32` stubs that return
-`NetError::Unsupported` from every socket and pipe constructor.
-Until then, socket and pipe types are absent on targets other than Unix and Windows (socket2
-does not build there). On Unix a peer that goes away is not reported to a `NamedPipe`; reads
-time out instead.
-`errors/net.toml` is not yet in the CLI's embedded catalogue.
+WP-1.1-10 is complete (B1-B6). `DatagramSocket` is IPv4 only. On Unix a peer that goes away
+is not reported to a `NamedPipe`; reads time out instead. On targets other than Unix and
+Windows (socket2 does not build there) `src/unsupported.rs` provides the same socket and pipe
+API with uninhabited types whose constructors return `NetError::Unsupported`; CI does not
+run tests on such a target. `errors/net.toml` is not yet in the CLI's embedded catalogue.

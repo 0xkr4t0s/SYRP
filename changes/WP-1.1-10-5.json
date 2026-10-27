@@ -1,0 +1,1 @@
+{"wp": "WP-1.1-10", "kind": "added", "summary": "syrp-net: on targets without OS networking (such as wasm32) StreamingSocket, DatagramSocket and NamedPipe exist with the same API and every constructor returns SYRP-NET-0003; tests check the error catalogue."}

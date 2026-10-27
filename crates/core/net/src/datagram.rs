@@ -9,7 +9,7 @@ use std::time::Duration;
 
 use socket2::{Domain, MaybeUninitSlice, Protocol, SockAddr, Socket, Type};
 
-use crate::socket::{not_supported, resolve, retryable, socket_error, wait_ready};
+use crate::socket::{apply_options, not_supported, resolve, retryable, socket_error, wait_ready};
 use crate::{IpAddress, IpFamily, NetError, Readiness, SocketOptions};
 
 /// A UDP socket over IPv4 (JUCE's `DatagramSocket`).
@@ -69,7 +69,7 @@ impl DatagramSocket {
     ) -> Result<Self, NetError> {
         let create = || {
             let sock = Socket::new(Domain::IPV4, Type::DGRAM, Some(Protocol::UDP))?;
-            options.apply(&sock)?;
+            apply_options(options, &sock)?;
             sock.set_broadcast(enable_broadcasting)?;
             Ok(sock)
         };

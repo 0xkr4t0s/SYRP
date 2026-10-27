@@ -9,10 +9,10 @@
 //! - [`DatagramSocket`]: UDP over IPv4, with broadcast and multicast.
 //! - [`NamedPipe`]: a named, two-way byte pipe between processes on this machine.
 //!
-//! URL and HTTP come from WP-1.1-09. The socket and pipe types exist on Unix and Windows only.
-//! Errors are [`NetError`], with codes `SYRP-NET-*` in `errors/net.toml`. On targets without an
-//! OS network API (such as `wasm32`) the value types work and every OS query returns
-//! [`NetError::Unsupported`].
+//! URL and HTTP come from WP-1.1-09. Errors are [`NetError`], with codes `SYRP-NET-*` in
+//! `errors/net.toml`. On targets without an OS network API (such as `wasm32`) the crate still
+//! compiles with the same API: the value types work, and every OS query and every socket or
+//! pipe constructor returns [`NetError::Unsupported`].
 //!
 //! ```
 //! use syrp_net::{IpAddress, IpFamily};
@@ -28,6 +28,7 @@ mod error;
 mod ifaces;
 mod ip;
 mod mac;
+mod options;
 #[cfg(any(unix, windows))]
 mod pipe;
 #[cfg(unix)]
@@ -36,14 +37,19 @@ mod pipe_unix;
 mod pipe_windows;
 #[cfg(any(unix, windows))]
 mod socket;
+#[cfg(not(any(unix, windows)))]
+mod unsupported;
 
 #[cfg(any(unix, windows))]
 pub use datagram::DatagramSocket;
 pub use error::NetError;
 pub use ip::{IpAddress, IpFamily};
 pub use mac::MacAddress;
+pub use options::{Readiness, SocketOptions};
 #[cfg(any(unix, windows))]
 pub use pipe::NamedPipe;
 #[cfg(any(unix, windows))]
-pub use socket::{Readiness, SocketOptions, StreamingSocket};
+pub use socket::StreamingSocket;
 pub use syrp_error::Diagnostic;
+#[cfg(not(any(unix, windows)))]
+pub use unsupported::{DatagramSocket, NamedPipe, StreamingSocket};
