@@ -307,6 +307,16 @@ fn check_encoding(text: Cow<'_, str>) -> Result<Cow<'_, str>, VarError> {
     }
 }
 
+/// Appends `raw` with each CR LF pair and each lone CR turned into LF (XML 1.0 section 2.11).
+fn push_line_ends_normalised(out: &mut String, raw: &str) {
+    let mut lines = raw.split('\r');
+    out.push_str(lines.next().unwrap_or(""));
+    for line in lines {
+        out.push('\n');
+        out.push_str(line.strip_prefix('\n').unwrap_or(line));
+    }
+}
+
 /// Returns whether `c` is XML white space.
 fn is_space(c: char) -> bool {
     matches!(c, ' ' | '\t' | '\n' | '\r')
@@ -624,7 +634,7 @@ impl<'t> Parser<'t> {
                     None => return Ok(element),
                 }
             } else if rest.starts_with("<![CDATA[") {
-                text.push_str(self.skip_past(9, "]]>", "CDATA section")?);
+                push_line_ends_normalised(&mut text, self.skip_past(9, "]]>", "CDATA section")?);
             } else if rest.starts_with('<') {
                 if self.misc(false)? {
                     continue;
