@@ -238,6 +238,31 @@ fn b3_a_stop_during_a_successful_batch_still_removes_it() {
 }
 
 #[test]
+fn b3_a_stop_after_a_timed_out_stop_does_not_wait_for_the_stuck_thread() {
+    use std::sync::mpsc::channel;
+    use std::time::{Duration, Instant};
+    let (blocked_tx, blocked_rx) = channel();
+    let (_release_tx, release_rx) = channel::<()>();
+    let sink = FakeSink::new(1);
+    *sink.during_send.lock().unwrap() = Some(Box::new(move || {
+        let _ = blocked_tx.send(());
+        let _ = release_rx.recv_timeout(Duration::from_secs(60));
+    }));
+    let d = crate::ThreadedAnalyticsDestination::new("t", sink);
+    crate::AnalyticsDestination::log_event(&d, &ev("a"));
+    d.start_analytics_thread(Duration::from_millis(1)).unwrap();
+    blocked_rx.recv_timeout(Duration::from_secs(60)).unwrap();
+    let short = Duration::from_millis(1);
+    assert!(d.stop_analytics_thread(short).timed_out());
+    let (slack, t) = (Duration::from_secs(30), Instant::now());
+    assert!(!d.stop_analytics_thread(short).timed_out());
+    assert!(t.elapsed() < short + slack);
+    let t = Instant::now();
+    drop(d);
+    assert!(t.elapsed() < crate::DROP_STOP_TIMEOUT + slack);
+}
+
+#[test]
 fn b5_too_short_periods_are_rejected_with_a_code() {
     use crate::{AnalyticsError, Diagnostic, ThreadedAnalyticsDestination};
     use std::time::Duration;

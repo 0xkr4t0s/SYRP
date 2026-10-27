@@ -474,8 +474,9 @@ impl<S: BatchSink> ThreadedAnalyticsDestination<S> {
                     .0;
             }
         }
-        if !timed_out && let Some(handle) = thread.take() {
-            let _ = handle.join();
+        // A stale thread (from a timed-out stop) is joined only once it has exited.
+        if !timed_out && let Some(h) = thread.take_if(|h| generation != 0 || h.is_finished()) {
+            let _ = h.join();
         }
         let (events, dropped) = self.shared.take_unlogged();
         if !events.is_empty() {
