@@ -1,0 +1,1 @@
+{"wp": "WP-1.1-06", "kind": "added", "summary": "syrp-thread increment 3: WaitableEvent (auto- and manual-reset, signals kept until waited on) and SpinLock<T> (backoff then yield, syscall-free try_lock, RAII guard), each with loom models, plus docs/migration pages mapping CriticalSection, ScopedLock, ReadWriteLock and ThreadLocalValue to std."}
