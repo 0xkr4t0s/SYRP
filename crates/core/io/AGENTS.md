@@ -55,7 +55,10 @@ B2 and B3 use proptest (typed round trips; `MemoryBlock` against a `Vec<u8>` mod
   little-endian" but not the sign. Syrp writes one length byte whose low 7 bits are the count
   (0..=4) of significant bytes of `|value|` and whose bit 7 marks a negative value, then those
   bytes little-endian. `0` is `00`, `-1` is `81 01`, `i32::MIN` is `84 00 00 00 80`. Reading a
-  count above 4 is `SYRP-IO-0004`. Confirm against JUCE output before `syrp-state` relies on it.
+  count above 4 is `SYRP-IO-0004`. The reader is deliberately lenient and accepts non-canonical
+  forms the writer never produces: `80` (negative zero) and zero-padded counts such as
+  `02 01 00`; the harness should check JUCE's reader on those too. Confirm against JUCE output
+  before `syrp-state` relies on it.
 - `write_text` with `write_bom` writes `FF FE` for UTF-16 only; UTF-8 never gets a BOM.
 
 ## Known gaps

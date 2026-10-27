@@ -222,11 +222,19 @@ pub trait OutputStream: Write {
         if write_bom {
             self.write_all(&[0xFF, 0xFE])?;
         }
-        let mut buf = io::BufWriter::new(&mut *self);
+        // Encode through a small stack buffer: no allocation, and nothing is left buffered to
+        // be written after an error has been returned.
+        let mut chunk = [0u8; 512];
+        let mut used = 0;
         for unit in text.encode_utf16() {
-            buf.write_all(&unit.to_le_bytes())?;
+            chunk[used..used + 2].copy_from_slice(&unit.to_le_bytes());
+            used += 2;
+            if used == chunk.len() {
+                self.write_all(&chunk)?;
+                used = 0;
+            }
         }
-        Ok(buf.flush()?)
+        Ok(self.write_all(&chunk[..used])?)
     }
 
     /// Writes `byte` `count` times.
@@ -246,7 +254,9 @@ pub trait OutputStream: Write {
 
     /// Copies up to `max_bytes` (everything for `None`) from `source` to this stream and returns
     /// the number of bytes copied. A read or write failure is an error whose
-    /// [`IoError::bytes_copied`] (also in its message) says how much was copied before it.
+    /// [`IoError::bytes_copied`] (also in its message) says how much was copied before it. After
+    /// a write failure that count is a lower bound: part of the failing chunk may also have
+    /// been written.
     ///
     /// ```
     /// # use syrp_io::{OutputStream, StdInputStream, StdOutputStream};

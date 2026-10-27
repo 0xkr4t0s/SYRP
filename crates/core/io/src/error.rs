@@ -78,7 +78,8 @@ impl IoError {
     }
 
     /// For a failed [`OutputStream::write_from_input_stream`](crate::OutputStream::write_from_input_stream),
-    /// the number of bytes copied before the failure; `None` for every other error.
+    /// the number of bytes copied before the failure (at least this many after a write
+    /// failure); `None` for every other error.
     ///
     /// ```
     /// use syrp_io::{IoError, IoErrorKind};
