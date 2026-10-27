@@ -1,6 +1,6 @@
 # Licensing
 
-> Draft, pending counsel review. See [LICENSE.md](https://github.com/0xkr4t0s/SYRP/blob/main/LICENSE.md).
+> Draft, pending counsel review. See [LICENSE.md](https://github.com/SYRP-Foundation/SYRP/blob/main/LICENSE.md).
 
 - **Interface crates** (L0 foundation, L1 contracts, `syrp-midi`): `MIT OR Apache-2.0`.
 - **Everything else**: your choice of `AGPL-3.0-only` or `BUSL-1.1`.

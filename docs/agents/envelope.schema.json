@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/0xkr4t0s/SYRP/docs/agents/envelope.schema.json",
+  "$id": "https://github.com/SYRP-Foundation/SYRP/docs/agents/envelope.schema.json",
   "title": "cargo syrp result envelope",
   "description": "Every cargo syrp command prints exactly one of these on stdout when output is JSON.",
   "type": "object",

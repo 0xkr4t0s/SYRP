@@ -10,7 +10,7 @@ Syrp has no usable framework crates yet (Phase 0). What you can run today is the
 ## First commands
 
 ```sh
-git clone https://github.com/0xkr4t0s/SYRP && cd syrp
+git clone https://github.com/SYRP-Foundation/SYRP && cd SYRP
 cargo syrp doctor          # what is installed, what is missing
 cargo syrp wp ready        # work packages that can start now
 cargo syrp explain SYRP-WP-0005
