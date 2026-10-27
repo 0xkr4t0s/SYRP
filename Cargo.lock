@@ -1163,6 +1163,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "syrp-analytics"
+version = "0.0.1"
+dependencies = [
+ "syrp-sys",
+]
+
+[[package]]
 name = "syrp-audio-api"
 version = "0.0.1"
 dependencies = [
