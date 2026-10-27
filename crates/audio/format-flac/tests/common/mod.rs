@@ -2,6 +2,9 @@
 //! Test streams: audio frames from `flacenc`, metadata blocks built from RFC 9639's layout.
 #![allow(dead_code)]
 
+use std::io::{Cursor, Seek, SeekFrom, Write};
+use std::sync::{Arc, Mutex};
+
 use flacenc::component::BitRepr;
 use flacenc::error::Verify;
 use syrp_error::Diagnostic;
@@ -130,4 +133,29 @@ pub fn read_f64(
         syrp_audio_api::AudioBlockMut::new(&mut out, channels, frames, frames).expect("block");
     r.read(block.into(), start)?;
     Ok(out)
+}
+
+/// An output whose bytes the test can inspect while the writer still owns it.
+#[derive(Clone, Default)]
+pub struct Shared(Arc<Mutex<Cursor<Vec<u8>>>>);
+
+impl Write for Shared {
+    fn write(&mut self, b: &[u8]) -> std::io::Result<usize> {
+        self.0.lock().unwrap().write(b)
+    }
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+
+impl Seek for Shared {
+    fn seek(&mut self, to: SeekFrom) -> std::io::Result<u64> {
+        self.0.lock().unwrap().seek(to)
+    }
+}
+
+impl Shared {
+    pub fn bytes(&self) -> Vec<u8> {
+        self.0.lock().unwrap().get_ref().clone()
+    }
 }
