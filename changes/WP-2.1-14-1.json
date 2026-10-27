@@ -1,0 +1,1 @@
+{"wp": "WP-2.1-14", "kind": "added", "summary": "syrp-format-wav: WavAudioFormat and WavReader for RIFF/RF64/BW64 WAVE with PCM, float and WAVE_FORMAT_EXTENSIBLE, channel masks, and coded errors SYRP-FORMAT-0006..0012 (increment 1: B1-B2)."}

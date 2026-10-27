@@ -1420,6 +1420,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "syrp-format-wav"
+version = "0.0.1"
+dependencies = [
+ "proptest",
+ "syrp-audio-api",
+ "syrp-error",
+ "syrp-format-api",
+]
+
+[[package]]
 name = "syrp-geom"
 version = "0.0.1"
 dependencies = [

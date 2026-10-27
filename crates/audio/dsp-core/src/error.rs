@@ -8,12 +8,16 @@ use syrp_error::{Diagnostic, ErrorCode};
 /// The error type of this crate. Each variant carries a code from `errors/dsp.toml`.
 ///
 /// ```
-/// use syrp_dsp_core::DspError;
+/// use syrp_audio_api::ProcessConfig;
+/// use syrp_dsp_core::{DspError, DspProcessor, DspSpec, LaneProcessor, ProcessorDuplicator};
 /// use syrp_error::Diagnostic;
-/// /// What a host shows for a failed `prepare`.
-/// fn report(err: &DspError) -> String {
-///     format!("{}: {err}", err.code().as_str())
-/// }
+/// # struct Nop; impl LaneProcessor<()> for Nop { type Lanes = syrp_simd::F32x8; fn prepare(&mut self, _: &DspSpec, _: &()) -> Result<(), DspError> { Ok(()) } fn reset(&mut self) {} fn process_lanes(&mut self, _: &(), _: &mut [syrp_simd::F32x8], _: bool) {} }
+/// let mut dup = ProcessorDuplicator::new((), || Nop);
+/// let err = dup.prepare(&DspSpec::new(ProcessConfig::new(48_000.0, usize::MAX)?, 1)).unwrap_err();
+/// assert!(matches!(err, DspError::CannotAllocate { .. }));
+/// assert_eq!(err.code().as_str(), "SYRP-DSP-0001");
+/// assert!(err.to_string().contains("scratch"));
+/// # Ok::<(), syrp_audio_api::AudioError>(())
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
@@ -46,4 +50,12 @@ impl Diagnostic for DspError {
             Self::CannotAllocate { .. } => ErrorCode::new("SYRP-DSP-0001"),
         }
     }
+}
+
+/// An empty vector with room for exactly `len` elements, or `CannotAllocate`.
+pub(crate) fn vec_with_capacity<T>(what: &'static str, len: usize) -> Result<Vec<T>, DspError> {
+    let mut v = Vec::new();
+    v.try_reserve_exact(len)
+        .map_err(|_| DspError::CannotAllocate { what, len })?;
+    Ok(v)
 }

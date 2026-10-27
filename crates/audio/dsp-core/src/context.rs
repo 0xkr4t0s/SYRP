@@ -218,7 +218,7 @@ impl<'a, S: DspSample> ProcessContext<'a, S> {
     }
 
     /// A replacing context over this context's output block, with the same bypass flag.
-    /// `ProcessorChain` runs every processor after the first one
+    /// [`ProcessorChain`](crate::ProcessorChain) runs every processor after the first one
     /// through it.
     ///
     /// ```
