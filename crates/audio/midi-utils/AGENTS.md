@@ -11,11 +11,11 @@ Module and file owners (WP-2.1-08 and WP-2.1-09 never edit `Cargo.toml`, `lib.rs
 
 | Path | Owner |
 |---|---|
-| `src/message/`, `tests/message.rs` | WP-2.1-07 |
+| `src/message/`, `src/sequence.rs`, `tests/message.rs`, `tests/sequence.rs` | WP-2.1-07 |
 | `src/file/`, `tests/file.rs` (stub until it lands) | WP-2.1-08 |
 | `src/ump/`, `tests/ump.rs`, `benches/ump.rs` (stubs until it lands) | WP-2.1-09 |
 
-WP-2.1-07 adds `sequence`, `keyboard` and `rpn` in later increments.
+WP-2.1-07 adds `keyboard` and `rpn` in later increments.
 
 ## Ledger rows
 juce_audio_basics/MidiMessageSequence, juce_audio_basics/MidiKeyboardState,
@@ -29,12 +29,17 @@ juce_audio_basics/MidiRPNMessage (WP-2.1-07). WP-2.1-08 and WP-2.1-09 list their
 - Readers accept any `MidiData` and return `None` for data no builder here can produce
   (wrong length, a denominator power of 32 or more, a key outside -7..=7).
 - Channels are 1 to 16 in every API, as in `syrp-midi`.
+- `MidiMessageSequence`: events sorted by `f64::total_cmp` of their timestamps, equal times
+  in insertion order (until `message_mut` changes a time; `sort` restores it). Note-off
+  matches are indices; every edit remaps them, so a match always names the same event or is
+  cleared when that event is deleted. Merges reserve with `try_reserve_exact` first and fail
+  with `SYRP-MIDI-0006`, leaving the sequence unchanged; bad indices are `SYRP-MIDI-0005`.
 - Name tables follow the MIDI 1.0 and General MIDI Level 1 lists; the wording is Syrp's.
 
 ## Thread affinity
 `message`: builders allocate (they return `MidiMessage`), so message thread only; readers,
 `controller_name` and the General MIDI names are RT-safe (no allocation), `note_name`
-allocates.
+allocates. `sequence`: message thread (edits allocate); `&self` reads are any-thread.
 
 ## Stability
 experimental
@@ -48,5 +53,5 @@ Test binaries may install `syrp_rt::GuardedAllocator` (dev-dependency) to prove 
 paths with `syrp_rt::no_alloc`; `proptest` is a dev-dependency.
 
 ## Known gaps
-WP-2.1-07 increment 1 (B1 and the B5 layout). Next: `MidiMessageSequence` (B2),
-`MidiKeyboardState` (B3), RPN (B4), error codes from `SYRP-MIDI-0005` (B6).
+WP-2.1-07 increments 1 and 2 (B1, B2 and the B5 layout). Next: `MidiKeyboardState` (B3),
+RPN (B4).

@@ -1,0 +1,1 @@
+{"wp": "WP-2.1-07", "kind": "added", "summary": "syrp-midi-utils: MidiMessageSequence and MidiEventHolder, a time-ordered event list with index-based note-off matching kept correct by every edit (add, delete, merge, extract, sort), and controller-state rebuilding for a time; errors SYRP-MIDI-0005 and SYRP-MIDI-0006 (increment 2: B2)."}

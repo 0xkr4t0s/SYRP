@@ -28,3 +28,17 @@ title = "Malformed Universal MIDI Packet"
 severity = "error"
 cause = "UmpPacket::read was given fewer words than the packet's message type needs, or a field its message type constrains is invalid: a System status outside 0xF1..0xFF (or 0xF7), a MIDI 1.0 channel voice status outside 0x80..0xEF, a data byte of 0x80 or above, a SysEx7 byte count above 6, a SysEx8 byte count outside 1..14, or an undefined Data 64/128 status."
 fix = "Read whole packets: the top four bits of the first word give the size (1, 2, 3 or 4 words). Build packets with the UmpPacket constructors, which check every field."
+
+[[error]]
+code = "SYRP-MIDI-0005"
+title = "MIDI sequence event index out of range"
+severity = "error"
+cause = "A syrp-midi-utils MidiMessageSequence method was given an event index that is not below the sequence's len(). The sequence is unchanged."
+fix = "Check the index against len() first, or look the event up with event(index), which returns None instead of failing. Indices shift when events are added or deleted before them."
+
+[[error]]
+code = "SYRP-MIDI-0006"
+title = "Out of memory for a MIDI sequence"
+severity = "error"
+cause = "The allocator could not provide room for the events that a syrp-midi-utils MidiMessageSequence add, merge or extract call needed. The sequence is unchanged."
+fix = "Free memory or split the work into smaller sequences. Very large inputs (for example a huge MIDI file merged at once) are the usual cause."
