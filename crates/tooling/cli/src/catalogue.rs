@@ -25,6 +25,7 @@ const SOURCES: &[(&str, &str)] = &[
     ),
     ("device", include_str!("../../../../errors/device.toml")),
     ("doc", include_str!("../../../../errors/doc.toml")),
+    ("dsp", include_str!("../../../../errors/dsp.toml")),
     ("error", include_str!("../../../../errors/error.toml")),
     ("eval", include_str!("../../../../errors/eval.toml")),
     ("format", include_str!("../../../../errors/format.toml")),
