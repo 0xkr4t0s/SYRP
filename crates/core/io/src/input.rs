@@ -236,6 +236,7 @@ pub trait InputStream: Read {
     /// significant bytes in little-endian order (none for zero). The length byte holds the
     /// number of magnitude bytes in its low 7 bits and has bit 7 set for a negative value, so
     /// `[0x01, 0xFF]` is `255` and `[0x81, 0x01]` is `-1`. A length above four is `SYRP-IO-0004`.
+    /// The inverse of [`OutputStream::write_compressed_int`](crate::OutputStream::write_compressed_int).
     ///
     /// ```
     /// # use syrp_io::{InputStream, StdInputStream};

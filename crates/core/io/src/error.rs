@@ -8,9 +8,10 @@ use syrp_error::{Diagnostic, ErrorCode};
 /// What went wrong in an [`IoError`].
 ///
 /// ```
-/// use syrp_io::{IoErrorKind, MemoryBlock};
-/// let err = MemoryBlock::with_size(usize::MAX, true).unwrap_err();
-/// assert_eq!(err.kind(), IoErrorKind::OutOfMemory);
+/// use syrp_io::{InputStream, IoErrorKind, StdInputStream};
+/// let mut s = StdInputStream::new(std::io::Cursor::new([1u8]))?;
+/// assert_eq!(s.read_i32_le().unwrap_err().kind(), IoErrorKind::EndOfStream);
+/// # Ok::<(), syrp_io::IoError>(())
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
@@ -25,8 +26,9 @@ pub enum IoErrorKind {
     OutOfMemory,
 }
 
-/// The error type of this crate: an [`IoErrorKind`] plus the underlying [`std::io::Error`] when
-/// there is one (returned by [`std::error::Error::source`]).
+/// The error type of this crate: an [`IoErrorKind`], the underlying [`std::io::Error`] when
+/// there is one (returned by [`std::error::Error::source`]), and, for a failed copy, the number
+/// of bytes copied before the failure.
 ///
 /// It implements [`Diagnostic`] with `SYRP-IO-*` codes and converts both ways with
 /// [`std::io::Error`], so the stream traits compose with `std` code. Converting an `IoError` to
@@ -45,6 +47,7 @@ pub enum IoErrorKind {
 pub struct IoError {
     kind: IoErrorKind,
     source: Option<io::Error>,
+    copied: Option<u64>,
 }
 
 impl IoError {
@@ -55,7 +58,11 @@ impl IoError {
     /// assert_eq!(IoError::new(IoErrorKind::InvalidData).kind(), IoErrorKind::InvalidData);
     /// ```
     pub const fn new(kind: IoErrorKind) -> Self {
-        Self { kind, source: None }
+        Self {
+            kind,
+            source: None,
+            copied: None,
+        }
     }
 
     /// What went wrong.
@@ -66,6 +73,23 @@ impl IoError {
     /// ```
     pub const fn kind(&self) -> IoErrorKind {
         self.kind
+    }
+
+    /// For a failed [`OutputStream::write_from_input_stream`](crate::OutputStream::write_from_input_stream),
+    /// the number of bytes copied before the failure; `None` for every other error.
+    ///
+    /// ```
+    /// use syrp_io::{IoError, IoErrorKind};
+    /// assert_eq!(IoError::new(IoErrorKind::Io).bytes_copied(), None);
+    /// ```
+    pub const fn bytes_copied(&self) -> Option<u64> {
+        self.copied
+    }
+
+    /// Records how many bytes a copy moved before this error.
+    pub(crate) fn with_copied(mut self, copied: u64) -> Self {
+        self.copied = Some(copied);
+        self
     }
 }
 
@@ -85,6 +109,7 @@ impl From<io::Error> for IoError {
         Self {
             kind,
             source: Some(err),
+            copied: None,
         }
     }
 }
@@ -104,13 +129,20 @@ impl From<IoError> for io::Error {
 
 impl fmt::Display for IoError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let Self { kind, source } = self;
+        let Self {
+            kind,
+            source,
+            copied,
+        } = self;
         f.write_str(match kind {
             IoErrorKind::EndOfStream => "the stream ended inside a fixed-size read",
             IoErrorKind::Io => "the underlying I/O operation failed",
             IoErrorKind::InvalidData => "malformed data in the stream",
             IoErrorKind::OutOfMemory => "out of memory for a stream or memory block",
         })?;
+        if let Some(n) = copied {
+            write!(f, " after copying {n} bytes")?;
+        }
         match source {
             Some(source) => write!(f, ": {source}"),
             None => Ok(()),
