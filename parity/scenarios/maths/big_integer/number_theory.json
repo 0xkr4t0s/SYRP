@@ -1,0 +1,42 @@
+{
+  "id": "maths/big_integer/number_theory",
+  "title": "Modular exponentiation, modular inverse and greatest common divisor, including a 1279-bit prime modulus",
+  "juce_tag": "9.0.4",
+  "tolerance": "exact",
+  "wp": "WP-1.1-16",
+  "ledger_rows": ["juce_core/BigInteger"],
+  "docs": [{"page": "BigInteger", "member": "exponentModulo", "says": "Raises the value to a power and reduces the result by a modulus."}, {"page": "BigInteger", "member": "inverseModulo", "says": "Replaces the value with its multiplicative inverse for a modulus."}, {"page": "BigInteger", "member": "findGreatestCommonDivisor", "says": "The largest value dividing both this value and the other one."}],
+  "values": {
+    "zero": {"base": 16, "text": "0"},
+    "one": {"base": 16, "text": "1"},
+    "small": {"base": 16, "text": "12345678"},
+    "small_neg": {"base": 16, "text": "-ff"},
+    "u64_max": {"base": 16, "text": "ffffffffffffffff"},
+    "pow2_1024": {"base": 16, "text": "10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"},
+    "big_a": {"base": 16, "text": "172505372ef440e5c51e9a508bb1f4c9da653868e6d9ca0bc36c05adb3fc4f6341279a23bef7be506564f3a160712456de76aaadd6b855c6b62bd09e04924d52bc614bedce030297c5e538f12d92a28f17d83ce44e27424458b6b6043106a85f68b6daa8b2a668d605d4017f9ee6725ed09d3a0562d56abd685a48f165d57b00c7f4781ef86f5c8cc1ab"},
+    "big_b": {"base": 16, "text": "-17486580790b44045f9429523c4b037d52900977a9f2c943862c199bd3a49d1ce2844948a86c51ce927e89f918590825511600314ac9aee9cf6b978d7d421bb1235c9dc8b64f4e68e5c85bd78d396e0d55fc45228f4bd571b0b41b5669a0729b23994395a774f0147f76f87a640701ad82a1865506aadbf8319b25f81fcec1496e2769e927"},
+    "m1279": {"base": 16, "text": "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
+    "odd_mod": {"base": 16, "text": "43cbb5811fb2f1a709799eb9f8d702c255eb3435850394b6687dd5094cdd4240c6d7a962c671f4360e035868e5d98c2b45ba5681347b74fcfab3045b382a0caf8c10d3cf3f741ef82175fc623151001bc34de28c1a4f126160278deda97d6933b93c1be0d05f81639e85fbc05801952061ca532551fffc3436d523583b156724d1"}
+  },
+  "steps": [
+    {"op": "exponentModulo", "args": ["small", "u64_max", "odd_mod"]},
+    {"op": "exponentModulo", "args": ["big_a", "big_a", "m1279"]},
+    {"op": "exponentModulo", "args": ["big_b", "small", "odd_mod"]},
+    {"op": "exponentModulo", "args": ["zero", "zero", "small"]},
+    {"op": "exponentModulo", "args": ["small_neg", "one", "small"]},
+    {"op": "exponentModulo", "args": ["big_a", "small", "one"]},
+    {"op": "inverseModulo", "args": ["small", "m1279"]},
+    {"op": "inverseModulo", "args": ["big_a", "odd_mod"]},
+    {"op": "inverseModulo", "args": ["big_b", "m1279"]},
+    {"op": "inverseModulo", "args": ["small_neg", "small"]},
+    {"op": "inverseModulo", "args": ["pow2_1024", "small"]},
+    {"op": "inverseModulo", "args": ["zero", "small"]},
+    {"op": "inverseModulo", "args": ["small", "one"]},
+    {"op": "findGreatestCommonDivisor", "args": ["big_a", "big_b"]},
+    {"op": "findGreatestCommonDivisor", "args": ["pow2_1024", "big_a"]},
+    {"op": "findGreatestCommonDivisor", "args": ["zero", "small_neg"]},
+    {"op": "findGreatestCommonDivisor", "args": ["zero", "zero"]},
+    {"op": "findGreatestCommonDivisor", "args": ["small", "m1279"]}
+  ],
+  "notes": "Only positive moduli are used; the results for zero, negative moduli and negative exponents are Syrp's own choices (see crates/core/maths/AGENTS.md)."
+}
