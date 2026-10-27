@@ -1,0 +1,362 @@
+pub mod syrp_maths
+#[non_exhaustive] pub enum syrp_maths::MathsError
+pub syrp_maths::MathsError::InvalidBaseOrDigit
+pub syrp_maths::MathsError::InvalidRange
+impl core::error::Error for syrp_maths::MathsError
+impl core::fmt::Display for syrp_maths::MathsError
+pub fn syrp_maths::MathsError::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl syrp_error::Diagnostic for syrp_maths::MathsError
+pub fn syrp_maths::MathsError::code(&self) -> syrp_error::ErrorCode
+pub struct syrp_maths::BigInteger
+impl syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::abs(&self) -> syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::is_negative(&self) -> bool
+pub fn syrp_maths::BigInteger::is_one(&self) -> bool
+pub fn syrp_maths::BigInteger::is_zero(&self) -> bool
+pub fn syrp_maths::BigInteger::negate(&mut self)
+pub fn syrp_maths::BigInteger::set_negative(&mut self, bool)
+pub fn syrp_maths::BigInteger::to_i128(&self) -> core::option::Option<i128>
+pub fn syrp_maths::BigInteger::to_i64(&self) -> core::option::Option<i64>
+pub fn syrp_maths::BigInteger::to_u128(&self) -> core::option::Option<u128>
+pub fn syrp_maths::BigInteger::to_u64(&self) -> core::option::Option<u64>
+impl syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::bit(&self, u32) -> bool
+pub fn syrp_maths::BigInteger::bit_range(&self, u32, u32) -> syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::bit_range_as_u32(&self, u32, u32) -> u32
+pub fn syrp_maths::BigInteger::clear_bit(&mut self, u32)
+pub fn syrp_maths::BigInteger::count_set_bits(&self) -> u64
+pub fn syrp_maths::BigInteger::find_next_clear_bit(&self, u32) -> core::option::Option<u32>
+pub fn syrp_maths::BigInteger::find_next_set_bit(&self, u32) -> core::option::Option<u32>
+pub fn syrp_maths::BigInteger::flip_bit(&mut self, u32)
+pub fn syrp_maths::BigInteger::highest_bit(&self) -> core::option::Option<u32>
+pub fn syrp_maths::BigInteger::insert_bit(&mut self, u32, bool)
+pub fn syrp_maths::BigInteger::set_bit(&mut self, u32, bool)
+pub fn syrp_maths::BigInteger::set_bit_range_as_u32(&mut self, u32, u32, u32)
+pub fn syrp_maths::BigInteger::set_range(&mut self, u32, u32, bool)
+impl syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::checked_div_rem(&self, &syrp_maths::BigInteger) -> core::option::Option<(syrp_maths::BigInteger, syrp_maths::BigInteger)>
+pub fn syrp_maths::BigInteger::div_rem(&self, &syrp_maths::BigInteger) -> (syrp_maths::BigInteger, syrp_maths::BigInteger)
+impl syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::exponent_modulo(&self, &syrp_maths::BigInteger, &syrp_maths::BigInteger) -> syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::find_greatest_common_divisor(&self, &syrp_maths::BigInteger) -> syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::inverse_modulo(&self, &syrp_maths::BigInteger) -> core::option::Option<syrp_maths::BigInteger>
+impl syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::from_le_bytes(&[u8]) -> syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::parse(&str, u32) -> core::result::Result<syrp_maths::BigInteger, syrp_maths::MathsError>
+pub fn syrp_maths::BigInteger::to_le_bytes(&self) -> alloc::vec::Vec<u8>
+pub fn syrp_maths::BigInteger::to_string_radix(&self, u32, usize) -> core::result::Result<alloc::string::String, syrp_maths::MathsError>
+impl core::cmp::Ord for syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::cmp(&self, &Self) -> core::cmp::Ordering
+impl core::cmp::PartialOrd for syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::partial_cmp(&self, &Self) -> core::option::Option<core::cmp::Ordering>
+impl core::convert::From<i128> for syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::from(i128) -> Self
+impl core::convert::From<i32> for syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::from(i32) -> Self
+impl core::convert::From<i64> for syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::from(i64) -> Self
+impl core::convert::From<u128> for syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::from(u128) -> Self
+impl core::convert::From<u32> for syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::from(u32) -> Self
+impl core::convert::From<u64> for syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::from(u64) -> Self
+impl core::fmt::Debug for syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::fmt::Display for syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::fmt::LowerHex for syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::fmt::UpperHex for syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::hash::Hash for syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::hash<H: core::hash::Hasher>(&self, &mut H)
+impl core::ops::arith::Add for syrp_maths::BigInteger
+pub type syrp_maths::BigInteger::Output = syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::add(self, syrp_maths::BigInteger) -> syrp_maths::BigInteger
+impl core::ops::arith::Add<&syrp_maths::BigInteger> for &syrp_maths::BigInteger
+pub type &syrp_maths::BigInteger::Output = syrp_maths::BigInteger
+pub fn &syrp_maths::BigInteger::add(self, &syrp_maths::BigInteger) -> syrp_maths::BigInteger
+impl core::ops::arith::Add<&syrp_maths::BigInteger> for syrp_maths::BigInteger
+pub type syrp_maths::BigInteger::Output = syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::add(self, &syrp_maths::BigInteger) -> syrp_maths::BigInteger
+impl core::ops::arith::Add<syrp_maths::BigInteger> for &syrp_maths::BigInteger
+pub type &syrp_maths::BigInteger::Output = syrp_maths::BigInteger
+pub fn &syrp_maths::BigInteger::add(self, syrp_maths::BigInteger) -> syrp_maths::BigInteger
+impl core::ops::arith::AddAssign for syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::add_assign(&mut self, syrp_maths::BigInteger)
+impl core::ops::arith::AddAssign<&syrp_maths::BigInteger> for syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::add_assign(&mut self, &syrp_maths::BigInteger)
+impl core::ops::arith::Div for syrp_maths::BigInteger
+pub type syrp_maths::BigInteger::Output = syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::div(self, syrp_maths::BigInteger) -> syrp_maths::BigInteger
+impl core::ops::arith::Div<&syrp_maths::BigInteger> for &syrp_maths::BigInteger
+pub type &syrp_maths::BigInteger::Output = syrp_maths::BigInteger
+pub fn &syrp_maths::BigInteger::div(self, &syrp_maths::BigInteger) -> syrp_maths::BigInteger
+impl core::ops::arith::Div<&syrp_maths::BigInteger> for syrp_maths::BigInteger
+pub type syrp_maths::BigInteger::Output = syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::div(self, &syrp_maths::BigInteger) -> syrp_maths::BigInteger
+impl core::ops::arith::Div<syrp_maths::BigInteger> for &syrp_maths::BigInteger
+pub type &syrp_maths::BigInteger::Output = syrp_maths::BigInteger
+pub fn &syrp_maths::BigInteger::div(self, syrp_maths::BigInteger) -> syrp_maths::BigInteger
+impl core::ops::arith::DivAssign for syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::div_assign(&mut self, syrp_maths::BigInteger)
+impl core::ops::arith::DivAssign<&syrp_maths::BigInteger> for syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::div_assign(&mut self, &syrp_maths::BigInteger)
+impl core::ops::arith::Mul for syrp_maths::BigInteger
+pub type syrp_maths::BigInteger::Output = syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::mul(self, syrp_maths::BigInteger) -> syrp_maths::BigInteger
+impl core::ops::arith::Mul<&syrp_maths::BigInteger> for &syrp_maths::BigInteger
+pub type &syrp_maths::BigInteger::Output = syrp_maths::BigInteger
+pub fn &syrp_maths::BigInteger::mul(self, &syrp_maths::BigInteger) -> syrp_maths::BigInteger
+impl core::ops::arith::Mul<&syrp_maths::BigInteger> for syrp_maths::BigInteger
+pub type syrp_maths::BigInteger::Output = syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::mul(self, &syrp_maths::BigInteger) -> syrp_maths::BigInteger
+impl core::ops::arith::Mul<syrp_maths::BigInteger> for &syrp_maths::BigInteger
+pub type &syrp_maths::BigInteger::Output = syrp_maths::BigInteger
+pub fn &syrp_maths::BigInteger::mul(self, syrp_maths::BigInteger) -> syrp_maths::BigInteger
+impl core::ops::arith::MulAssign for syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::mul_assign(&mut self, syrp_maths::BigInteger)
+impl core::ops::arith::MulAssign<&syrp_maths::BigInteger> for syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::mul_assign(&mut self, &syrp_maths::BigInteger)
+impl core::ops::arith::Neg for &syrp_maths::BigInteger
+pub type &syrp_maths::BigInteger::Output = syrp_maths::BigInteger
+pub fn &syrp_maths::BigInteger::neg(self) -> syrp_maths::BigInteger
+impl core::ops::arith::Neg for syrp_maths::BigInteger
+pub type syrp_maths::BigInteger::Output = syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::neg(self) -> syrp_maths::BigInteger
+impl core::ops::arith::Rem for syrp_maths::BigInteger
+pub type syrp_maths::BigInteger::Output = syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::rem(self, syrp_maths::BigInteger) -> syrp_maths::BigInteger
+impl core::ops::arith::Rem<&syrp_maths::BigInteger> for &syrp_maths::BigInteger
+pub type &syrp_maths::BigInteger::Output = syrp_maths::BigInteger
+pub fn &syrp_maths::BigInteger::rem(self, &syrp_maths::BigInteger) -> syrp_maths::BigInteger
+impl core::ops::arith::Rem<&syrp_maths::BigInteger> for syrp_maths::BigInteger
+pub type syrp_maths::BigInteger::Output = syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::rem(self, &syrp_maths::BigInteger) -> syrp_maths::BigInteger
+impl core::ops::arith::Rem<syrp_maths::BigInteger> for &syrp_maths::BigInteger
+pub type &syrp_maths::BigInteger::Output = syrp_maths::BigInteger
+pub fn &syrp_maths::BigInteger::rem(self, syrp_maths::BigInteger) -> syrp_maths::BigInteger
+impl core::ops::arith::RemAssign for syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::rem_assign(&mut self, syrp_maths::BigInteger)
+impl core::ops::arith::RemAssign<&syrp_maths::BigInteger> for syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::rem_assign(&mut self, &syrp_maths::BigInteger)
+impl core::ops::arith::Sub for syrp_maths::BigInteger
+pub type syrp_maths::BigInteger::Output = syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::sub(self, syrp_maths::BigInteger) -> syrp_maths::BigInteger
+impl core::ops::arith::Sub<&syrp_maths::BigInteger> for &syrp_maths::BigInteger
+pub type &syrp_maths::BigInteger::Output = syrp_maths::BigInteger
+pub fn &syrp_maths::BigInteger::sub(self, &syrp_maths::BigInteger) -> syrp_maths::BigInteger
+impl core::ops::arith::Sub<&syrp_maths::BigInteger> for syrp_maths::BigInteger
+pub type syrp_maths::BigInteger::Output = syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::sub(self, &syrp_maths::BigInteger) -> syrp_maths::BigInteger
+impl core::ops::arith::Sub<syrp_maths::BigInteger> for &syrp_maths::BigInteger
+pub type &syrp_maths::BigInteger::Output = syrp_maths::BigInteger
+pub fn &syrp_maths::BigInteger::sub(self, syrp_maths::BigInteger) -> syrp_maths::BigInteger
+impl core::ops::arith::SubAssign for syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::sub_assign(&mut self, syrp_maths::BigInteger)
+impl core::ops::arith::SubAssign<&syrp_maths::BigInteger> for syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::sub_assign(&mut self, &syrp_maths::BigInteger)
+impl core::ops::bit::BitAnd for syrp_maths::BigInteger
+pub type syrp_maths::BigInteger::Output = syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::bitand(self, syrp_maths::BigInteger) -> syrp_maths::BigInteger
+impl core::ops::bit::BitAnd<&syrp_maths::BigInteger> for &syrp_maths::BigInteger
+pub type &syrp_maths::BigInteger::Output = syrp_maths::BigInteger
+pub fn &syrp_maths::BigInteger::bitand(self, &syrp_maths::BigInteger) -> syrp_maths::BigInteger
+impl core::ops::bit::BitAnd<&syrp_maths::BigInteger> for syrp_maths::BigInteger
+pub type syrp_maths::BigInteger::Output = syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::bitand(self, &syrp_maths::BigInteger) -> syrp_maths::BigInteger
+impl core::ops::bit::BitAnd<syrp_maths::BigInteger> for &syrp_maths::BigInteger
+pub type &syrp_maths::BigInteger::Output = syrp_maths::BigInteger
+pub fn &syrp_maths::BigInteger::bitand(self, syrp_maths::BigInteger) -> syrp_maths::BigInteger
+impl core::ops::bit::BitAndAssign for syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::bitand_assign(&mut self, syrp_maths::BigInteger)
+impl core::ops::bit::BitAndAssign<&syrp_maths::BigInteger> for syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::bitand_assign(&mut self, &syrp_maths::BigInteger)
+impl core::ops::bit::BitOr for syrp_maths::BigInteger
+pub type syrp_maths::BigInteger::Output = syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::bitor(self, syrp_maths::BigInteger) -> syrp_maths::BigInteger
+impl core::ops::bit::BitOr<&syrp_maths::BigInteger> for &syrp_maths::BigInteger
+pub type &syrp_maths::BigInteger::Output = syrp_maths::BigInteger
+pub fn &syrp_maths::BigInteger::bitor(self, &syrp_maths::BigInteger) -> syrp_maths::BigInteger
+impl core::ops::bit::BitOr<&syrp_maths::BigInteger> for syrp_maths::BigInteger
+pub type syrp_maths::BigInteger::Output = syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::bitor(self, &syrp_maths::BigInteger) -> syrp_maths::BigInteger
+impl core::ops::bit::BitOr<syrp_maths::BigInteger> for &syrp_maths::BigInteger
+pub type &syrp_maths::BigInteger::Output = syrp_maths::BigInteger
+pub fn &syrp_maths::BigInteger::bitor(self, syrp_maths::BigInteger) -> syrp_maths::BigInteger
+impl core::ops::bit::BitOrAssign for syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::bitor_assign(&mut self, syrp_maths::BigInteger)
+impl core::ops::bit::BitOrAssign<&syrp_maths::BigInteger> for syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::bitor_assign(&mut self, &syrp_maths::BigInteger)
+impl core::ops::bit::BitXor for syrp_maths::BigInteger
+pub type syrp_maths::BigInteger::Output = syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::bitxor(self, syrp_maths::BigInteger) -> syrp_maths::BigInteger
+impl core::ops::bit::BitXor<&syrp_maths::BigInteger> for &syrp_maths::BigInteger
+pub type &syrp_maths::BigInteger::Output = syrp_maths::BigInteger
+pub fn &syrp_maths::BigInteger::bitxor(self, &syrp_maths::BigInteger) -> syrp_maths::BigInteger
+impl core::ops::bit::BitXor<&syrp_maths::BigInteger> for syrp_maths::BigInteger
+pub type syrp_maths::BigInteger::Output = syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::bitxor(self, &syrp_maths::BigInteger) -> syrp_maths::BigInteger
+impl core::ops::bit::BitXor<syrp_maths::BigInteger> for &syrp_maths::BigInteger
+pub type &syrp_maths::BigInteger::Output = syrp_maths::BigInteger
+pub fn &syrp_maths::BigInteger::bitxor(self, syrp_maths::BigInteger) -> syrp_maths::BigInteger
+impl core::ops::bit::BitXorAssign for syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::bitxor_assign(&mut self, syrp_maths::BigInteger)
+impl core::ops::bit::BitXorAssign<&syrp_maths::BigInteger> for syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::bitxor_assign(&mut self, &syrp_maths::BigInteger)
+impl core::ops::bit::Shl<u32> for &syrp_maths::BigInteger
+pub type &syrp_maths::BigInteger::Output = syrp_maths::BigInteger
+pub fn &syrp_maths::BigInteger::shl(self, u32) -> syrp_maths::BigInteger
+impl core::ops::bit::Shl<u32> for syrp_maths::BigInteger
+pub type syrp_maths::BigInteger::Output = syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::shl(self, u32) -> syrp_maths::BigInteger
+impl core::ops::bit::ShlAssign<u32> for syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::shl_assign(&mut self, u32)
+impl core::ops::bit::Shr<u32> for &syrp_maths::BigInteger
+pub type &syrp_maths::BigInteger::Output = syrp_maths::BigInteger
+pub fn &syrp_maths::BigInteger::shr(self, u32) -> syrp_maths::BigInteger
+impl core::ops::bit::Shr<u32> for syrp_maths::BigInteger
+pub type syrp_maths::BigInteger::Output = syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::shr(self, u32) -> syrp_maths::BigInteger
+impl core::ops::bit::ShrAssign<u32> for syrp_maths::BigInteger
+pub fn syrp_maths::BigInteger::shr_assign(&mut self, u32)
+impl core::str::traits::FromStr for syrp_maths::BigInteger
+pub type syrp_maths::BigInteger::Err = syrp_maths::MathsError
+pub fn syrp_maths::BigInteger::from_str(&str) -> core::result::Result<Self, syrp_maths::MathsError>
+pub struct syrp_maths::NormalisableRange<T>
+impl<T: syrp_maths::Float> syrp_maths::NormalisableRange<T>
+pub fn syrp_maths::NormalisableRange<T>::convert_from_0to1(&self, T) -> T
+pub fn syrp_maths::NormalisableRange<T>::convert_to_0to1(&self, T) -> T
+pub fn syrp_maths::NormalisableRange<T>::end(&self) -> T
+pub fn syrp_maths::NormalisableRange<T>::interval(&self) -> T
+pub fn syrp_maths::NormalisableRange<T>::is_symmetric_skew(&self) -> bool
+pub fn syrp_maths::NormalisableRange<T>::new(T, T) -> core::result::Result<Self, syrp_maths::MathsError>
+pub fn syrp_maths::NormalisableRange<T>::range(&self) -> syrp_maths::Range<T>
+pub fn syrp_maths::NormalisableRange<T>::skew(&self) -> T
+pub fn syrp_maths::NormalisableRange<T>::snap_to_legal_value(&self, T) -> T
+pub fn syrp_maths::NormalisableRange<T>::start(&self) -> T
+pub fn syrp_maths::NormalisableRange<T>::with_centre(T, T, T) -> core::result::Result<Self, syrp_maths::MathsError>
+pub fn syrp_maths::NormalisableRange<T>::with_custom_mapping(self, syrp_maths::MapFn<T>, syrp_maths::MapFn<T>) -> Self
+pub fn syrp_maths::NormalisableRange<T>::with_custom_snap(self, syrp_maths::MapFn<T>) -> Self
+pub fn syrp_maths::NormalisableRange<T>::with_interval(self, T) -> core::result::Result<Self, syrp_maths::MathsError>
+pub fn syrp_maths::NormalisableRange<T>::with_skew(self, T) -> core::result::Result<Self, syrp_maths::MathsError>
+pub fn syrp_maths::NormalisableRange<T>::with_skew_for_centre(self, T) -> core::result::Result<Self, syrp_maths::MathsError>
+pub fn syrp_maths::NormalisableRange<T>::with_symmetric_skew(self, bool) -> Self
+impl<T: syrp_maths::Float + syrp_rt::RtSafe> syrp_rt::RtSafe for syrp_maths::NormalisableRange<T>
+pub struct syrp_maths::Random
+impl syrp_maths::Random
+pub fn syrp_maths::Random::fill_bytes(&mut self, &mut [u8])
+pub const fn syrp_maths::Random::new(u64) -> Self
+pub fn syrp_maths::Random::next_bool(&mut self) -> bool
+pub fn syrp_maths::Random::next_f32(&mut self) -> f32
+pub fn syrp_maths::Random::next_f64(&mut self) -> f64
+pub fn syrp_maths::Random::next_i32(&mut self) -> i32
+pub fn syrp_maths::Random::next_i32_below(&mut self, i32) -> i32
+pub fn syrp_maths::Random::next_i64(&mut self) -> i64
+pub fn syrp_maths::Random::next_u64(&mut self) -> u64
+pub fn syrp_maths::Random::set_seed(&mut self, u64)
+pub fn syrp_maths::Random::with_entropy() -> Self
+impl syrp_rt::RtSafe for syrp_maths::Random
+pub struct syrp_maths::Range<T>
+impl<T> syrp_maths::Range<T> where T: core::marker::Copy + core::cmp::PartialOrd + core::ops::arith::Add<Output = T> + core::ops::arith::Sub<Output = T>
+pub fn syrp_maths::Range<T>::clip_value(self, T) -> T
+pub fn syrp_maths::Range<T>::constrain_range(self, Self) -> Self
+pub fn syrp_maths::Range<T>::contains(self, T) -> bool
+pub fn syrp_maths::Range<T>::contains_range(self, Self) -> bool
+pub fn syrp_maths::Range<T>::end(self) -> T
+pub fn syrp_maths::Range<T>::expanded(self, T) -> Self
+pub fn syrp_maths::Range<T>::get_intersection_with(self, Self) -> Self
+pub fn syrp_maths::Range<T>::get_union_with(self, Self) -> Self
+pub fn syrp_maths::Range<T>::intersects(self, Self) -> bool
+pub fn syrp_maths::Range<T>::is_empty(self) -> bool
+pub fn syrp_maths::Range<T>::length(self) -> T
+pub fn syrp_maths::Range<T>::moved_to_start_at(self, T) -> Self
+pub fn syrp_maths::Range<T>::new(T, T) -> Self
+pub fn syrp_maths::Range<T>::start(self) -> T
+pub fn syrp_maths::Range<T>::with_start_and_length(T, T) -> Self
+impl<T: syrp_rt::RtSafe> syrp_rt::RtSafe for syrp_maths::Range<T>
+pub struct syrp_maths::StatisticsAccumulator<T>
+impl<T: syrp_maths::Float> syrp_maths::StatisticsAccumulator<T>
+pub fn syrp_maths::StatisticsAccumulator<T>::add(&mut self, T)
+pub fn syrp_maths::StatisticsAccumulator<T>::average(&self) -> T
+pub fn syrp_maths::StatisticsAccumulator<T>::count(&self) -> u64
+pub fn syrp_maths::StatisticsAccumulator<T>::max(&self) -> core::option::Option<T>
+pub fn syrp_maths::StatisticsAccumulator<T>::min(&self) -> core::option::Option<T>
+pub const fn syrp_maths::StatisticsAccumulator<T>::new() -> Self
+pub fn syrp_maths::StatisticsAccumulator<T>::reset(&mut self)
+pub fn syrp_maths::StatisticsAccumulator<T>::standard_deviation(&self) -> T
+pub fn syrp_maths::StatisticsAccumulator<T>::variance(&self) -> T
+impl<T: syrp_maths::Float + syrp_rt::RtSafe> syrp_rt::RtSafe for syrp_maths::StatisticsAccumulator<T>
+pub struct syrp_maths::Tolerance<T>
+impl<T: syrp_maths::Float> syrp_maths::Tolerance<T>
+pub fn syrp_maths::Tolerance<T>::absolute(self) -> T
+pub fn syrp_maths::Tolerance<T>::relative(self) -> T
+pub fn syrp_maths::Tolerance<T>::with_absolute(self, T) -> Self
+pub fn syrp_maths::Tolerance<T>::with_relative(self, T) -> Self
+impl<T: syrp_maths::Float> core::default::Default for syrp_maths::Tolerance<T>
+pub fn syrp_maths::Tolerance<T>::default() -> Self
+pub trait syrp_maths::Float: syrp_maths::float::sealed::Sealed + core::marker::Copy + core::cmp::PartialOrd + core::default::Default + core::fmt::Debug + core::ops::arith::Add<Output = Self> + core::ops::arith::Sub<Output = Self> + core::ops::arith::Mul<Output = Self> + core::ops::arith::Div<Output = Self>
+pub const syrp_maths::Float::EPSILON: Self
+pub const syrp_maths::Float::MIN_POSITIVE: Self
+pub fn syrp_maths::Float::from_f64(f64) -> Self
+pub fn syrp_maths::Float::to_f64(self) -> f64
+impl syrp_maths::Float for f32
+pub const f32::EPSILON: Self
+pub const f32::MIN_POSITIVE: Self
+pub fn f32::from_f64(f64) -> Self
+pub fn f32::to_f64(self) -> f64
+impl syrp_maths::Float for f64
+pub const f64::EPSILON: Self
+pub const f64::MIN_POSITIVE: Self
+pub fn f64::from_f64(f64) -> Self
+pub fn f64::to_f64(self) -> f64
+pub trait syrp_maths::MathConstants: core::marker::Sized
+pub const syrp_maths::MathConstants::EULER: Self
+pub const syrp_maths::MathConstants::HALF_PI: Self
+pub const syrp_maths::MathConstants::PI: Self
+pub const syrp_maths::MathConstants::SQRT2: Self
+pub const syrp_maths::MathConstants::TWO_PI: Self
+impl syrp_maths::MathConstants for f32
+pub const f32::EULER: Self
+pub const f32::HALF_PI: Self
+pub const f32::PI: Self
+pub const f32::SQRT2: Self
+pub const f32::TWO_PI: Self
+impl syrp_maths::MathConstants for f64
+pub const f64::EULER: Self
+pub const f64::HALF_PI: Self
+pub const f64::PI: Self
+pub const f64::SQRT2: Self
+pub const f64::TWO_PI: Self
+pub trait syrp_maths::PowerOfTwo: syrp_maths::helpers::sealed::Sealed + core::marker::Sized
+pub fn syrp_maths::PowerOfTwo::is_power_of_two(self) -> bool
+pub fn syrp_maths::PowerOfTwo::next_power_of_two_checked(self) -> core::option::Option<Self>
+impl syrp_maths::PowerOfTwo for i32
+pub fn i32::is_power_of_two(self) -> bool
+pub fn i32::next_power_of_two_checked(self) -> core::option::Option<Self>
+impl syrp_maths::PowerOfTwo for i64
+pub fn i64::is_power_of_two(self) -> bool
+pub fn i64::next_power_of_two_checked(self) -> core::option::Option<Self>
+impl syrp_maths::PowerOfTwo for u32
+pub fn u32::is_power_of_two(self) -> bool
+pub fn u32::next_power_of_two_checked(self) -> core::option::Option<Self>
+impl syrp_maths::PowerOfTwo for u64
+pub fn u64::is_power_of_two(self) -> bool
+pub fn u64::next_power_of_two_checked(self) -> core::option::Option<Self>
+impl syrp_maths::PowerOfTwo for usize
+pub fn usize::is_power_of_two(self) -> bool
+pub fn usize::next_power_of_two_checked(self) -> core::option::Option<Self>
+pub fn syrp_maths::approximately_equal<T: syrp_maths::Float>(T, T) -> bool
+pub fn syrp_maths::approximately_equal_with<T: syrp_maths::Float>(T, T, syrp_maths::Tolerance<T>) -> bool
+pub fn syrp_maths::is_power_of_two<T: syrp_maths::PowerOfTwo>(T) -> bool
+pub fn syrp_maths::is_within<T: syrp_maths::Float>(T, T, T) -> bool
+pub fn syrp_maths::limit<T: core::cmp::PartialOrd>(T, T, T) -> T
+pub fn syrp_maths::map_from_log10<T: syrp_maths::Float>(T, T, T) -> T
+pub fn syrp_maths::map_range<T: syrp_maths::Float>(T, T, T, T, T) -> T
+pub fn syrp_maths::map_to_0to1<T: syrp_maths::Float>(T, T, T) -> T
+pub fn syrp_maths::map_to_log10<T: syrp_maths::Float>(T, T, T) -> T
+pub fn syrp_maths::next_power_of_two<T: syrp_maths::PowerOfTwo>(T) -> core::option::Option<T>
+pub fn syrp_maths::round_to_int<T: syrp_maths::Float>(T) -> i32
+pub fn syrp_maths::system_random() -> std::sync::poison::mutex::MutexGuard<'static, syrp_maths::Random>
+pub type syrp_maths::MapFn<T> = fn(T, T, T) -> T
