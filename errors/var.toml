@@ -20,3 +20,10 @@ title = "Value cannot be written: too deep or cyclic"
 severity = "error"
 cause = "syrp_var::json::to_string (or serialising a Var with serde) met arrays and objects nested more than 100 levels deep, which is what a DynamicObject that contains itself looks like."
 fix = "Break the cycle by removing the property that refers back to an enclosing object, or flatten the value."
+
+[[error]]
+code = "SYRP-VAR-0004"
+title = "Invalid XML name"
+severity = "error"
+cause = "An XmlElement tag name or attribute name is not an XML 1.0 `Name`: it is empty, starts with a digit, `-` or `.`, or contains a space or another character the production does not allow."
+fix = "Use a name that starts with a letter, `_` or `:` and continues with letters, digits, `-`, `.`, `_` or `:`. syrp_var::xml::is_valid_xml_name checks a name before use."

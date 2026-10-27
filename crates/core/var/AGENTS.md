@@ -2,12 +2,14 @@
 
 ## Purpose
 The L2 dynamic value layer (master plan §5.2, Wave 1.1). Covers JUCE's `Identifier` (as
-`Identifier`), `var` (as `Var`), `NamedValueSet`, `DynamicObject` and `JSON` (module `json`). `syrp-state` stores node types and property names as `Identifier`s and property values
-as `Var`s. Behaviour comes from the public JUCE documentation only. XML is a later WP here.
+`Identifier`), `var` (as `Var`), `NamedValueSet`, `DynamicObject`, `JSON` (module `json`) and, from WP-1.1-15, `XmlElement`
+(module `xml`). `syrp-state` stores node types and property names as `Identifier`s and property values
+as `Var`s. Behaviour comes from the public JUCE documentation only.
 
 ## Ledger rows
 juce_core/var, juce_core/Identifier, juce_core/NamedValueSet, juce_core/DynamicObject,
-juce_core/JSON
+juce_core/JSON, juce_core/XmlElement, juce_core/XmlAttribute (WP-1.1-15; juce_core/XmlDocument
+follows with the parser)
 
 ## Invariants
 - `size_of::<Identifier>() == 4`; `size_of::<Var>() == 16` on 64-bit targets. Heap variants
@@ -28,6 +30,11 @@ juce_core/JSON
   `-0002` input too deep, `-0003` value too deep or cyclic to write.
 - JSON object keys are interned as `Identifier`s and never freed.
 - `Debug` for `DynamicObject` never prints properties (objects may contain themselves).
+- XML (`src/xml/`): `XmlElement` owns `tag: String`, `attributes: Vec<XmlAttribute>`,
+  `children: Vec<XmlNode>`; `XmlNode` is an element or a text `String`. No `Rc`, so both are
+  `Send + Sync`. Tag and attribute names always pass `is_valid_xml_name` (`SYRP-VAR-0004`).
+  `Clone`, `Drop`, `is_equivalent_to` (also `==`) and `all_sub_text` use explicit stacks,
+  never recursion (100,000-level tests); `Debug` is shallow.
 
 ## Features
 `serde` (default): public `Serialize`/`Deserialize` for `Var`. `json` works without it
@@ -37,7 +44,8 @@ juce_core/JSON
 `Identifier` is `Send + Sync`; `Identifier::new` locks and may allocate (not for the audio
 thread), every other method is RT-safe. `Var`, `NamedValueSet` and `DynamicObject` are
 `!Send` and `!Sync` (phase-1 board decision, spec B2a): message-thread or single-thread use.
-Move values between threads by serialising them.
+Move values between threads by serialising them. `XmlElement`, `XmlNode` and `XmlAttribute`
+are `Send + Sync`.
 
 ## Stability
 experimental
@@ -67,7 +75,13 @@ The JUCE `var` documentation does not decide these; the choices here are documen
 - JSON writes undefined as `null`, NaN and infinities as `null`, binary as an array of byte
   values, `f64` always with a fraction or exponent (`2.0`); unsigned integers above `i64::MAX`
   parse as `f64`; a repeated key keeps its first position and last value.
+- XML model (WP-1.1-15): text is a separate `XmlNode` variant, not an element;
+  `set_attribute` with an invalid name is an error (not ignored); `f64` attribute values are
+  written with Rust's shortest round-trip text.
 
 ## Known gaps
 WP-1.1-01 is complete (B1-B7). The CLI catalogue entry for the new `errors/var.toml` domain is
-tracked on CR #5. XML (`XmlElement`, `XmlDocument`) is a later WP in this crate.
+tracked on CR #5. WP-1.1-15 increment 1 delivers the XML element model: B1, the
+attribute setters and string getters of B2, the core of B3 (equivalence), and B5 for clone, drop
+and comparison. Typed attribute getters, namespaces, the rest of B3, the parser (B4-B5) and the
+writer (B6-B8) follow in later increments.
