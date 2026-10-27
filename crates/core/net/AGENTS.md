@@ -20,6 +20,9 @@ juce_core/SocketOptions, juce_core/NamedPipe
   Other targets return `NetError::Unsupported`.
 - Socket addresses from the OS are read with `read_unaligned`; every `unsafe` block has a
   `// SAFETY:` comment (clippy `undocumented_unsafe_blocks`).
+- `StreamingSocket` (`src/socket.rs`, socket2) takes `&self` everywhere; blocking waits poll
+  in 50 ms slices so `close` from another thread ends them with `NetError::Closed`. Writes
+  never raise `SIGPIPE` (`MSG_NOSIGNAL` on Linux, `SO_NOSIGPIPE` on Apple).
 - Errors are `NetError` (`SYRP-NET-*`, `errors/net.toml`); OS failures carry the OS code.
 
 ## Thread affinity
@@ -38,6 +41,7 @@ Tests use loopback only and never a real network. Enumeration tests assert that 
 listed, never a count of other interfaces.
 
 ## Known gaps
-WP-1.1-10 increment 1 (B1). Still to come: `MacAddress` (B2), `StreamingSocket`,
-`SocketOptions` and `DatagramSocket` (B3-B4), `NamedPipe` (B5) and the remaining B6 codes.
+WP-1.1-10 increment 2 (B2, B3 without `SocketOptions`). Still to come: `SocketOptions` and
+`DatagramSocket` (B3-B4), `NamedPipe` (B5) and the remaining B6 codes. Socket types are
+absent on targets other than Unix and Windows (socket2 does not build there).
 `errors/net.toml` is not yet in the CLI's embedded catalogue.

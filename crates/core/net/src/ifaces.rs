@@ -4,13 +4,18 @@
 
 use std::net::{IpAddr, Ipv4Addr};
 
-/// One assigned address from the OS interface list.
+/// One record from the OS interface list. An interface usually yields several: one per
+/// assigned IP address, plus (on Unix) one for its link-layer address.
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct IfEntry {
-    /// The assigned IP address.
-    pub(crate) ip: IpAddr,
+    /// The assigned IP address, if this record has one.
+    pub(crate) ip: Option<IpAddr>,
     /// The IPv4 broadcast address of `ip`'s subnet, when the interface supports broadcast.
     pub(crate) broadcast: Option<Ipv4Addr>,
+    /// The 6-byte hardware address, if this record has one.
+    pub(crate) mac: Option<[u8; 6]>,
+    /// Whether the interface is a loopback interface.
+    pub(crate) loopback: bool,
 }
 
 #[cfg(any(target_os = "linux", target_os = "android", target_vendor = "apple"))]
@@ -79,7 +84,70 @@ mod unix {
         }
     }
 
-    /// Lists the assigned addresses through `getifaddrs`.
+    /// Reads a 6-byte link-layer address from an `AF_PACKET` socket address.
+    ///
+    /// # Safety
+    /// As [`sockaddr_ip`]; for `AF_PACKET` the whole `sockaddr_ll` must be readable.
+    #[cfg(any(target_os = "linux", target_os = "android"))]
+    unsafe fn sockaddr_mac(sa: *const libc::sockaddr) -> Option<[u8; 6]> {
+        if sa.is_null() {
+            return None;
+        }
+        // SAFETY: non-null, and the contract makes sa_family readable; addr_of! reads just
+        // that field, without a reference or alignment.
+        let family = unsafe { std::ptr::addr_of!((*sa).sa_family).read_unaligned() };
+        if i32::from(family) != libc::AF_PACKET {
+            return None;
+        }
+        // SAFETY: the family is AF_PACKET, so the whole sockaddr_ll is readable.
+        let ll = unsafe { sa.cast::<libc::sockaddr_ll>().read_unaligned() };
+        let mut mac = [0u8; 6];
+        mac.copy_from_slice(&ll.sll_addr[..6]);
+        (ll.sll_halen == 6).then_some(mac)
+    }
+
+    /// Reads a 6-byte link-layer address from an `AF_LINK` socket address.
+    ///
+    /// # Safety
+    /// As [`sockaddr_ip`]: `sa_len` bytes from `sa` are readable.
+    #[cfg(target_vendor = "apple")]
+    unsafe fn sockaddr_mac(sa: *const libc::sockaddr) -> Option<[u8; 6]> {
+        use std::mem::offset_of;
+        use std::ptr::addr_of;
+        if sa.is_null() {
+            return None;
+        }
+        // SAFETY: non-null, and sa_len and sa_family are readable per the contract; addr_of!
+        // reads only those fields, without a reference or alignment.
+        let (len, family) = unsafe {
+            let len = addr_of!((*sa).sa_len).read_unaligned();
+            (usize::from(len), addr_of!((*sa).sa_family).read_unaligned())
+        };
+        // The fixed header ends where the variable-length sdl_data begins.
+        let header = offset_of!(libc::sockaddr_dl, sdl_data);
+        if i32::from(family) != libc::AF_LINK || len < header {
+            return None;
+        }
+        let dl = sa.cast::<libc::sockaddr_dl>();
+        // SAFETY: sdl_nlen and sdl_alen lie inside the header, and len >= header bytes are
+        // readable; addr_of! reads only those fields.
+        let (nlen, alen) = unsafe {
+            let nlen = addr_of!((*dl).sdl_nlen).read_unaligned();
+            (nlen, addr_of!((*dl).sdl_alen).read_unaligned())
+        };
+        // The address follows the interface name inside sdl_data.
+        let start = header + usize::from(nlen);
+        if alen != 6 || start + 6 > len {
+            return None;
+        }
+        let mut mac = [0u8; 6];
+        // SAFETY: start + 6 <= sa_len, and sa_len bytes from sa are readable per the
+        // contract; the destination is a distinct 6-byte local array.
+        unsafe { std::ptr::copy_nonoverlapping(sa.cast::<u8>().add(start), mac.as_mut_ptr(), 6) };
+        Some(mac)
+    }
+
+    /// Lists the interface records through `getifaddrs`.
     pub(crate) fn interfaces() -> Result<Vec<IfEntry>, NetError> {
         let mut head = std::mem::MaybeUninit::<*mut libc::ifaddrs>::uninit();
         // SAFETY: `head` is a valid, writable out-pointer for getifaddrs; on success the list
@@ -98,27 +166,29 @@ mod unix {
             // SAFETY: `node` is a non-null element of the list getifaddrs returned, which
             // stays valid until freeifaddrs; the sockaddrs it points to are null or valid
             // for their family, as getifaddrs(3) guarantees.
-            let (ip, bcast) = unsafe {
+            let entry = unsafe {
                 let ifa = &*node;
                 node = ifa.ifa_next;
+                let loopback = ifa.ifa_flags & libc::IFF_LOOPBACK as libc::c_uint != 0;
                 let can_broadcast = ifa.ifa_flags & libc::IFF_BROADCAST as libc::c_uint != 0;
                 #[cfg(any(target_os = "linux", target_os = "android"))]
                 let bcast = ifa.ifa_ifu;
                 #[cfg(target_vendor = "apple")]
                 let bcast = ifa.ifa_dstaddr;
-                let bcast = if can_broadcast {
-                    sockaddr_ip(bcast)
-                } else {
-                    None
+                let ip = sockaddr_ip(ifa.ifa_addr);
+                let broadcast = match (can_broadcast, sockaddr_ip(bcast)) {
+                    (true, Some(IpAddr::V4(b))) if matches!(ip, Some(IpAddr::V4(_))) => Some(b),
+                    _ => None,
                 };
-                (sockaddr_ip(ifa.ifa_addr), bcast)
+                let mac = sockaddr_mac(ifa.ifa_addr);
+                IfEntry {
+                    ip,
+                    broadcast,
+                    mac,
+                    loopback,
+                }
             };
-            let Some(ip) = ip else { continue };
-            let broadcast = match (ip, bcast) {
-                (IpAddr::V4(_), Some(IpAddr::V4(b))) => Some(b),
-                _ => None,
-            };
-            out.push(IfEntry { ip, broadcast });
+            out.push(entry);
         }
         // SAFETY: `head` came from a successful getifaddrs and is freed only here.
         unsafe { libc::freeifaddrs(head) };
@@ -207,7 +277,7 @@ mod windows {
         Err(NetError::InterfaceQuery { os_error })
     }
 
-    /// Converts the adapter list into address records.
+    /// Converts the adapter list into interface records.
     ///
     /// # Safety
     /// `first` is the head of a list filled in by a successful `GetAdaptersAddresses` call,
@@ -219,6 +289,17 @@ mod windows {
             // SAFETY: a non-null node of a valid adapter list (this fn's contract).
             let a = unsafe { &*adapter };
             let loopback = a.IfType == IF_TYPE_SOFTWARE_LOOPBACK;
+            if a.PhysicalAddressLength == 6 {
+                let mut mac = [0u8; 6];
+                mac.copy_from_slice(&a.PhysicalAddress[..6]);
+                let (ip, broadcast, mac) = (None, None, Some(mac));
+                out.push(IfEntry {
+                    ip,
+                    broadcast,
+                    mac,
+                    loopback,
+                });
+            }
             let mut unicast = a.FirstUnicastAddress.cast_const();
             while !unicast.is_null() {
                 // SAFETY: a non-null node of the adapter's unicast list, valid with the
@@ -230,16 +311,20 @@ mod windows {
                     let len = usize::try_from(u.Address.iSockaddrLength).unwrap_or(0);
                     (sockaddr_ip(u.Address.lpSockaddr, len), u.OnLinkPrefixLength)
                 };
-                let Some(ip) = ip else { continue };
                 // Windows reports no broadcast address; derive it from the on-link prefix.
                 let broadcast = match ip {
-                    IpAddr::V4(v4) if !loopback && prefix < 32 => {
+                    Some(IpAddr::V4(v4)) if !loopback && prefix < 32 => {
                         let host_bits = u32::MAX.checked_shr(u32::from(prefix)).unwrap_or(0);
                         Some(Ipv4Addr::from(u32::from(v4) | host_bits))
                     }
                     _ => None,
                 };
-                out.push(IfEntry { ip, broadcast });
+                out.push(IfEntry {
+                    ip,
+                    broadcast,
+                    mac: None,
+                    loopback,
+                });
             }
             adapter = a.Next.cast_const();
         }
