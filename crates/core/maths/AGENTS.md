@@ -5,11 +5,12 @@ The L2 numeric layer (master plan §5.2): JUCE's Range (`Range`), NormalisableRa
 (`NormalisableRange`), the numeric helper functions (`jmap`, `jlimit`, `isWithin`,
 `approximatelyEqual`, `nextPowerOfTwo`, `isPowerOfTwo`, `roundToInt`, `mapFromLog10`,
 `mapToLog10`), `MathConstants`, Random (`Random`, `system_random`) and
-StatisticsAccumulator. BigInteger and Expression are a later WP. Behaviour comes from the public JUCE class
-documentation only.
+StatisticsAccumulator, and BigInteger (`BigInteger`, WP-1.1-16). Expression is a later WP.
+Behaviour comes from the public JUCE class documentation only.
 
 ## Ledger rows
-juce_core/Range, juce_core/NormalisableRange, juce_core/Random, juce_core/StatisticsAccumulator
+juce_core/Range, juce_core/NormalisableRange, juce_core/Random, juce_core/StatisticsAccumulator,
+juce_core/BigInteger
 
 ## Invariants
 - `Range`: `start <= end` always (`new` orders its ends); half-open, so `contains(end)` is
@@ -27,10 +28,16 @@ juce_core/Range, juce_core/NormalisableRange, juce_core/Random, juce_core/Statis
   algorithm or constants: saved sequences and tests depend on it.
 - `StatisticsAccumulator` uses Welford in `f64`; variance is the population variance.
 - Float maths runs in `f64` internally (`Float::to_f64`/`from_f64`).
+- `BigInteger`: sign and magnitude, private fields; the magnitude is little-endian `u64`
+  limbs with no zero limb on top, and zero is never negative (`from_parts`/`renormalise`
+  restore both after every edit). Our own limbs, no bignum dependency, so no third-party type
+  can reach the public API. Division truncates toward zero; the remainder has the dividend's
+  sign.
 
 ## Thread affinity
 `Range`, `NormalisableRange`, `Random` and `StatisticsAccumulator` are `RtSafe`: any thread,
-no allocation, no locks (custom `MapFn`s must be RT-safe themselves). `Random::with_entropy`
+no allocation, no locks (custom `MapFn`s must be RT-safe themselves). `BigInteger` allocates
+and is not `RtSafe`; it is any-thread (`Send + Sync`). `Random::with_entropy`
 and `system_random` (a `Mutex`) are not for the audio thread.
 
 ## Stability
@@ -40,13 +47,20 @@ experimental
 ```sh
 cargo syrp test --crate syrp-maths
 ```
-`tests/no_alloc.rs` installs `syrp_rt::GuardedAllocator`; keep it its own test binary.
+`tests/big_integer.rs` checks against `i128`/`u128` for small values and algebraic identities
+for large ones. `tests/no_alloc.rs` installs `syrp_rt::GuardedAllocator`; keep it its own test binary.
 
 ## Known gaps
-All WP-1.1-11 behaviours (B1-B6) are covered. `BigInteger` and `Expression` are a later WP.
+All WP-1.1-11 behaviours (B1-B6) are covered. WP-1.1-16 increment 1 covers BigInteger B1-B2;
+bit operations (B3) come in increment 2, and text and bytes (B4), number theory (B5) and the
+parity scenarios (B6) in increment 3.
+`Expression` is a later WP. Multiplication is schoolbook (no Karatsuba).
 
 ## Open questions
 - Are capturing closures ever needed for custom `NormalisableRange` mappings? JUCE accepts
   capturing lambdas; `MapFn` does not, so the differential harness has no direct equivalent
   for such a JUCE range. If a real need appears, add a separate non-`RtSafe` type rather than
-  changing `NormalisableRange`. `BigInteger` and `Expression` are a later WP.
+  changing `NormalisableRange`.
+- `BigInteger` division by zero: `/`, `%` and `div_rem` return zero (`checked_div_rem` returns
+  `None`). Syrp's choice, pinned by `b2_division_by_zero_returns_zero_syrp_choice`; the JUCE
+  documentation does not define it.

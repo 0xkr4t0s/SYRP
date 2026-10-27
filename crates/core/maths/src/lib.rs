@@ -9,8 +9,10 @@
 //!   [`round_to_int`] and the [`MathConstants`] for `f32` and `f64`.
 //! - [`Random`]: a seedable SplitMix64 generator, and the shared [`system_random`].
 //! - [`StatisticsAccumulator`]: running mean, variance, minimum and maximum (Welford).
+//! - [`BigInteger`]: an arbitrary-size signed integer with arithmetic and division.
 //!
-//! Nothing here allocates except [`Random::with_entropy`] and [`system_random`]. `Range`,
+//! Nothing here allocates except [`BigInteger`], [`Random::with_entropy`] and
+//! [`system_random`]. `Range`,
 //! `NormalisableRange`, `Random` and `StatisticsAccumulator` implement [`syrp_rt::RtSafe`].
 //!
 //! ```
@@ -26,6 +28,7 @@ use std::fmt;
 
 use syrp_error::{Diagnostic, ErrorCode};
 
+mod big_integer;
 mod float;
 mod helpers;
 mod normalisable;
@@ -33,6 +36,7 @@ mod random;
 mod range;
 mod statistics;
 
+pub use big_integer::BigInteger;
 pub use float::Float;
 pub use helpers::{
     MathConstants, PowerOfTwo, Tolerance, approximately_equal, approximately_equal_with,
