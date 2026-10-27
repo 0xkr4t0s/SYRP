@@ -1,0 +1,21 @@
+{
+  "id": "formats/aiff/write/float32",
+  "title": "Write 32-bit float AIFF with markers, loops and text, then read it back",
+  "juce_tag": "9.0.4",
+  "tolerance": "exact",
+  "wp": "WP-2.1-17",
+  "ledger_rows": ["juce_audio_formats/AiffAudioFormat"],
+  "docs": [{"page": "AiffAudioFormat", "member": "createWriterFor", "says": "Makes a writer that stores audio in this format on a stream, or fails."}],
+  "op": "write",
+  "write": {
+    "sample_rate": 44100.0,
+    "bits_per_sample": 32,
+    "floating_point": true,
+    "channels": [[-1.0, -4.656612873077393e-10, 0.0, 4.656612873077393e-10, 0.5, 0.9999999995343387], [0.3, -0.7, 1.5, -1.5, 0.0001, -1.0]],
+    "cues": [{"id": 1, "position": 0, "label": "start"}, {"id": 2, "position": 4, "label": "end"}],
+    "loops": [{"kind": "forward", "start": 0, "end": 4}, {"kind": "ping_pong", "start": 1, "end": 3}],
+    "text": {"title": "Take 3", "artist": "Someone", "copyright": "2026 Someone", "comment": "first"}
+  },
+  "record": ["opened", "sample_rate", "num_channels", "length_in_samples", "bits_per_sample", "uses_floating_point_data", "samples_f32", "metadata_values"],
+  "notes": "Pass the cues, loops and text through the metadata JUCE's AIFF writer accepts for them, write, then record the file as re-read by AiffAudioFormat. The second channel tests rounding and clipping."
+}
