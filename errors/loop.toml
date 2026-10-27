@@ -20,3 +20,24 @@ title = "Message loop closed before the task ran"
 severity = "error"
 cause = "post_and_wait posted a task, but the loop was dropped (or the task panicked) before it produced a result."
 fix = "Keep the loop alive and running while other threads wait on it, and check the task for panics."
+
+[[error]]
+code = "SYRP-LOOP-0004"
+title = "A second EventLoop on one thread"
+severity = "error"
+cause = "EventLoop::new was called on a thread that already has an EventLoop. Each thread has at most one owned loop, because the loop is that thread's message thread."
+fix = "Use the existing loop, or its task_sender() from other code. Drop the old loop first if you really want a new one."
+
+[[error]]
+code = "SYRP-LOOP-0005"
+title = "The OS refused a call the loop needs"
+severity = "error"
+cause = "EventLoop::new needs a few OS objects (an epoll instance and an eventfd on Linux, a run-loop source on macOS, a message-only window on Windows), and EventLoop::add_fd registers a file descriptor with epoll. The named OS call failed; the error carries the OS error number."
+fix = "Read the OS error. Usually the process has run out of file descriptors or handles: close unused ones or raise the limit."
+
+[[error]]
+code = "SYRP-LOOP-0006"
+title = "No owned message loop on this target"
+severity = "error"
+cause = "syrp-events has owned loops for Linux, macOS and Windows only. On iOS, Android and the web the platform owns the loop, and EventLoop::new returns this error."
+fix = "Use the loop the platform or host provides (a hosted loop), or ManualLoop in tests."

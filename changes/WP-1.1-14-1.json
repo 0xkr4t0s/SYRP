@@ -1,0 +1,1 @@
+{"wp": "WP-1.1-14", "kind": "added", "summary": "syrp-events (increment 1): EventLoop, the owned MessageLoop with run/run_for/dispatch_pending/with_token/QuitHandle, real-time phase-keeping timers, the Linux epoll backend with add_fd, an interim portable backend for macOS and Windows, a conformance suite shared with ManualLoop, and SYRP-LOOP-0004..0006."}
