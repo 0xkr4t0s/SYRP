@@ -1,0 +1,1 @@
+{"wp": "WP-2.1-15", "kind": "added", "summary": "syrp-format-flac: FlacAudioFormat with FLAC reading through claxon, random access over SEEKTABLE and remembered frames, and Vorbis comment, CUESHEET, APPLICATION and PICTURE metadata (increment 1: B1-B3)."}
