@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only OR BUSL-1.1
-//! [`StreamingSocket`] (TCP) and [`Readiness`].
+//! [`StreamingSocket`] (TCP), [`SocketOptions`] and [`Readiness`].
 
 use std::io::{self, Read};
 use std::net::{SocketAddr, ToSocketAddrs};
@@ -19,6 +19,88 @@ const SLICE: Duration = Duration::from_millis(50);
 const SEND_FLAGS: libc::c_int = libc::MSG_NOSIGNAL;
 #[cfg(not(any(target_os = "linux", target_os = "android")))]
 const SEND_FLAGS: i32 = 0;
+
+/// Options applied when a socket is created (JUCE's `SocketOptions`). Unset sizes keep the
+/// OS default; the OS may round or clamp a size it is given.
+///
+/// ```
+/// use syrp_net::SocketOptions;
+/// let o = SocketOptions::new().with_receive_buffer_size(64 * 1024);
+/// assert_eq!(o.receive_buffer_size(), Some(64 * 1024));
+/// assert_eq!(o.send_buffer_size(), None);
+/// ```
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct SocketOptions {
+    receive_buffer_size: Option<usize>,
+    send_buffer_size: Option<usize>,
+}
+
+impl SocketOptions {
+    /// Options that keep every OS default.
+    ///
+    /// ```
+    /// use syrp_net::SocketOptions;
+    /// assert_eq!(SocketOptions::new(), SocketOptions::default());
+    /// ```
+    pub const fn new() -> Self {
+        Self {
+            receive_buffer_size: None,
+            send_buffer_size: None,
+        }
+    }
+
+    /// These options with `SO_RCVBUF` set to `bytes`.
+    ///
+    /// ```
+    /// use syrp_net::SocketOptions;
+    /// assert_eq!(SocketOptions::new().with_receive_buffer_size(4096).receive_buffer_size(), Some(4096));
+    /// ```
+    #[must_use]
+    pub const fn with_receive_buffer_size(mut self, bytes: usize) -> Self {
+        self.receive_buffer_size = Some(bytes);
+        self
+    }
+
+    /// These options with `SO_SNDBUF` set to `bytes`.
+    ///
+    /// ```
+    /// use syrp_net::SocketOptions;
+    /// assert_eq!(SocketOptions::new().with_send_buffer_size(4096).send_buffer_size(), Some(4096));
+    /// ```
+    #[must_use]
+    pub const fn with_send_buffer_size(mut self, bytes: usize) -> Self {
+        self.send_buffer_size = Some(bytes);
+        self
+    }
+
+    /// The receive buffer size to request, if any.
+    ///
+    /// ```
+    /// assert_eq!(syrp_net::SocketOptions::new().receive_buffer_size(), None);
+    /// ```
+    pub const fn receive_buffer_size(&self) -> Option<usize> {
+        self.receive_buffer_size
+    }
+
+    /// The send buffer size to request, if any.
+    ///
+    /// ```
+    /// assert_eq!(syrp_net::SocketOptions::new().send_buffer_size(), None);
+    /// ```
+    pub const fn send_buffer_size(&self) -> Option<usize> {
+        self.send_buffer_size
+    }
+
+    pub(crate) fn apply(&self, sock: &Socket) -> io::Result<()> {
+        if let Some(n) = self.receive_buffer_size {
+            sock.set_recv_buffer_size(n)?;
+        }
+        if let Some(n) = self.send_buffer_size {
+            sock.set_send_buffer_size(n)?;
+        }
+        Ok(())
+    }
+}
 
 /// The outcome of [`StreamingSocket::wait_until_ready`]; failures are `Err`.
 ///
@@ -80,16 +162,39 @@ impl StreamingSocket {
     /// # Ok::<(), syrp_net::NetError>(())
     /// ```
     pub fn connect(host: &str, port: u16, timeout: Option<Duration>) -> Result<Self, NetError> {
+        Self::connect_with_options(host, port, timeout, SocketOptions::new())
+    }
+
+    /// [`connect`](Self::connect), applying `options` before connecting.
+    ///
+    /// # Errors
+    /// As [`connect`](Self::connect).
+    ///
+    /// ```no_run
+    /// use syrp_net::{SocketOptions, StreamingSocket};
+    /// let o = SocketOptions::new().with_send_buffer_size(1 << 16);
+    /// let s = StreamingSocket::connect_with_options("localhost", 8080, None, o)?;
+    /// # Ok::<(), syrp_net::NetError>(())
+    /// ```
+    pub fn connect_with_options(
+        host: &str,
+        port: u16,
+        timeout: Option<Duration>,
+        options: SocketOptions,
+    ) -> Result<Self, NetError> {
         let mut last = NetError::Resolve {
             host: host.to_owned(),
             os_error: None,
         };
         for addr in resolve(host, port)? {
-            let attempt = new_socket(addr).and_then(|sock| {
+            let attempt = new_socket(addr, options).and_then(|sock| {
                 match timeout {
                     Some(t) => sock.connect_timeout(&SockAddr::from(addr), t)?,
                     None => sock.connect(&SockAddr::from(addr))?,
                 }
+                // Non-blocking from here on: every read and write waits for readiness in
+                // slices first, so a racing reader or `close` can never strand it in the OS.
+                sock.set_nonblocking(true)?;
                 Ok(sock)
             });
             match attempt {
@@ -115,6 +220,26 @@ impl StreamingSocket {
     /// # Ok::<(), syrp_net::NetError>(())
     /// ```
     pub fn create_listener(port: u16, local_host: &str) -> Result<Self, NetError> {
+        Self::create_listener_with_options(port, local_host, SocketOptions::new())
+    }
+
+    /// [`create_listener`](Self::create_listener), applying `options` to the listener (and so
+    /// to the connections it accepts).
+    ///
+    /// # Errors
+    /// As [`create_listener`](Self::create_listener).
+    ///
+    /// ```
+    /// use syrp_net::{SocketOptions, StreamingSocket};
+    /// let o = SocketOptions::new().with_receive_buffer_size(1 << 16);
+    /// let l = StreamingSocket::create_listener_with_options(0, "127.0.0.1", o)?;
+    /// # Ok::<(), syrp_net::NetError>(())
+    /// ```
+    pub fn create_listener_with_options(
+        port: u16,
+        local_host: &str,
+        options: SocketOptions,
+    ) -> Result<Self, NetError> {
         let ip = if local_host.trim().is_empty() {
             IpAddress::any(crate::IpFamily::V4)
         } else {
@@ -125,7 +250,7 @@ impl StreamingSocket {
         };
         let addr = SocketAddr::new(ip.into(), port);
         let listen = || -> io::Result<Socket> {
-            let sock = new_socket(addr)?;
+            let sock = new_socket(addr, options)?;
             // Windows SO_REUSEADDR lets another process steal the port, so only Unix sets it.
             #[cfg(unix)]
             sock.set_reuse_address(true)?;
@@ -159,7 +284,7 @@ impl StreamingSocket {
             self.wait_until_ready(true, None)?;
             match self.sock.accept() {
                 Ok((sock, peer)) => {
-                    let accepted = sock.set_nonblocking(false).and_then(|()| no_sigpipe(&sock));
+                    let accepted = sock.set_nonblocking(true).and_then(|()| no_sigpipe(&sock));
                     accepted.map_err(|e| socket_error("accept", &e))?;
                     let peer = peer.as_socket();
                     let host = peer.map(|p| p.ip().to_string()).unwrap_or_default();
@@ -226,7 +351,9 @@ impl StreamingSocket {
             self.check_open()?;
             match self.sock.send_with_flags(&buf[sent..], SEND_FLAGS) {
                 Ok(n) => sent += n,
-                Err(e) if retryable(&e) => {}
+                Err(e) if retryable(&e) => {
+                    self.wait_until_ready(false, None)?;
+                }
                 Err(e) => return Err(self.error("write", &e)),
             }
         }
@@ -253,22 +380,7 @@ impl StreamingSocket {
         for_reading: bool,
         timeout: Option<Duration>,
     ) -> Result<Readiness, NetError> {
-        let deadline = timeout.and_then(|t| Instant::now().checked_add(t));
-        loop {
-            self.check_open()?;
-            let left = deadline.map_or(SLICE, |d| {
-                d.saturating_duration_since(Instant::now()).min(SLICE)
-            });
-            let ms = u16::try_from(left.as_millis()).unwrap_or(u16::MAX);
-            let ready = poll(&self.sock, for_reading, ms).map_err(|e| self.error("wait", &e))?;
-            self.check_open()?;
-            if ready {
-                return Ok(Readiness::Ready);
-            }
-            if deadline.is_some_and(|d| Instant::now() >= d) {
-                return Ok(Readiness::TimedOut);
-            }
-        }
+        wait_ready(&self.sock, &self.closed, for_reading, timeout)
     }
 
     /// Closes the socket: further calls fail with [`NetError::Closed`], and calls blocked in
@@ -378,7 +490,36 @@ impl StreamingSocket {
     }
 }
 
-fn resolve(host: &str, port: u16) -> Result<Vec<SocketAddr>, NetError> {
+/// Waits for `sock` in [`SLICE`]s, failing with [`NetError::Closed`] once `closed` is set.
+pub(crate) fn wait_ready(
+    sock: &Socket,
+    closed: &AtomicBool,
+    for_reading: bool,
+    timeout: Option<Duration>,
+) -> Result<Readiness, NetError> {
+    let open = || match closed.load(Ordering::Acquire) {
+        true => Err(NetError::Closed),
+        false => Ok(()),
+    };
+    let deadline = timeout.and_then(|t| Instant::now().checked_add(t));
+    loop {
+        open()?;
+        let left = deadline.map_or(SLICE, |d| {
+            d.saturating_duration_since(Instant::now()).min(SLICE)
+        });
+        let ms = u16::try_from(left.as_millis()).unwrap_or(u16::MAX);
+        let ready = poll(sock, for_reading, ms);
+        open()?;
+        if ready.map_err(|e| socket_error("wait", &e))? {
+            return Ok(Readiness::Ready);
+        }
+        if deadline.is_some_and(|d| Instant::now() >= d) {
+            return Ok(Readiness::TimedOut);
+        }
+    }
+}
+
+pub(crate) fn resolve(host: &str, port: u16) -> Result<Vec<SocketAddr>, NetError> {
     let fail = |os_error| NetError::Resolve {
         host: host.to_owned(),
         os_error,
@@ -393,8 +534,9 @@ fn resolve(host: &str, port: u16) -> Result<Vec<SocketAddr>, NetError> {
     Ok(addrs)
 }
 
-fn new_socket(addr: SocketAddr) -> io::Result<Socket> {
+fn new_socket(addr: SocketAddr, options: SocketOptions) -> io::Result<Socket> {
     let sock = Socket::new(Domain::for_address(addr), Type::STREAM, Some(Protocol::TCP))?;
+    options.apply(&sock)?;
     no_sigpipe(&sock)?;
     Ok(sock)
 }
@@ -407,7 +549,7 @@ fn no_sigpipe(sock: &Socket) -> io::Result<()> {
     Ok(())
 }
 
-fn socket_error(operation: &'static str, e: &io::Error) -> NetError {
+pub(crate) fn socket_error(operation: &'static str, e: &io::Error) -> NetError {
     NetError::Socket {
         operation,
         kind: e.kind(),
@@ -415,11 +557,11 @@ fn socket_error(operation: &'static str, e: &io::Error) -> NetError {
     }
 }
 
-fn not_supported(operation: &'static str) -> NetError {
+pub(crate) fn not_supported(operation: &'static str) -> NetError {
     socket_error(operation, &io::ErrorKind::Unsupported.into())
 }
 
-fn retryable(e: &io::Error) -> bool {
+pub(crate) fn retryable(e: &io::Error) -> bool {
     matches!(
         e.kind(),
         io::ErrorKind::Interrupted | io::ErrorKind::WouldBlock
