@@ -76,6 +76,14 @@ fn b4_declaration_comments_and_processing_instructions_are_dropped() {
 }
 
 #[test]
+fn b4_line_ends_inside_cdata_are_normalised() {
+    let root = parse("<a><![CDATA[1\r\n2\r3\n4\r\r\n5\r]]>\r\n<![CDATA[\r]]></a>");
+    assert_eq!(root.all_sub_text(), "1\n2\n3\n4\n\n5\n\n\n");
+    let kept = XmlDocument::new("<a><![CDATA[\r\n]]></a>").ignore_empty_text_elements(false);
+    assert_eq!(kept.document_element().unwrap().all_sub_text(), "\n");
+}
+
+#[test]
 fn b4_line_ends_and_attribute_whitespace_are_normalised() {
     let root = parse("<a v=\"1\r\n2\t3\n4&#10;5\">x\r\ny\rz</a>");
     assert_eq!(root.string_attribute("v"), Some("1 2 3 4\n5"));
