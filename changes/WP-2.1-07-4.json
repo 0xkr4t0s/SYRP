@@ -1,0 +1,1 @@
+{"wp": "WP-2.1-07", "kind": "added", "summary": "syrp-midi-utils: MidiRpnMessage, MidiRpnDetector (allocation-free RPN/NRPN parsing from CC 101/100, 99/98, 6/38 with the null parameter) and MidiRpnGenerator, with a round-trip proptest; error catalogue and dependency checks (increment 4, final: B4, B6)."}

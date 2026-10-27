@@ -11,11 +11,10 @@ Module and file owners (WP-2.1-08 and WP-2.1-09 never edit `Cargo.toml`, `lib.rs
 
 | Path | Owner |
 |---|---|
-| `src/message/`, `src/sequence.rs`, `src/keyboard.rs` and their `tests/*.rs` | WP-2.1-07 |
+| `src/message/`, `src/sequence.rs`, `src/keyboard.rs`, `src/rpn.rs`; `tests/message.rs`, `tests/sequence.rs`, `tests/keyboard.rs`, `tests/rpn.rs`, `tests/errors.rs` | WP-2.1-07 |
 | `src/file/`, `tests/file.rs` (stub until it lands) | WP-2.1-08 |
 | `src/ump/`, `tests/ump.rs`, `benches/ump.rs` (stubs until it lands) | WP-2.1-09 |
 
-WP-2.1-07 adds `rpn` in its last increment.
 
 ## Ledger rows
 juce_audio_basics/MidiMessageSequence, juce_audio_basics/MidiKeyboardState,
@@ -40,6 +39,12 @@ juce_audio_basics/MidiRPNMessage (WP-2.1-07). WP-2.1-08 and WP-2.1-09 list their
   `unsafe` in the crate (an `unsafe impl Sync` and one block). A UI event updates the state
   only after it is queued (`SYRP-MIDI-0007` when full, state unchanged). Injected events are
   not fed back into the state. Listeners are added with `&mut self`, before sharing.
+- RPN: both parameter bytes before the value; a value LSB (38) before the MSB (6) makes a
+  14-bit value and is used once; selecting a parameter forgets a pending LSB; 127/127 is
+  null (RPN and NRPN). The generator writes 14-bit values LSB first and 7-bit values as 6
+  then 38 = 0, so generated messages always parse back (proptest in `tests/rpn.rs`).
+- Errors continue `errors/midi.toml`: this crate owns `SYRP-MIDI-0005` to `0007` and
+  reuses `0002` and `0003` for the cases those entries describe.
 - Name tables follow the MIDI 1.0 and General MIDI Level 1 lists; the wording is Syrp's.
 
 ## Thread affinity
@@ -51,6 +56,8 @@ allocates. `sequence`: message thread (edits allocate); `&self` reads are any-th
 proves it under `syrp_rt::no_alloc`). UI thread: `note_on`, `note_off`, `all_notes_off` (they
 may wait for another UI thread). `new`, `add_listener`, `remove_listener`: message thread.
 Listener callbacks run on the thread that changed the state.
+`rpn`: all RT-safe (`MidiRpnDetector::try_parse` never allocates); the generator returns
+owned `MidiMessage`s, so it allocates.
 
 ## Stability
 experimental
@@ -64,5 +71,7 @@ Test binaries may install `syrp_rt::GuardedAllocator` (dev-dependency) to prove 
 paths with `syrp_rt::no_alloc`; `proptest` is a dev-dependency.
 
 ## Known gaps
-WP-2.1-07 increments 1 to 3 (B1 to B3 and the B5 layout). Next: RPN (B4).
-`MidiKeyboardState` has no `reset()` yet, and listeners cannot be added after sharing.
+WP-2.1-07 is complete (B1 to B6). `MidiKeyboardState` has no `reset()`, and listeners
+cannot be added after the state is shared. Data increment/decrement (96, 97) are not
+interpreted by the RPN detector. None of the Syrp's-choice behaviours above has been
+compared with JUCE by a parity scenario yet.

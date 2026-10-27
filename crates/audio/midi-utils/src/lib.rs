@@ -9,9 +9,8 @@
 //! - [`sequence`]: [`MidiMessageSequence`], a time-ordered event list whose note ons are
 //!   paired with their note offs by index.
 //! - [`file`](mod@file): Standard MIDI Files (WP-2.1-08).
+//! - [`rpn`]: [`MidiRpnDetector`] and [`MidiRpnGenerator`] for RPN and NRPN messages.
 //! - [`ump`]: MIDI 1.0 and MIDI 2.0 translation and UMP dispatchers (WP-2.1-09).
-//!
-//! The RPN detector and generator arrive in the last increment of WP-2.1-07.
 //!
 //! ```
 //! use syrp_midi::MidiData;
@@ -25,8 +24,10 @@
 pub mod file;
 pub mod keyboard;
 pub mod message;
+pub mod rpn;
 pub mod sequence;
 pub mod ump;
 
 pub use keyboard::{KeyboardError, MidiKeyboardState, MidiKeyboardStateListener};
+pub use rpn::{MidiRpnDetector, MidiRpnGenerator, MidiRpnMessage};
 pub use sequence::{MidiEventHolder, MidiMessageSequence, SequenceError};
