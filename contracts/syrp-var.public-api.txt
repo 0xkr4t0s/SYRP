@@ -1,0 +1,383 @@
+pub mod syrp_var
+pub use syrp_var::Diagnostic
+pub mod syrp_var::json
+#[non_exhaustive] pub enum syrp_var::json::Format
+pub syrp_var::json::Format::Compact
+pub syrp_var::json::Format::Pretty
+pub const syrp_var::json::MAX_DEPTH: usize
+pub fn syrp_var::json::parse(&str) -> core::result::Result<syrp_var::Var, syrp_var::VarError>
+pub fn syrp_var::json::to_string(&syrp_var::Var, syrp_var::json::Format) -> core::result::Result<alloc::string::String, syrp_var::VarError>
+pub mod syrp_var::xml
+#[non_exhaustive] pub enum syrp_var::xml::XmlNodeView<'a>
+pub syrp_var::xml::XmlNodeView::Element(&'a syrp_var::XmlElement)
+pub syrp_var::xml::XmlNodeView::Text(&'a str)
+pub struct syrp_var::xml::ChildElements<'a>
+impl core::iter::traits::double_ended::DoubleEndedIterator for syrp_var::xml::ChildElements<'_>
+pub fn syrp_var::xml::ChildElements<'_>::next_back(&mut self) -> core::option::Option<Self::Item>
+impl<'a> core::iter::traits::iterator::Iterator for syrp_var::xml::ChildElements<'a>
+pub type syrp_var::xml::ChildElements<'a>::Item = &'a syrp_var::XmlElement
+pub fn syrp_var::xml::ChildElements<'a>::next(&mut self) -> core::option::Option<&'a syrp_var::XmlElement>
+pub struct syrp_var::xml::TextFormat
+impl syrp_var::TextFormat
+pub fn syrp_var::TextFormat::add_default_header(&self) -> bool
+pub fn syrp_var::TextFormat::custom_header(&self) -> &str
+pub fn syrp_var::TextFormat::dtd(&self) -> &str
+pub fn syrp_var::TextFormat::indentation(&self) -> usize
+pub fn syrp_var::TextFormat::line_wrap(&self) -> usize
+pub fn syrp_var::TextFormat::new() -> Self
+pub fn syrp_var::TextFormat::new_line_chars(&self) -> &str
+pub fn syrp_var::TextFormat::single_line(self) -> Self
+pub fn syrp_var::TextFormat::with_custom_header(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn syrp_var::TextFormat::with_default_header(self, bool) -> Self
+pub fn syrp_var::TextFormat::with_dtd(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn syrp_var::TextFormat::with_indentation(self, usize) -> Self
+pub fn syrp_var::TextFormat::with_line_wrap(self, usize) -> Self
+pub fn syrp_var::TextFormat::with_new_line_chars(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn syrp_var::TextFormat::without_header(self) -> Self
+impl core::default::Default for syrp_var::TextFormat
+pub fn syrp_var::TextFormat::default() -> Self
+pub struct syrp_var::xml::XmlAttribute
+impl syrp_var::XmlAttribute
+pub fn syrp_var::XmlAttribute::name(&self) -> &str
+pub fn syrp_var::XmlAttribute::value(&self) -> &str
+pub struct syrp_var::xml::XmlDocument<'a>
+impl<'a> syrp_var::XmlDocument<'a>
+pub fn syrp_var::XmlDocument<'a>::document_element(&self) -> core::result::Result<syrp_var::XmlElement, syrp_var::VarError>
+pub fn syrp_var::XmlDocument<'a>::from_bytes(&'a [u8]) -> Self
+pub fn syrp_var::XmlDocument<'a>::ignore_empty_text_elements(self, bool) -> Self
+pub fn syrp_var::XmlDocument<'a>::new(&'a str) -> Self
+pub fn syrp_var::XmlDocument<'a>::only_read_outer_element(self, bool) -> Self
+pub fn syrp_var::XmlDocument<'a>::parse(&str) -> core::result::Result<syrp_var::XmlElement, syrp_var::VarError>
+pub fn syrp_var::XmlDocument<'a>::parse_bytes(&[u8]) -> core::result::Result<syrp_var::XmlElement, syrp_var::VarError>
+pub struct syrp_var::xml::XmlElement
+impl syrp_var::XmlElement
+pub fn syrp_var::XmlElement::add_child_element(&mut self, impl core::convert::Into<syrp_var::XmlNode>)
+pub fn syrp_var::XmlElement::add_text_element(&mut self, impl core::convert::Into<alloc::string::String>)
+pub fn syrp_var::XmlElement::all_sub_text(&self) -> alloc::string::String
+pub fn syrp_var::XmlElement::child(&self, usize) -> core::option::Option<&syrp_var::XmlNode>
+pub fn syrp_var::XmlElement::child_elements(&self) -> syrp_var::xml::ChildElements<'_>
+pub fn syrp_var::XmlElement::child_mut(&mut self, usize) -> core::option::Option<&mut syrp_var::XmlNode>
+pub fn syrp_var::XmlElement::children(&self) -> &[syrp_var::XmlNode]
+pub fn syrp_var::XmlElement::create_new_child_element(&mut self, &str) -> core::result::Result<&mut syrp_var::XmlElement, syrp_var::VarError>
+pub fn syrp_var::XmlElement::is_equivalent_to(&self, &syrp_var::XmlElement, bool) -> bool
+pub fn syrp_var::XmlElement::new(&str) -> core::result::Result<Self, syrp_var::VarError>
+pub fn syrp_var::XmlElement::num_children(&self) -> usize
+pub fn syrp_var::XmlElement::set_tag_name(&mut self, &str) -> core::result::Result<(), syrp_var::VarError>
+pub fn syrp_var::XmlElement::tag_name(&self) -> &str
+impl syrp_var::XmlElement
+pub fn syrp_var::XmlElement::attribute_name(&self, usize) -> core::option::Option<&str>
+pub fn syrp_var::XmlElement::attribute_value(&self, usize) -> core::option::Option<&str>
+pub fn syrp_var::XmlElement::attributes(&self) -> core::slice::iter::Iter<'_, syrp_var::XmlAttribute>
+pub fn syrp_var::XmlElement::bool_attribute(&self, impl core::convert::AsRef<str>, bool) -> bool
+pub fn syrp_var::XmlElement::compare_attribute(&self, impl core::convert::AsRef<str>, &str, bool) -> bool
+pub fn syrp_var::XmlElement::double_attribute(&self, impl core::convert::AsRef<str>, f64) -> f64
+pub fn syrp_var::XmlElement::has_attribute(&self, impl core::convert::AsRef<str>) -> bool
+pub fn syrp_var::XmlElement::int_attribute(&self, impl core::convert::AsRef<str>, i32) -> i32
+pub fn syrp_var::XmlElement::num_attributes(&self) -> usize
+pub fn syrp_var::XmlElement::remove_all_attributes(&mut self)
+pub fn syrp_var::XmlElement::remove_attribute(&mut self, impl core::convert::AsRef<str>) -> bool
+pub fn syrp_var::XmlElement::set_attribute(&mut self, impl core::convert::AsRef<str>, impl syrp_var::xml::IntoAttributeValue) -> core::result::Result<(), syrp_var::VarError>
+pub fn syrp_var::XmlElement::string_attribute(&self, impl core::convert::AsRef<str>) -> core::option::Option<&str>
+pub fn syrp_var::XmlElement::string_attribute_or<'a>(&'a self, impl core::convert::AsRef<str>, &'a str) -> &'a str
+impl syrp_var::XmlElement
+pub fn syrp_var::XmlElement::child_by_attribute(&self, impl core::convert::AsRef<str>, &str) -> core::option::Option<&syrp_var::XmlElement>
+pub fn syrp_var::XmlElement::child_by_name(&self, &str) -> core::option::Option<&syrp_var::XmlElement>
+pub fn syrp_var::XmlElement::child_by_name_mut(&mut self, &str) -> core::option::Option<&mut syrp_var::XmlElement>
+pub fn syrp_var::XmlElement::child_element_all_sub_text(&self, &str, &str) -> alloc::string::String
+pub fn syrp_var::XmlElement::contains_child(&self, &syrp_var::XmlElement) -> bool
+pub fn syrp_var::XmlElement::delete_all_child_elements(&mut self)
+pub fn syrp_var::XmlElement::delete_all_child_elements_with_tag_name(&mut self, &str)
+pub fn syrp_var::XmlElement::has_tag_name(&self, &str) -> bool
+pub fn syrp_var::XmlElement::has_tag_name_ignoring_namespace(&self, &str) -> bool
+pub fn syrp_var::XmlElement::insert_child_element(&mut self, impl core::convert::Into<syrp_var::XmlNode>, usize)
+pub fn syrp_var::XmlElement::namespace(&self) -> &str
+pub fn syrp_var::XmlElement::prepend_child_element(&mut self, impl core::convert::Into<syrp_var::XmlNode>)
+pub fn syrp_var::XmlElement::remove_child(&mut self, usize) -> core::option::Option<syrp_var::XmlNode>
+pub fn syrp_var::XmlElement::replace_child_element(&mut self, usize, impl core::convert::Into<syrp_var::XmlNode>) -> core::result::Result<syrp_var::XmlNode, syrp_var::XmlNode>
+pub fn syrp_var::XmlElement::sort_child_elements(&mut self, impl core::ops::function::FnMut(&syrp_var::XmlNode, &syrp_var::XmlNode) -> core::cmp::Ordering)
+pub fn syrp_var::XmlElement::tag_name_without_namespace(&self) -> &str
+impl syrp_var::XmlElement
+pub fn syrp_var::XmlElement::to_string(&self, &syrp_var::TextFormat) -> alloc::string::String
+pub fn syrp_var::XmlElement::write_to(&self, &mut impl core::io::write::Write, &syrp_var::TextFormat) -> core::io::error::Result<()>
+impl core::clone::Clone for syrp_var::XmlElement
+pub fn syrp_var::XmlElement::clone(&self) -> Self
+impl core::cmp::PartialEq for syrp_var::XmlElement
+pub fn syrp_var::XmlElement::eq(&self, &Self) -> bool
+impl core::convert::From<syrp_var::XmlElement> for syrp_var::XmlNode
+pub fn syrp_var::XmlNode::from(syrp_var::XmlElement) -> Self
+impl core::fmt::Debug for syrp_var::XmlElement
+pub fn syrp_var::XmlElement::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::ops::drop::Drop for syrp_var::XmlElement
+pub fn syrp_var::XmlElement::drop(&mut self)
+pub struct syrp_var::xml::XmlNode
+impl syrp_var::XmlNode
+pub fn syrp_var::XmlNode::as_element(&self) -> core::option::Option<&syrp_var::XmlElement>
+pub fn syrp_var::XmlNode::as_element_mut(&mut self) -> core::option::Option<&mut syrp_var::XmlElement>
+pub fn syrp_var::XmlNode::as_text(&self) -> core::option::Option<&str>
+pub fn syrp_var::XmlNode::as_view(&self) -> syrp_var::XmlNodeView<'_>
+pub fn syrp_var::XmlNode::into_element(self) -> core::result::Result<syrp_var::XmlElement, syrp_var::XmlNode>
+pub fn syrp_var::XmlNode::is_text_element(&self) -> bool
+pub fn syrp_var::XmlNode::set_text(&mut self, impl core::convert::Into<alloc::string::String>) -> bool
+pub fn syrp_var::XmlNode::text(impl core::convert::Into<alloc::string::String>) -> Self
+impl core::convert::From<syrp_var::XmlElement> for syrp_var::XmlNode
+pub fn syrp_var::XmlNode::from(syrp_var::XmlElement) -> Self
+impl core::fmt::Debug for syrp_var::XmlNode
+pub fn syrp_var::XmlNode::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+pub trait syrp_var::xml::IntoAttributeValue
+pub fn syrp_var::xml::IntoAttributeValue::into_attribute_value(self) -> alloc::string::String
+impl syrp_var::xml::IntoAttributeValue for &alloc::string::String
+pub fn &alloc::string::String::into_attribute_value(self) -> alloc::string::String
+impl syrp_var::xml::IntoAttributeValue for &str
+pub fn &str::into_attribute_value(self) -> alloc::string::String
+impl syrp_var::xml::IntoAttributeValue for alloc::string::String
+pub fn alloc::string::String::into_attribute_value(self) -> alloc::string::String
+impl syrp_var::xml::IntoAttributeValue for bool
+pub fn bool::into_attribute_value(self) -> alloc::string::String
+impl syrp_var::xml::IntoAttributeValue for f64
+pub fn f64::into_attribute_value(self) -> alloc::string::String
+impl syrp_var::xml::IntoAttributeValue for i32
+pub fn i32::into_attribute_value(self) -> alloc::string::String
+impl syrp_var::xml::IntoAttributeValue for i64
+pub fn i64::into_attribute_value(self) -> alloc::string::String
+pub fn syrp_var::xml::is_valid_xml_name(&str) -> bool
+#[non_exhaustive] pub enum syrp_var::VarView<'a>
+pub syrp_var::VarView::Array(&'a [syrp_var::Var])
+pub syrp_var::VarView::Binary(&'a [u8])
+pub syrp_var::VarView::Bool(bool)
+pub syrp_var::VarView::Double(f64)
+pub syrp_var::VarView::Int(i32)
+pub syrp_var::VarView::Int64(i64)
+pub syrp_var::VarView::Object(&'a alloc::rcs::rc::Rc<syrp_var::DynamicObject>)
+pub syrp_var::VarView::Str(&'a str)
+pub syrp_var::VarView::Undefined
+pub syrp_var::VarView::Void
+#[non_exhaustive] pub enum syrp_var::XmlNodeView<'a>
+pub syrp_var::XmlNodeView::Element(&'a syrp_var::XmlElement)
+pub syrp_var::XmlNodeView::Text(&'a str)
+pub struct syrp_var::DynamicObject
+impl syrp_var::DynamicObject
+pub fn syrp_var::DynamicObject::get_property(&self, syrp_var::Identifier) -> syrp_var::Var
+pub fn syrp_var::DynamicObject::has_property(&self, syrp_var::Identifier) -> bool
+pub const fn syrp_var::DynamicObject::new() -> Self
+pub fn syrp_var::DynamicObject::properties(&self) -> syrp_var::NamedValueSet
+pub fn syrp_var::DynamicObject::property_count(&self) -> usize
+pub fn syrp_var::DynamicObject::remove_property(&self, syrp_var::Identifier) -> core::option::Option<syrp_var::Var>
+pub fn syrp_var::DynamicObject::set_property(&self, syrp_var::Identifier, impl core::convert::Into<syrp_var::Var>) -> bool
+impl core::fmt::Debug for syrp_var::DynamicObject
+pub fn syrp_var::DynamicObject::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+pub struct syrp_var::Identifier(_)
+impl syrp_var::Identifier
+pub const syrp_var::Identifier::EMPTY: syrp_var::Identifier
+pub fn syrp_var::Identifier::as_str(self) -> &'static str
+pub fn syrp_var::Identifier::as_u32(self) -> u32
+pub fn syrp_var::Identifier::cmp_text(self, syrp_var::Identifier) -> core::cmp::Ordering
+pub fn syrp_var::Identifier::is_empty(self) -> bool
+pub fn syrp_var::Identifier::new(&str) -> Self
+impl core::convert::AsRef<str> for syrp_var::Identifier
+pub fn syrp_var::Identifier::as_ref(&self) -> &str
+impl core::convert::From<&str> for syrp_var::Identifier
+pub fn syrp_var::Identifier::from(&str) -> Self
+impl core::default::Default for syrp_var::Identifier
+pub fn syrp_var::Identifier::default() -> Self
+impl core::fmt::Debug for syrp_var::Identifier
+pub fn syrp_var::Identifier::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::fmt::Display for syrp_var::Identifier
+pub fn syrp_var::Identifier::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+pub struct syrp_var::NamedValueIter<'a>
+impl core::iter::traits::exact_size::ExactSizeIterator for syrp_var::NamedValueIter<'_>
+impl<'a> core::iter::traits::iterator::Iterator for syrp_var::NamedValueIter<'a>
+pub type syrp_var::NamedValueIter<'a>::Item = (syrp_var::Identifier, &'a syrp_var::Var)
+pub fn syrp_var::NamedValueIter<'a>::next(&mut self) -> core::option::Option<Self::Item>
+pub fn syrp_var::NamedValueIter<'a>::size_hint(&self) -> (usize, core::option::Option<usize>)
+pub struct syrp_var::NamedValueSet
+impl syrp_var::NamedValueSet
+pub fn syrp_var::NamedValueSet::contains(&self, syrp_var::Identifier) -> bool
+pub fn syrp_var::NamedValueSet::get(&self, syrp_var::Identifier) -> core::option::Option<&syrp_var::Var>
+pub fn syrp_var::NamedValueSet::is_empty(&self) -> bool
+pub fn syrp_var::NamedValueSet::iter(&self) -> syrp_var::NamedValueIter<'_>
+pub fn syrp_var::NamedValueSet::len(&self) -> usize
+pub const fn syrp_var::NamedValueSet::new() -> Self
+pub fn syrp_var::NamedValueSet::remove(&mut self, syrp_var::Identifier) -> core::option::Option<syrp_var::Var>
+pub fn syrp_var::NamedValueSet::set(&mut self, syrp_var::Identifier, impl core::convert::Into<syrp_var::Var>) -> bool
+impl core::fmt::Debug for syrp_var::NamedValueSet
+pub fn syrp_var::NamedValueSet::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<'a> core::iter::traits::collect::IntoIterator for &'a syrp_var::NamedValueSet
+pub type &'a syrp_var::NamedValueSet::IntoIter = syrp_var::NamedValueIter<'a>
+pub type &'a syrp_var::NamedValueSet::Item = (syrp_var::Identifier, &'a syrp_var::Var)
+pub fn &'a syrp_var::NamedValueSet::into_iter(self) -> syrp_var::NamedValueIter<'a>
+pub struct syrp_var::TextFormat
+impl syrp_var::TextFormat
+pub fn syrp_var::TextFormat::add_default_header(&self) -> bool
+pub fn syrp_var::TextFormat::custom_header(&self) -> &str
+pub fn syrp_var::TextFormat::dtd(&self) -> &str
+pub fn syrp_var::TextFormat::indentation(&self) -> usize
+pub fn syrp_var::TextFormat::line_wrap(&self) -> usize
+pub fn syrp_var::TextFormat::new() -> Self
+pub fn syrp_var::TextFormat::new_line_chars(&self) -> &str
+pub fn syrp_var::TextFormat::single_line(self) -> Self
+pub fn syrp_var::TextFormat::with_custom_header(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn syrp_var::TextFormat::with_default_header(self, bool) -> Self
+pub fn syrp_var::TextFormat::with_dtd(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn syrp_var::TextFormat::with_indentation(self, usize) -> Self
+pub fn syrp_var::TextFormat::with_line_wrap(self, usize) -> Self
+pub fn syrp_var::TextFormat::with_new_line_chars(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn syrp_var::TextFormat::without_header(self) -> Self
+impl core::default::Default for syrp_var::TextFormat
+pub fn syrp_var::TextFormat::default() -> Self
+pub struct syrp_var::Var
+impl syrp_var::Var
+pub fn syrp_var::Var::array_mut(&mut self) -> core::option::Option<&mut alloc::vec::Vec<syrp_var::Var>>
+pub fn syrp_var::Var::deep_clone(&self) -> syrp_var::Var
+impl syrp_var::Var
+pub fn syrp_var::Var::as_array(&self) -> core::option::Option<&[syrp_var::Var]>
+pub fn syrp_var::Var::as_bytes(&self) -> core::option::Option<&[u8]>
+pub fn syrp_var::Var::as_object(&self) -> core::option::Option<&alloc::rcs::rc::Rc<syrp_var::DynamicObject>>
+pub fn syrp_var::Var::as_str(&self) -> core::option::Option<&str>
+pub fn syrp_var::Var::as_view(&self) -> syrp_var::VarView<'_>
+pub fn syrp_var::Var::from_bytes(impl core::convert::Into<alloc::vec::Vec<u8>>) -> Self
+pub fn syrp_var::Var::is_array(&self) -> bool
+pub fn syrp_var::Var::is_binary(&self) -> bool
+pub fn syrp_var::Var::is_bool(&self) -> bool
+pub fn syrp_var::Var::is_f64(&self) -> bool
+pub fn syrp_var::Var::is_i32(&self) -> bool
+pub fn syrp_var::Var::is_i64(&self) -> bool
+pub fn syrp_var::Var::is_object(&self) -> bool
+pub fn syrp_var::Var::is_string(&self) -> bool
+pub fn syrp_var::Var::is_undefined(&self) -> bool
+pub fn syrp_var::Var::is_void(&self) -> bool
+pub fn syrp_var::Var::new_object() -> Self
+pub const fn syrp_var::Var::undefined() -> Self
+pub const fn syrp_var::Var::void() -> Self
+impl syrp_var::Var
+pub fn syrp_var::Var::as_bool(&self) -> bool
+pub fn syrp_var::Var::as_f64(&self) -> f64
+pub fn syrp_var::Var::as_i32(&self) -> i32
+pub fn syrp_var::Var::as_i64(&self) -> i64
+pub fn syrp_var::Var::eq_same_type(&self, &syrp_var::Var) -> bool
+pub fn syrp_var::Var::loose_eq(&self, &syrp_var::Var) -> bool
+pub fn syrp_var::Var::to_text(&self) -> alloc::string::String
+impl core::cmp::PartialEq for syrp_var::Var
+pub fn syrp_var::Var::eq(&self, &syrp_var::Var) -> bool
+impl core::convert::From<&str> for syrp_var::Var
+pub fn syrp_var::Var::from(&str) -> Self
+impl core::convert::From<alloc::rcs::rc::Rc<syrp_var::DynamicObject>> for syrp_var::Var
+pub fn syrp_var::Var::from(alloc::rcs::rc::Rc<syrp_var::DynamicObject>) -> Self
+impl core::convert::From<alloc::string::String> for syrp_var::Var
+pub fn syrp_var::Var::from(alloc::string::String) -> Self
+impl core::convert::From<alloc::vec::Vec<syrp_var::Var>> for syrp_var::Var
+pub fn syrp_var::Var::from(alloc::vec::Vec<syrp_var::Var>) -> Self
+impl core::convert::From<bool> for syrp_var::Var
+pub fn syrp_var::Var::from(bool) -> Self
+impl core::convert::From<f64> for syrp_var::Var
+pub fn syrp_var::Var::from(f64) -> Self
+impl core::convert::From<i32> for syrp_var::Var
+pub fn syrp_var::Var::from(i32) -> Self
+impl core::convert::From<i64> for syrp_var::Var
+pub fn syrp_var::Var::from(i64) -> Self
+impl core::default::Default for syrp_var::Var
+pub fn syrp_var::Var::default() -> Self
+impl core::fmt::Debug for syrp_var::Var
+pub fn syrp_var::Var::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::fmt::Display for syrp_var::Var
+pub fn syrp_var::Var::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl serde_core::ser::Serialize for syrp_var::Var
+pub fn syrp_var::Var::serialize<S: serde_core::ser::Serializer>(&self, S) -> core::result::Result<<S as serde_core::ser::Serializer>::Ok, <S as serde_core::ser::Serializer>::Error>
+impl<'de> serde_core::de::Deserialize<'de> for syrp_var::Var
+pub fn syrp_var::Var::deserialize<D: serde_core::de::Deserializer<'de>>(D) -> core::result::Result<syrp_var::Var, <D as serde_core::de::Deserializer>::Error>
+pub struct syrp_var::VarError
+impl syrp_var::VarError
+pub fn syrp_var::VarError::column(&self) -> usize
+pub fn syrp_var::VarError::line(&self) -> usize
+impl core::error::Error for syrp_var::VarError
+impl core::fmt::Display for syrp_var::VarError
+pub fn syrp_var::VarError::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl syrp_error::Diagnostic for syrp_var::VarError
+pub fn syrp_var::VarError::code(&self) -> syrp_error::ErrorCode
+pub fn syrp_var::VarError::hint(&self) -> core::option::Option<alloc::borrow::Cow<'static, str>>
+pub struct syrp_var::XmlAttribute
+impl syrp_var::XmlAttribute
+pub fn syrp_var::XmlAttribute::name(&self) -> &str
+pub fn syrp_var::XmlAttribute::value(&self) -> &str
+pub struct syrp_var::XmlDocument<'a>
+impl<'a> syrp_var::XmlDocument<'a>
+pub fn syrp_var::XmlDocument<'a>::document_element(&self) -> core::result::Result<syrp_var::XmlElement, syrp_var::VarError>
+pub fn syrp_var::XmlDocument<'a>::from_bytes(&'a [u8]) -> Self
+pub fn syrp_var::XmlDocument<'a>::ignore_empty_text_elements(self, bool) -> Self
+pub fn syrp_var::XmlDocument<'a>::new(&'a str) -> Self
+pub fn syrp_var::XmlDocument<'a>::only_read_outer_element(self, bool) -> Self
+pub fn syrp_var::XmlDocument<'a>::parse(&str) -> core::result::Result<syrp_var::XmlElement, syrp_var::VarError>
+pub fn syrp_var::XmlDocument<'a>::parse_bytes(&[u8]) -> core::result::Result<syrp_var::XmlElement, syrp_var::VarError>
+pub struct syrp_var::XmlElement
+impl syrp_var::XmlElement
+pub fn syrp_var::XmlElement::add_child_element(&mut self, impl core::convert::Into<syrp_var::XmlNode>)
+pub fn syrp_var::XmlElement::add_text_element(&mut self, impl core::convert::Into<alloc::string::String>)
+pub fn syrp_var::XmlElement::all_sub_text(&self) -> alloc::string::String
+pub fn syrp_var::XmlElement::child(&self, usize) -> core::option::Option<&syrp_var::XmlNode>
+pub fn syrp_var::XmlElement::child_elements(&self) -> syrp_var::xml::ChildElements<'_>
+pub fn syrp_var::XmlElement::child_mut(&mut self, usize) -> core::option::Option<&mut syrp_var::XmlNode>
+pub fn syrp_var::XmlElement::children(&self) -> &[syrp_var::XmlNode]
+pub fn syrp_var::XmlElement::create_new_child_element(&mut self, &str) -> core::result::Result<&mut syrp_var::XmlElement, syrp_var::VarError>
+pub fn syrp_var::XmlElement::is_equivalent_to(&self, &syrp_var::XmlElement, bool) -> bool
+pub fn syrp_var::XmlElement::new(&str) -> core::result::Result<Self, syrp_var::VarError>
+pub fn syrp_var::XmlElement::num_children(&self) -> usize
+pub fn syrp_var::XmlElement::set_tag_name(&mut self, &str) -> core::result::Result<(), syrp_var::VarError>
+pub fn syrp_var::XmlElement::tag_name(&self) -> &str
+impl syrp_var::XmlElement
+pub fn syrp_var::XmlElement::attribute_name(&self, usize) -> core::option::Option<&str>
+pub fn syrp_var::XmlElement::attribute_value(&self, usize) -> core::option::Option<&str>
+pub fn syrp_var::XmlElement::attributes(&self) -> core::slice::iter::Iter<'_, syrp_var::XmlAttribute>
+pub fn syrp_var::XmlElement::bool_attribute(&self, impl core::convert::AsRef<str>, bool) -> bool
+pub fn syrp_var::XmlElement::compare_attribute(&self, impl core::convert::AsRef<str>, &str, bool) -> bool
+pub fn syrp_var::XmlElement::double_attribute(&self, impl core::convert::AsRef<str>, f64) -> f64
+pub fn syrp_var::XmlElement::has_attribute(&self, impl core::convert::AsRef<str>) -> bool
+pub fn syrp_var::XmlElement::int_attribute(&self, impl core::convert::AsRef<str>, i32) -> i32
+pub fn syrp_var::XmlElement::num_attributes(&self) -> usize
+pub fn syrp_var::XmlElement::remove_all_attributes(&mut self)
+pub fn syrp_var::XmlElement::remove_attribute(&mut self, impl core::convert::AsRef<str>) -> bool
+pub fn syrp_var::XmlElement::set_attribute(&mut self, impl core::convert::AsRef<str>, impl syrp_var::xml::IntoAttributeValue) -> core::result::Result<(), syrp_var::VarError>
+pub fn syrp_var::XmlElement::string_attribute(&self, impl core::convert::AsRef<str>) -> core::option::Option<&str>
+pub fn syrp_var::XmlElement::string_attribute_or<'a>(&'a self, impl core::convert::AsRef<str>, &'a str) -> &'a str
+impl syrp_var::XmlElement
+pub fn syrp_var::XmlElement::child_by_attribute(&self, impl core::convert::AsRef<str>, &str) -> core::option::Option<&syrp_var::XmlElement>
+pub fn syrp_var::XmlElement::child_by_name(&self, &str) -> core::option::Option<&syrp_var::XmlElement>
+pub fn syrp_var::XmlElement::child_by_name_mut(&mut self, &str) -> core::option::Option<&mut syrp_var::XmlElement>
+pub fn syrp_var::XmlElement::child_element_all_sub_text(&self, &str, &str) -> alloc::string::String
+pub fn syrp_var::XmlElement::contains_child(&self, &syrp_var::XmlElement) -> bool
+pub fn syrp_var::XmlElement::delete_all_child_elements(&mut self)
+pub fn syrp_var::XmlElement::delete_all_child_elements_with_tag_name(&mut self, &str)
+pub fn syrp_var::XmlElement::has_tag_name(&self, &str) -> bool
+pub fn syrp_var::XmlElement::has_tag_name_ignoring_namespace(&self, &str) -> bool
+pub fn syrp_var::XmlElement::insert_child_element(&mut self, impl core::convert::Into<syrp_var::XmlNode>, usize)
+pub fn syrp_var::XmlElement::namespace(&self) -> &str
+pub fn syrp_var::XmlElement::prepend_child_element(&mut self, impl core::convert::Into<syrp_var::XmlNode>)
+pub fn syrp_var::XmlElement::remove_child(&mut self, usize) -> core::option::Option<syrp_var::XmlNode>
+pub fn syrp_var::XmlElement::replace_child_element(&mut self, usize, impl core::convert::Into<syrp_var::XmlNode>) -> core::result::Result<syrp_var::XmlNode, syrp_var::XmlNode>
+pub fn syrp_var::XmlElement::sort_child_elements(&mut self, impl core::ops::function::FnMut(&syrp_var::XmlNode, &syrp_var::XmlNode) -> core::cmp::Ordering)
+pub fn syrp_var::XmlElement::tag_name_without_namespace(&self) -> &str
+impl syrp_var::XmlElement
+pub fn syrp_var::XmlElement::to_string(&self, &syrp_var::TextFormat) -> alloc::string::String
+pub fn syrp_var::XmlElement::write_to(&self, &mut impl core::io::write::Write, &syrp_var::TextFormat) -> core::io::error::Result<()>
+impl core::clone::Clone for syrp_var::XmlElement
+pub fn syrp_var::XmlElement::clone(&self) -> Self
+impl core::cmp::PartialEq for syrp_var::XmlElement
+pub fn syrp_var::XmlElement::eq(&self, &Self) -> bool
+impl core::convert::From<syrp_var::XmlElement> for syrp_var::XmlNode
+pub fn syrp_var::XmlNode::from(syrp_var::XmlElement) -> Self
+impl core::fmt::Debug for syrp_var::XmlElement
+pub fn syrp_var::XmlElement::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::ops::drop::Drop for syrp_var::XmlElement
+pub fn syrp_var::XmlElement::drop(&mut self)
+pub struct syrp_var::XmlNode
+impl syrp_var::XmlNode
+pub fn syrp_var::XmlNode::as_element(&self) -> core::option::Option<&syrp_var::XmlElement>
+pub fn syrp_var::XmlNode::as_element_mut(&mut self) -> core::option::Option<&mut syrp_var::XmlElement>
+pub fn syrp_var::XmlNode::as_text(&self) -> core::option::Option<&str>
+pub fn syrp_var::XmlNode::as_view(&self) -> syrp_var::XmlNodeView<'_>
+pub fn syrp_var::XmlNode::into_element(self) -> core::result::Result<syrp_var::XmlElement, syrp_var::XmlNode>
+pub fn syrp_var::XmlNode::is_text_element(&self) -> bool
+pub fn syrp_var::XmlNode::set_text(&mut self, impl core::convert::Into<alloc::string::String>) -> bool
+pub fn syrp_var::XmlNode::text(impl core::convert::Into<alloc::string::String>) -> Self
+impl core::convert::From<syrp_var::XmlElement> for syrp_var::XmlNode
+pub fn syrp_var::XmlNode::from(syrp_var::XmlElement) -> Self
+impl core::fmt::Debug for syrp_var::XmlNode
+pub fn syrp_var::XmlNode::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
