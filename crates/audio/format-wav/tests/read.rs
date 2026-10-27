@@ -5,7 +5,7 @@ mod common;
 
 use std::io::Cursor;
 
-use common::{chunk, fmt, open, read_all_f32, read_all_f64, riff};
+use common::{chunk, fmt, fmt_ext, open, read_all_f32, read_all_f64, riff};
 use syrp_audio_api::{AudioBlockMut, ChannelSet};
 use syrp_error::Diagnostic;
 use syrp_format_api::{AudioFormat, AudioSpec, SampleKind, WriterOptions};
@@ -35,9 +35,13 @@ fn b1_name_extensions_rates_and_depths() {
 }
 
 #[test]
-fn b1_can_read_riff_with_wave_form_only() {
+fn b1_can_read_riff_rf64_bw64_with_wave_form_only() {
     let wav = WavAudioFormat::new();
-    assert!(wav.can_read(b"RIFF\0\0\0\0WAVEfmt "));
+    for magic in [b"RIFF", b"RF64", b"BW64"] {
+        let mut h = magic.to_vec();
+        h.extend_from_slice(b"\0\0\0\0WAVEfmt ");
+        assert!(wav.can_read(&h), "{magic:?}");
+    }
     assert!(!wav.can_read(b""));
     assert!(!wav.can_read(b"RIFF\0\0\0\0WAV"));
     assert!(!wav.can_read(b"RIFF\0\0\0\0AVI "));
@@ -145,6 +149,53 @@ fn b2_reads_32_and_64_bit_float_into_both_sample_types() {
 }
 
 #[test]
+fn b2_extensible_pcm_and_float_subformats() {
+    let pcm = riff(&[
+        chunk(b"fmt ", &fmt_ext(2, 48_000, 16, 16, 0x3, 1)),
+        chunk(b"data", &le16(&[16384, -16384])),
+    ]);
+    let mut r = open(pcm).unwrap();
+    assert_eq!(r.spec().channels(), ChannelSet::stereo());
+    assert_eq!(read_all_f64(r.as_mut()), [[0.5], [-0.5]]);
+    let d: Vec<u8> = 0.75f32.to_le_bytes().to_vec();
+    let float = riff(&[
+        chunk(b"fmt ", &fmt_ext(1, 48_000, 32, 32, 0x4, 3)),
+        chunk(b"data", &d),
+    ]);
+    let mut r = open(float).unwrap();
+    assert!(r.spec().is_float());
+    assert_eq!(r.spec().channels(), ChannelSet::mono());
+    assert_eq!(read_all_f32(r.as_mut())[0], [0.75]);
+}
+
+#[test]
+fn b2_valid_bits_narrower_than_the_container_are_honoured() {
+    // 20 valid bits in a 24-bit container: the low 4 bits are padding and ignored.
+    let raw: i32 = (0x7FFFF << 4) | 0xF;
+    let d: Vec<u8> = raw.to_le_bytes()[..3].to_vec();
+    let mut r = open(riff(&[
+        chunk(b"fmt ", &fmt_ext(1, 48_000, 24, 20, 0x4, 1)),
+        chunk(b"data", &d),
+    ]))
+    .unwrap();
+    assert_eq!(r.spec().bits_per_sample(), 20);
+    assert_eq!(
+        read_all_f64(r.as_mut())[0],
+        [f64::from(0x7FFFF) / f64::from(1 << 19)]
+    );
+}
+
+#[test]
+fn b2_valid_bits_zero_means_the_whole_container_syrp_choice() {
+    let r = open(riff(&[
+        chunk(b"fmt ", &fmt_ext(1, 48_000, 24, 0, 0x4, 1)),
+        chunk(b"data", &[0; 3]),
+    ]))
+    .unwrap();
+    assert_eq!(r.spec().bits_per_sample(), 24);
+}
+
+#[test]
 fn b2_odd_sized_and_unknown_chunks_are_skipped_with_their_pad_byte() {
     let file = riff(&[
         chunk(b"zzzz", &[1, 2, 3]),
@@ -155,6 +206,82 @@ fn b2_odd_sized_and_unknown_chunks_are_skipped_with_their_pad_byte() {
     ]);
     let mut r = open(file).unwrap();
     assert_eq!(read_all_f64(r.as_mut())[0], [0.25]);
+}
+
+#[test]
+fn b2_rf64_and_bw64_take_sizes_from_ds64() {
+    for magic in [b"RF64", b"BW64"] {
+        let samples = le16(&[100, 200, 300]);
+        let mut ds64 = Vec::new();
+        ds64.extend_from_slice(&0u64.to_le_bytes()); // RIFF size, patched below
+        ds64.extend_from_slice(&(samples.len() as u64).to_le_bytes());
+        ds64.extend_from_slice(&3u64.to_le_bytes());
+        ds64.extend_from_slice(&0u32.to_le_bytes());
+        let mut data = b"data".to_vec();
+        data.extend_from_slice(&u32::MAX.to_le_bytes());
+        data.extend_from_slice(&samples);
+        let mut file = riff(&[
+            chunk(b"ds64", &ds64),
+            chunk(b"fmt ", &fmt(1, 1, 8000, 16)),
+            data,
+        ]);
+        file[..4].copy_from_slice(magic);
+        file[4..8].copy_from_slice(&u32::MAX.to_le_bytes());
+        let riff_size = file.len() as u64 - 8;
+        file[20..28].copy_from_slice(&riff_size.to_le_bytes());
+        let mut r = open(file).unwrap();
+        assert_eq!(r.length(), 3);
+        let s = 32768.0;
+        assert_eq!(
+            read_all_f64(r.as_mut())[0],
+            [100.0 / s, 200.0 / s, 300.0 / s]
+        );
+    }
+}
+
+#[test]
+fn b2_channel_mask_maps_to_a_named_layout_in_canonical_order() {
+    // 5.1 with side speakers (Microsoft 0x60F): file order L R C LFE SL SR.
+    let d = le16(&[1, 2, 3, 4, 5, 6]);
+    let mut r = open(riff(&[
+        chunk(b"fmt ", &fmt_ext(6, 48_000, 16, 16, 0x60F, 1)),
+        chunk(b"data", &d),
+    ]))
+    .unwrap();
+    assert_eq!(r.spec().channels(), ChannelSet::surround_5_1());
+    let got: Vec<f64> = read_all_f64(r.as_mut())
+        .into_iter()
+        .map(|c| c[0] * 32768.0)
+        .collect();
+    assert_eq!(got, [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
+    // 7.1 (0x63F): file L R C LFE BL BR SL SR; canonical puts the side pair before the rear.
+    let d = le16(&[1, 2, 3, 4, 5, 6, 7, 8]);
+    let mut r = open(riff(&[
+        chunk(b"fmt ", &fmt_ext(8, 48_000, 16, 16, 0x63F, 1)),
+        chunk(b"data", &d),
+    ]))
+    .unwrap();
+    assert_eq!(r.spec().channels(), ChannelSet::surround_7_1());
+    let got: Vec<f64> = read_all_f64(r.as_mut())
+        .into_iter()
+        .map(|c| c[0] * 32768.0)
+        .collect();
+    assert_eq!(got, [1.0, 2.0, 3.0, 4.0, 7.0, 8.0, 5.0, 6.0]);
+}
+
+#[test]
+fn b2_mask_zero_mismatched_or_inexpressible_gives_discrete() {
+    for (mask, ch) in [(0, 2), (0x7, 2), (0xC0, 2), (0x8000_0003, 2)] {
+        let file = riff(&[
+            chunk(b"fmt ", &fmt_ext(ch, 8000, 16, 16, mask, 1)),
+            chunk(b"data", &[0; 4]),
+        ]);
+        assert_eq!(
+            open(file).unwrap().spec().channels(),
+            ChannelSet::discrete(2),
+            "{mask:#x}"
+        );
+    }
 }
 
 #[test]
@@ -238,10 +365,34 @@ fn b2_malformed_headers_have_their_codes() {
     assert_eq!(bad(fmt(1, 1, 8000, 40)), "SYRP-FORMAT-0009");
     assert_eq!(bad(fmt(3, 1, 8000, 24)), "SYRP-FORMAT-0009");
     assert_eq!(bad(fmt(1, 1, 8000, 16)[..14].to_vec()), "SYRP-FORMAT-0009");
+    assert_eq!(bad(fmt_ext(1, 8000, 16, 17, 4, 1)), "SYRP-FORMAT-0009");
+    assert_eq!(
+        bad(fmt_ext(1, 8000, 16, 16, 4, 1)[..24].to_vec()),
+        "SYRP-FORMAT-0009"
+    );
     let mut misaligned = fmt(1, 2, 8000, 16);
     misaligned[12] = 3;
     assert_eq!(bad(misaligned), "SYRP-FORMAT-0009");
     assert_eq!(bad(fmt(2, 1, 8000, 4)), "SYRP-FORMAT-0010");
+    let mut odd_guid = fmt_ext(1, 8000, 16, 16, 4, 1);
+    odd_guid[39] = 0;
+    assert_eq!(bad(odd_guid), "SYRP-FORMAT-0010");
+}
+
+#[test]
+fn b2_rf64_without_a_valid_ds64_is_0012() {
+    let mut no_ds64 = riff(&[chunk(b"fmt ", &fmt(1, 1, 8000, 16)), chunk(b"data", &[])]);
+    no_ds64[..4].copy_from_slice(b"RF64");
+    assert_eq!(code_of(no_ds64), "SYRP-FORMAT-0012");
+    let mut ds64 = vec![0u8; 28];
+    ds64[24..28].copy_from_slice(&1000u32.to_le_bytes()); // table larger than the chunk
+    let mut file = riff(&[
+        chunk(b"ds64", &ds64),
+        chunk(b"fmt ", &fmt(1, 1, 8000, 16)),
+        chunk(b"data", &[]),
+    ]);
+    file[..4].copy_from_slice(b"BW64");
+    assert_eq!(code_of(file), "SYRP-FORMAT-0012");
 }
 
 #[test]

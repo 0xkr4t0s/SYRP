@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only OR BUSL-1.1
-//! Builds WAV files byte by byte from the public RIFF layout.
+//! Builds WAV files byte by byte from the public RIFF, WAVEFORMATEXTENSIBLE and RF64 layouts.
 #![allow(dead_code)] // Each test binary uses a different subset.
 
 use std::io::Cursor;
@@ -39,6 +39,19 @@ pub fn fmt(tag: u16, channels: u16, rate: u32, bits: u16) -> Vec<u8> {
     v.extend_from_slice(&(rate * u32::from(align)).to_le_bytes());
     v.extend_from_slice(&align.to_le_bytes());
     v.extend_from_slice(&bits.to_le_bytes());
+    v
+}
+
+/// A 40-byte `WAVE_FORMAT_EXTENSIBLE` body with sub-format tag `sub` (1 PCM, 3 float).
+pub fn fmt_ext(channels: u16, rate: u32, bits: u16, valid: u16, mask: u32, sub: u16) -> Vec<u8> {
+    let mut v = fmt(0xFFFE, channels, rate, bits);
+    v.extend_from_slice(&22u16.to_le_bytes());
+    v.extend_from_slice(&valid.to_le_bytes());
+    v.extend_from_slice(&mask.to_le_bytes());
+    v.extend_from_slice(&sub.to_le_bytes());
+    v.extend_from_slice(&[
+        0x00, 0x00, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71,
+    ]);
     v
 }
 

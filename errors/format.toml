@@ -39,14 +39,14 @@ fix = "Write blocks with exactly AudioWriter::spec().channel_count() channels; s
 code = "SYRP-FORMAT-0006"
 title = "Not a WAV file"
 severity = "error"
-cause = "The input does not begin with a RIFF header whose form type is WAVE."
+cause = "The input does not begin with a RIFF, RF64 or BW64 header whose form type is WAVE."
 fix = "Check the file with AudioFormat::can_read before opening it, or use the format that matches its header."
 
 [[error]]
 code = "SYRP-FORMAT-0007"
 title = "WAV chunk runs past the end of the input"
 severity = "error"
-cause = "The WAV file's fmt chunk declares a size larger than the bytes left in the input; the file is truncated or its sizes are corrupt."
+cause = "A chunk the WAV reader needs (fmt or ds64) declares a size larger than the bytes left in the input; the file is truncated or its sizes are corrupt."
 fix = "Re-copy or re-export the file; a truncated recording may be recoverable by a tool that rewrites its chunk sizes."
 
 [[error]]
@@ -60,14 +60,14 @@ fix = "The file is incomplete or not an audio WAV file; re-export it from its so
 code = "SYRP-FORMAT-0009"
 title = "WAV format chunk holds impossible values"
 severity = "error"
-cause = "The 'fmt ' chunk is too short, or has zero channels, a zero sample rate, a block alignment that does not match the channels and sample size, or a bit depth the encoding cannot have."
+cause = "The 'fmt ' chunk is too short, or has zero channels, a zero sample rate, a block alignment that does not match the channels and sample size, a bit depth the encoding cannot have, or valid bits wider than the sample container."
 fix = "The file header is corrupt; re-export the file from its source."
 
 [[error]]
 code = "SYRP-FORMAT-0010"
 title = "WAV encoding is not supported"
 severity = "error"
-cause = "The WAV file uses a format tag other than integer PCM or IEEE float, such as ADPCM or another compressed codec."
+cause = "The WAV file uses a format tag or WAVE_FORMAT_EXTENSIBLE sub-format other than integer PCM or IEEE float, such as ADPCM or another compressed codec."
 fix = "Convert the file to PCM or float WAV with another tool, or open it with a format that decodes that codec."
 
 [[error]]
@@ -76,3 +76,17 @@ title = "WAV size needs more memory than is available"
 severity = "error"
 cause = "A count or size read from the WAV file needs an allocation that could not be reserved."
 fix = "Free memory, or check that the file is not corrupt; sizes are checked against the input length first, so a valid file of this length needs this much."
+
+[[error]]
+code = "SYRP-FORMAT-0012"
+title = "RF64 file has no valid ds64 chunk"
+severity = "error"
+cause = "An RF64 or BW64 file must carry a 'ds64' chunk with its 64-bit sizes as the first chunk; it is missing, too short, or its table runs past the chunk."
+fix = "The file is corrupt or was not finished by its writer; re-export it."
+
+[[error]]
+code = "SYRP-FORMAT-0013"
+title = "WAV metadata chunk is malformed"
+severity = "error"
+cause = "A bext, cue or smpl chunk is shorter than its fixed fields, declares more cue points or loops than its size holds, or has a loop that ends before it starts."
+fix = "The file's metadata is corrupt; strip the damaged chunk with another tool or re-export the file."

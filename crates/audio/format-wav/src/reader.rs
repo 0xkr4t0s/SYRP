@@ -3,13 +3,14 @@
 
 use std::io::{Read, SeekFrom};
 
-use syrp_audio_api::{AudioBlockMut, ChannelSet};
+use syrp_audio_api::AudioBlockMut;
 use syrp_format_api::{
     AnyBlockMut, AudioReader, AudioSpec, FormatError, Metadata, ReadSeek, SampleKind,
 };
 
 use crate::WavError;
 use crate::riff::{self, Fmt};
+use crate::{layout, meta};
 
 /// Bytes decoded per read call, rounded down to whole frames (at least one frame).
 const SCRATCH_BYTES: usize = 16 * 1024;
@@ -96,10 +97,12 @@ impl OutSample for f64 {
     }
 }
 
-/// A reader for RIFF WAVE files holding integer PCM or IEEE float samples.
+/// A reader for RIFF, RF64 and BW64 WAVE files holding integer PCM or IEEE float samples.
 ///
 /// Integer samples become `value / 2^(bits - 1)` (8-bit samples are offset by 128 first), so
-/// every stored value is exact in `f64` and, up to 24 bits, in `f32`.
+/// every stored value is exact in `f64` and, up to 24 bits, in `f32`. Channels come out in
+/// the canonical order of [`AudioSpec::channels`], whatever order the file's channel mask
+/// gives them.
 ///
 /// ```
 /// use syrp_format_api::AudioReader;
@@ -147,12 +150,7 @@ impl WavReader {
     pub fn open(mut input: Box<dyn ReadSeek>) -> Result<Self, WavError> {
         let riff = riff::walk(input.as_mut())?;
         let fmt = riff.fmt;
-        // Microsoft's default for a plain header: one channel is mono, two are stereo.
-        let channels = match fmt.channels {
-            1 => ChannelSet::mono(),
-            2 => ChannelSet::stereo(),
-            n => ChannelSet::discrete(u32::from(n)),
-        };
+        let layout = layout::from_mask(fmt.mask, fmt.channels)?;
         let kind = if fmt.float {
             SampleKind::Float
         } else {
@@ -160,18 +158,14 @@ impl WavReader {
         };
         let spec = AudioSpec::new(
             f64::from(fmt.sample_rate),
-            channels,
+            layout.channels,
             u32::from(fmt.valid_bits),
             kind,
         )
         .map_err(|_| WavError::bad_format("no stream matches these values"))?;
+        let metadata = meta::read(input.as_mut(), &riff.chunks, riff.len)?;
         let block_align = usize::from(fmt.block_align);
         let frames_per_read = (SCRATCH_BYTES / block_align).max(1);
-        let mut file_index = Vec::new();
-        file_index
-            .try_reserve_exact(usize::from(fmt.channels))
-            .map_err(|_| WavError::OutOfMemory)?;
-        file_index.extend(0..usize::from(fmt.channels));
         let mut scratch = Vec::new();
         scratch
             .try_reserve_exact(frames_per_read * block_align)
@@ -181,12 +175,12 @@ impl WavReader {
             input,
             spec,
             length: riff.data.size / u64::from(fmt.block_align),
-            metadata: Metadata::new(),
+            metadata,
             data_offset: riff.data.offset,
             block_align,
             sample_bytes: usize::from(fmt.container_bytes),
             encoding: Encoding::of(&fmt),
-            file_index,
+            file_index: layout.file_index,
             scratch,
         })
     }

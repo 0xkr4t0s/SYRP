@@ -3,12 +3,14 @@
 //! an [`AudioFormat`] of the `syrp-format-api` contract.
 //!
 //! - [`WavAudioFormat`]: the format description and the factory for readers and writers.
-//! - [`WavReader`]: decodes integer PCM (8-bit unsigned, 16, 24 and 32-bit signed) and
-//!   32/64-bit IEEE float.
-//!
-//! WP-2.1-14 lands in increments: this one reads plain RIFF files; `WAVE_FORMAT_EXTENSIBLE`,
-//! channel masks and RF64/BW64 come next, then metadata and the writer.
+//! - [`WavReader`]: decodes integer PCM (8-bit unsigned, 16, 24 and 32-bit signed, and
+//!   narrower `valid_bits_per_sample`) and 32/64-bit IEEE float.
+//! - Metadata: `bext`, `cue ` with `LIST`/`adtl` labels, `smpl` loops and `LIST`/`INFO` text
+//!   become typed [`MetadataItem`](syrp_format_api::MetadataItem)s; `acid`, `inst`, `iXML`,
+//!   `axml`, `Trkn` and `cart` are kept byte for byte as `Other`.
 //! - [`WavError`]: the codec's coded errors (`SYRP-FORMAT-0006` onwards).
+//!
+//! WP-2.1-14 lands in increments: the writer comes next.
 //!
 //! The layouts come from public specifications only: Microsoft's RIFF and
 //! `WAVEFORMATEXTENSIBLE` documentation, EBU Tech 3285 (BWF), EBU Tech 3306 (RF64) and
@@ -23,6 +25,8 @@
 //! ```
 
 mod error;
+mod layout;
+mod meta;
 mod reader;
 mod riff;
 
@@ -129,7 +133,12 @@ impl AudioFormat for WavAudioFormat {
     }
 
     fn can_read(&self, header: &[u8]) -> bool {
-        header.len() >= 12 && header[..4] == *b"RIFF" && header[8..12] == *b"WAVE"
+        header.len() >= 12
+            && matches!(
+                header[..4],
+                [b'R', b'I', b'F', b'F'] | [b'R', b'F', b'6', b'4'] | [b'B', b'W', b'6', b'4']
+            )
+            && header[8..12] == *b"WAVE"
     }
 
     fn create_reader(&self, input: Box<dyn ReadSeek>) -> Result<Box<dyn AudioReader>, FormatError> {
