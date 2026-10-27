@@ -1,0 +1,1 @@
+{"wp": "WP-1.1-06", "kind": "added", "summary": "New crate syrp-thread, increment 1: Thread builder and ThreadHandle with exit signalling, notify and wait, timed stop that detaches instead of killing, a bounded wait on drop, Thread::launch and the current-thread helpers, plus the errors/thread.toml domain (SYRP-THREAD-0001..0002)."}
