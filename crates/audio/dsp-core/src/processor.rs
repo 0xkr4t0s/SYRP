@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only OR BUSL-1.1
-//! [`DspProcessor`], the processor model.
+//! [`DspProcessor`], the processor model, and [`ProcessorWrapper`].
 
 use crate::{DspError, DspSample, DspSpec, ProcessContext};
 
@@ -108,5 +108,163 @@ impl<S: DspSample, P: DspProcessor<S> + ?Sized> DspProcessor<S> for Box<P> {
     }
     fn process(&mut self, ctx: &mut ProcessContext<'_, S>) {
         (**self).process(ctx);
+    }
+}
+
+/// The `prepare` hook of a [`ProcessorWrapper`].
+type PrepareFn<P> = fn(&mut P, &DspSpec) -> Result<(), DspError>;
+
+/// Adapts a value that has no [`DspProcessor`] impl (a type from another crate, or plain
+/// state) into a processor, from a `process` closure plus optional `prepare` and `reset`
+/// functions (JUCE's `dsp::ProcessorWrapper`).
+///
+/// Without hooks, `prepare` succeeds and `reset` does nothing. The closure runs on the audio
+/// thread and must not allocate.
+///
+/// ```
+/// use syrp_audio_api::{AudioBlockMut, ProcessConfig};
+/// use syrp_dsp_core::{DspProcessor, DspSpec, ProcessContext, ProcessorWrapper};
+/// /// A type from elsewhere: it knows nothing about Syrp's processor model.
+/// struct Level { gain: f32 }
+/// let mut p = ProcessorWrapper::new(Level { gain: 0.5 }, |lvl: &mut Level, ctx: &mut ProcessContext<'_, f32>| {
+///     ctx.copy_input_to_output();
+///     for ch in ctx.output_block().split_channels_mut() { ch.iter_mut().for_each(|s| *s *= lvl.gain) }
+/// })
+/// .with_reset(|lvl| lvl.gain = 1.0);
+/// p.prepare(&DspSpec::new(ProcessConfig::new(48_000.0, 2)?, 1))?;
+/// let mut d = [2.0_f32; 2];
+/// p.process(&mut ProcessContext::replacing(AudioBlockMut::new(&mut d, 1, 2, 2)?));
+/// assert_eq!(d, [1.0; 2]);
+/// p.reset();
+/// assert_eq!(p.get().gain, 1.0);
+/// # Ok::<(), Box<dyn std::error::Error>>(())
+/// ```
+#[doc(alias = "dsp::ProcessorWrapper")]
+pub struct ProcessorWrapper<P, F> {
+    inner: P,
+    process: F,
+    prepare: Option<PrepareFn<P>>,
+    reset: Option<fn(&mut P)>,
+}
+
+impl<P, F> ProcessorWrapper<P, F> {
+    /// Wraps `inner`, processing with `process`.
+    ///
+    /// ```
+    /// use syrp_dsp_core::{ProcessContext, ProcessorWrapper};
+    /// let w = ProcessorWrapper::new(3_u32, |_: &mut u32, _: &mut ProcessContext<'_, f32>| {});
+    /// assert_eq!(*w.get(), 3);
+    /// ```
+    #[must_use]
+    pub fn new<S>(inner: P, process: F) -> Self
+    where
+        S: DspSample,
+        F: FnMut(&mut P, &mut ProcessContext<'_, S>) + Send,
+    {
+        Self {
+            inner,
+            process,
+            prepare: None,
+            reset: None,
+        }
+    }
+
+    /// Runs `prepare` on the wrapped value in [`DspProcessor::prepare`].
+    ///
+    /// ```
+    /// use syrp_audio_api::ProcessConfig;
+    /// use syrp_dsp_core::{DspProcessor, DspSpec, ProcessContext, ProcessorWrapper};
+    /// let mut w = ProcessorWrapper::new(0.0_f64, |_: &mut f64, _: &mut ProcessContext<'_, f32>| {})
+    ///     .with_prepare(|sr, spec| { *sr = spec.sample_rate(); Ok(()) });
+    /// w.prepare(&DspSpec::new(ProcessConfig::new(22_050.0, 8)?, 1))?;
+    /// assert_eq!(*w.get(), 22_050.0);
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
+    #[must_use]
+    pub fn with_prepare(mut self, prepare: PrepareFn<P>) -> Self {
+        self.prepare = Some(prepare);
+        self
+    }
+
+    /// Runs `reset` on the wrapped value in [`DspProcessor::reset`]. It must not allocate.
+    ///
+    /// ```
+    /// use syrp_dsp_core::{DspProcessor, ProcessContext, ProcessorWrapper};
+    /// let mut w = ProcessorWrapper::new(5_i32, |_: &mut i32, _: &mut ProcessContext<'_, f32>| {})
+    ///     .with_reset(|n| *n = 0);
+    /// w.reset();
+    /// assert_eq!(*w.get(), 0);
+    /// ```
+    #[must_use]
+    pub fn with_reset(mut self, reset: fn(&mut P)) -> Self {
+        self.reset = Some(reset);
+        self
+    }
+
+    /// The wrapped value.
+    ///
+    /// ```
+    /// use syrp_dsp_core::{ProcessContext, ProcessorWrapper};
+    /// let w = ProcessorWrapper::new("state", |_: &mut &str, _: &mut ProcessContext<'_, f32>| {});
+    /// assert_eq!(*w.get(), "state");
+    /// ```
+    #[must_use]
+    pub fn get(&self) -> &P {
+        &self.inner
+    }
+
+    /// The wrapped value, mutably.
+    ///
+    /// ```
+    /// use syrp_dsp_core::{ProcessContext, ProcessorWrapper};
+    /// let mut w = ProcessorWrapper::new(1_u8, |_: &mut u8, _: &mut ProcessContext<'_, f32>| {});
+    /// *w.get_mut() = 2;
+    /// assert_eq!(*w.get(), 2);
+    /// ```
+    pub fn get_mut(&mut self) -> &mut P {
+        &mut self.inner
+    }
+
+    /// Unwraps the value.
+    ///
+    /// ```
+    /// use syrp_dsp_core::{ProcessContext, ProcessorWrapper};
+    /// let w = ProcessorWrapper::new(vec![1, 2], |_: &mut Vec<i32>, _: &mut ProcessContext<'_, f32>| {});
+    /// assert_eq!(w.into_inner(), [1, 2]);
+    /// ```
+    #[must_use]
+    pub fn into_inner(self) -> P {
+        self.inner
+    }
+}
+
+impl<S, P, F> DspProcessor<S> for ProcessorWrapper<P, F>
+where
+    S: DspSample,
+    P: Send,
+    F: FnMut(&mut P, &mut ProcessContext<'_, S>) + Send,
+{
+    fn prepare(&mut self, spec: &DspSpec) -> Result<(), DspError> {
+        self.prepare.map_or(Ok(()), |f| f(&mut self.inner, spec))
+    }
+
+    fn reset(&mut self) {
+        if let Some(f) = self.reset {
+            f(&mut self.inner);
+        }
+    }
+
+    fn process(&mut self, ctx: &mut ProcessContext<'_, S>) {
+        (self.process)(&mut self.inner, ctx);
+    }
+}
+
+impl<P: std::fmt::Debug, F> std::fmt::Debug for ProcessorWrapper<P, F> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ProcessorWrapper")
+            .field("inner", &self.inner)
+            .field("has_prepare", &self.prepare.is_some())
+            .field("has_reset", &self.reset.is_some())
+            .finish()
     }
 }
