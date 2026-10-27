@@ -27,6 +27,15 @@ juce_events/CallbackMessage, juce_events/Message, juce_events/MessageListener
   `SYRP-LOOP-0003`; senders and quit handles hold only weak references.
 - `contracts/` and `syrp-loop-api` are never changed here.
 
+## Deviations from the spec
+- B5 (macOS): timers do not use `CFRunLoopTimer`s. Timer deadlines come from a one-shot
+  `EVFILT_TIMER` with `NOTE_CRITICAL` on a kqueue, added to the run loop as a
+  `CFFileDescriptor` run-loop source (common modes). Reason: Darwin coalesces ordinary timed
+  waits (increment 1 measured condvar and plain `kevent` timeouts overshooting a 10 ms period
+  on CI), run-loop timers are armed as ordinary kernel timers, and critical kqueue timers are
+  exempt. Delivery under a foreign run-loop driver is unchanged. Posted tasks do use a
+  `CFRunLoopSource`, as specified.
+
 ## Thread affinity
 `EventLoop` and its guards and callbacks live on the message thread. `TaskSender` and
 `QuitHandle` are any-thread. Nothing here is RT-safe.
@@ -40,14 +49,21 @@ cargo syrp test --crate syrp-events
 cargo check -p syrp-events --target x86_64-apple-darwin
 cargo check -p syrp-events --target x86_64-pc-windows-msvc
 ```
+`tests/windows.rs` (B6) and `tests/macos_main_thread.rs` (B5) run only on their OS.
 `tests/conformance.rs` (B2) runs one suite against both `ManualLoop` and `EventLoop`; extend it
 there, never in two places. Timing tests use loose bounds.
 
 ## Known gaps
-WP-1.1-14 increments 1-2 (B1-B4, B9 codes). Linux runs the real `epoll` backend
-(`src/os/epoll.rs`: non-blocking `eventfd` wake, `epoll_wait` timeout rounded up to whole ms,
-`add_fd`). macOS and Windows are still interim, with no OS event sources: a `kqueue` with a
-`NOTE_CRITICAL` timer on macOS (Darwin coalesces ordinary timed waits) and a condvar under
-`timeBeginPeriod(1)` on Windows. `CFRunLoop` (B5) and Win32 (B6) replace them.
+WP-1.1-14 increments 1-3 (B1-B6, B9 codes). Backends: `src/os/epoll.rs` (Linux: eventfd
+wake, `epoll_wait` timeout rounded up to whole ms, `add_fd`), `src/os/cfrunloop.rs` (macOS:
+a `CFRunLoopSource` for wakes; timer deadlines from a `NOTE_CRITICAL` kqueue timer surfaced
+through a `CFFileDescriptor`, not a `CFRunLoopTimer`, because Darwin coalesces ordinary timed
+waits), `src/os/win32.rs` (message-only window, `MsgWaitForMultipleObjectsEx` under
+`timeBeginPeriod(1)`), `src/os/unsupported.rs` (other targets). Backends whose OS loop can be
+driven by someone else call the core back through `Poller::attach`; `Poller::arm` tells them
+the next deadline (on Windows a coarse `SetTimer`, so timers also run under a modal or
+nested pump; the loop's own wait takes its `WM_WAKE`/`WM_TIMER` inline and uses the precise
+timeout). `add_fd` is Linux only. macOS and Windows code is compile-checked locally and run
+only on CI; `tests/macos_main_thread.rs` (`harness = false`) needs the process main thread.
 `on_vblank` always uses the 60 Hz fallback timer; `VBlankDriver` (B7) and the migration page
 (B8) follow. `errors/loop.toml` codes 0004-0006 are in the existing domain.
