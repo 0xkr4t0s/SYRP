@@ -1,0 +1,11 @@
+id = "WP-1.2-01"
+title = "syrp-events: Timer, MultiTimer, flushable coalescers, Broadcaster<T> and ActionBroadcaster"
+crate = "crates/core/events"
+depends_on = ["WP-1.1-14"]
+ledger_rows = ["juce_events/Timer", "juce_events/MultiTimer", "juce_events/TimedCallback", "juce_events/AsyncUpdater", "juce_events/LockingAsyncUpdater", "juce_events/ChangeBroadcaster", "juce_events/ChangeListener", "juce_events/ActionBroadcaster", "juce_events/ActionListener"]
+spec = "work/specs/WP-1.2-01.md"
+risk = ["public-api"]
+acceptance = "cargo syrp wp check WP-1.2-01 --json"
+platforms = ["linux", "macos", "windows"]
+role = "implementer"
+budget = { agent_hours = 24, max_review_rounds = 3, max_restarts = 2 }

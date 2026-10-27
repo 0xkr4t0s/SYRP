@@ -1,0 +1,11 @@
+id = "WP-1.2-09"
+title = "syrp-crypto: MD5, SHA256, Whirlpool, BlowFish, Primes and raw RSAKey"
+crate = "crates/core/crypto"
+depends_on = ["WP-1.1-04", "WP-1.1-11"]
+ledger_rows = ["juce_cryptography/MD5", "juce_cryptography/SHA256", "juce_cryptography/Whirlpool", "juce_cryptography/BlowFish", "juce_cryptography/Primes", "juce_cryptography/RSAKey"]
+spec = "work/specs/WP-1.2-09.md"
+risk = ["public-api", "supply-chain"]
+acceptance = "cargo syrp wp check WP-1.2-09 --json"
+platforms = ["linux", "macos", "windows"]
+role = "implementer"
+budget = { agent_hours = 32, max_review_rounds = 3, max_restarts = 2 }

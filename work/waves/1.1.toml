@@ -2,7 +2,8 @@ id = "1.1"
 phase = 1
 title = "Core runtime: syrp-var, maths, sys, strings, io, thread, process, net and the owned event loops"
 # Waves roll: a WP here starts as soon as its own dependencies merge. Numbers follow the master
-# plan's Wave 1.1 list (§7.2). Item 2 (JSON) is part of WP-1.1-01; XML still needs a WP.
+# plan's Wave 1.1 list (§7.2). Item 2 is split: JSON is part of WP-1.1-01 and XML is WP-1.1-15,
+# numbered after the list; it follows WP-1.1-01 in crates/core/var.
 # WPs that share a crate run in sequence, because ownership may not overlap: io 03 -> 04 -> 05,
 # thread 06 -> 07, net 10 -> 09 (10 creates syrp-net).
 # WP-1.1-14 implements the frozen syrp-loop-api contract (WP-0.2-01) and changes nothing under
@@ -11,5 +12,5 @@ title = "Core runtime: syrp-var, maths, sys, strings, io, thread, process, net a
 enabled = true
 packages = [
   "WP-1.1-01", "WP-1.1-03", "WP-1.1-04", "WP-1.1-05", "WP-1.1-06", "WP-1.1-07", "WP-1.1-08",
-  "WP-1.1-09", "WP-1.1-10", "WP-1.1-11", "WP-1.1-12", "WP-1.1-13", "WP-1.1-14",
+  "WP-1.1-09", "WP-1.1-10", "WP-1.1-11", "WP-1.1-12", "WP-1.1-13", "WP-1.1-14", "WP-1.1-15",
 ]

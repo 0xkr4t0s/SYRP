@@ -1,8 +1,15 @@
 id = "1.2"
 phase = 1
-title = "Events and state: the syrp-state store and UndoManager"
-# Numbers follow the master plan's Wave 1.2 list (§7.2). Value and CachedValue (item 5) are
-# compat types under ADR 0003 and live in WP-1.9-01. Persistence, PropertiesFile and the
-# synchroniser (items 6-8) need syrp-io and syrp-events and get WPs after those.
+title = "Events, IPC, state and headless extras: timers and broadcasters, syrp-ipc, syrp-state, syrp-crypto, syrp-osc, syrp-analytics and key files"
+# Waves roll: a WP here starts as soon as its own dependencies merge. Numbers follow the master
+# plan's Wave 1.2 list (§7.2). Value and CachedValue (item 5) are compat types under ADR 0003 and
+# live in WP-1.9-01, so there is no WP-1.2-05. Native persistence has no list item and is
+# WP-1.2-13, numbered after the list.
+# WPs that share a crate run in sequence, because ownership may not overlap:
+# events 1.1-14 -> 1.2-01; state 1.2-03 -> 04 -> 13 -> 07 -> 06 -> 08.
+# WP-1.2-08 (JUCE formats) is specified only from juce-oracle outputs, so it waits for WP-0.1-11.
 enabled = true
-packages = ["WP-1.2-03", "WP-1.2-04"]
+packages = [
+  "WP-1.2-01", "WP-1.2-02", "WP-1.2-03", "WP-1.2-04", "WP-1.2-06", "WP-1.2-07", "WP-1.2-08",
+  "WP-1.2-09", "WP-1.2-10", "WP-1.2-11", "WP-1.2-12", "WP-1.2-13",
+]

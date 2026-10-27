@@ -1,0 +1,11 @@
+id = "WP-1.2-08"
+title = "syrp-state: juce-compat ValueTree binary and XML layouts and JUCE properties files (black-box)"
+crate = "crates/core/state"
+paths = ["parity/scenarios/state/formats/"]
+depends_on = ["WP-1.2-06", "WP-0.1-11"]
+spec = "work/specs/WP-1.2-08.md"
+risk = ["public-api", "licensing"]
+acceptance = "cargo syrp wp check WP-1.2-08 --json"
+platforms = ["linux", "macos", "windows"]
+role = "implementer"
+budget = { agent_hours = 32, max_review_rounds = 3, max_restarts = 2 }
