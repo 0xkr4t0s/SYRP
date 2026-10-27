@@ -232,10 +232,12 @@ pub trait InputStream: Read {
         read_f64_be: f64, from_be_bytes, "readDoubleBigEndian";
     }
 
-    /// Reads an `i32` in JUCE's variable-length form: one length byte, then the magnitude's
-    /// significant bytes in little-endian order (none for zero). The length byte holds the
-    /// number of magnitude bytes in its low 7 bits and has bit 7 set for a negative value, so
-    /// `[0x01, 0xFF]` is `255` and `[0x81, 0x01]` is `-1`. A length above four is `SYRP-IO-0004`.
+    /// Reads an `i32` in Syrp's variable-length layout: one length byte, then the magnitude's
+    /// significant bytes in little-endian order (none for zero). The length-byte part follows
+    /// the public `writeCompressedInt` documentation; the sign bit (bit 7 of the length byte,
+    /// set for a negative value) is Syrp's choice, an open question for WP-0.1-11. So
+    /// `[0x01, 0xFF]` is `255` and `[0x81, 0x01]` is `-1`. A length above four, or a magnitude
+    /// no `i32` has (above `i32::MAX`, or above 2^31 when negative), is `SYRP-IO-0004`.
     ///
     /// ```
     /// # use syrp_io::{InputStream, StdInputStream};
@@ -253,11 +255,12 @@ pub trait InputStream: Read {
         let mut bytes = [0u8; 4];
         self.read_exact(&mut bytes[..len])?;
         let magnitude = u32::from_le_bytes(bytes);
-        Ok(if head & 0x80 != 0 {
-            0i32.wrapping_sub_unsigned(magnitude)
+        let value = if head & 0x80 != 0 {
+            0i32.checked_sub_unsigned(magnitude)
         } else {
-            magnitude as i32
-        })
+            i32::try_from(magnitude).ok()
+        };
+        value.ok_or_else(|| IoError::new(IoErrorKind::InvalidData))
     }
 
     /// Reads UTF-8 text up to a NUL byte or the end; the NUL is consumed, not returned.
@@ -308,7 +311,9 @@ pub trait InputStream: Read {
     }
 }
 
-/// Forwards the required methods (and `is_exhausted`) through a `Box` or `&mut`.
+/// Forwards the required methods, and the provided ones a stream may override with a cheaper
+/// version (`is_exhausted`, `skip_next_bytes`, `read_into_memory_block`), through a `Box` or
+/// `&mut`, so an override is not bypassed behind `Box<dyn InputStream>`.
 macro_rules! forward_input_stream {
     ($($ty:ty),*) => {$(
         impl<S: InputStream + ?Sized> InputStream for $ty {
@@ -323,6 +328,16 @@ macro_rules! forward_input_stream {
             }
             fn is_exhausted(&mut self) -> bool {
                 (**self).is_exhausted()
+            }
+            fn skip_next_bytes(&mut self, n: u64) -> Result<u64, IoError> {
+                (**self).skip_next_bytes(n)
+            }
+            fn read_into_memory_block(
+                &mut self,
+                block: &mut MemoryBlock,
+                max_bytes: Option<u64>,
+            ) -> Result<u64, IoError> {
+                (**self).read_into_memory_block(block, max_bytes)
             }
         }
     )*};

@@ -80,6 +80,20 @@ fn b1_compressed_int_layout_and_bad_length() {
         .unwrap_err();
     assert_eq!(err.kind(), IoErrorKind::InvalidData);
     assert_eq!(err.code().as_str(), "SYRP-IO-0004");
+    assert_eq!(
+        stream(&[0x04, 0xFF, 0xFF, 0xFF, 0x7F])
+            .read_compressed_int()
+            .unwrap(),
+        i32::MAX
+    );
+    for overlong in [
+        [0x04, 0xFF, 0xFF, 0xFF, 0xFF],
+        [0x84, 0xFF, 0xFF, 0xFF, 0xFF],
+        [0x84, 1, 0, 0, 0x80],
+    ] {
+        let err = stream(&overlong).read_compressed_int().unwrap_err();
+        assert_eq!(err.code().as_str(), "SYRP-IO-0004", "{overlong:02X?}");
+    }
 }
 
 #[test]
