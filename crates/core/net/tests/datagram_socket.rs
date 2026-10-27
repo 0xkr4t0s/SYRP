@@ -166,3 +166,37 @@ fn b4_errors_carry_codes() {
     s.close();
     assert_eq!(s.bind_to_port(0, "").unwrap_err(), NetError::Closed);
 }
+
+#[test]
+fn b4_close_wakes_two_readers_racing_for_datagrams() {
+    use std::sync::{Arc, mpsc};
+    // Each trial: two readers wake for one datagram; the loser must go back to waiting,
+    // not block in the OS where `close` cannot reach it. Detached threads let a stuck
+    // reader fail the test instead of hanging it.
+    for trial in 0..20 {
+        let (rx, port) = receiver(SocketOptions::new());
+        let rx = Arc::new(rx);
+        let (done, results) = mpsc::channel();
+        for _ in 0..2 {
+            let (rx, done) = (Arc::clone(&rx), done.clone());
+            thread::spawn(move || {
+                let _ = done.send(rx.read(&mut [0u8; 8], true).map(|r| r.0));
+            });
+        }
+        thread::sleep(Duration::from_millis(20));
+        let tx = DatagramSocket::new(false).expect("socket");
+        tx.write("127.0.0.1", port, b"x").expect("write");
+        let first = results
+            .recv_timeout(Duration::from_secs(10))
+            .expect("a reader got it");
+        assert_eq!(first, Ok(1), "trial {trial}");
+        thread::sleep(Duration::from_millis(20));
+        rx.close();
+        let second = results.recv_timeout(Duration::from_secs(10));
+        assert_eq!(
+            second,
+            Ok(Err(NetError::Closed)),
+            "trial {trial}: reader stuck after close"
+        );
+    }
+}

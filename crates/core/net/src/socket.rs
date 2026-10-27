@@ -192,6 +192,9 @@ impl StreamingSocket {
                     Some(t) => sock.connect_timeout(&SockAddr::from(addr), t)?,
                     None => sock.connect(&SockAddr::from(addr))?,
                 }
+                // Non-blocking from here on: every read and write waits for readiness in
+                // slices first, so a racing reader or `close` can never strand it in the OS.
+                sock.set_nonblocking(true)?;
                 Ok(sock)
             });
             match attempt {
@@ -281,7 +284,7 @@ impl StreamingSocket {
             self.wait_until_ready(true, None)?;
             match self.sock.accept() {
                 Ok((sock, peer)) => {
-                    let accepted = sock.set_nonblocking(false).and_then(|()| no_sigpipe(&sock));
+                    let accepted = sock.set_nonblocking(true).and_then(|()| no_sigpipe(&sock));
                     accepted.map_err(|e| socket_error("accept", &e))?;
                     let peer = peer.as_socket();
                     let host = peer.map(|p| p.ip().to_string()).unwrap_or_default();
@@ -348,7 +351,9 @@ impl StreamingSocket {
             self.check_open()?;
             match self.sock.send_with_flags(&buf[sent..], SEND_FLAGS) {
                 Ok(n) => sent += n,
-                Err(e) if retryable(&e) => {}
+                Err(e) if retryable(&e) => {
+                    self.wait_until_ready(false, None)?;
+                }
                 Err(e) => return Err(self.error("write", &e)),
             }
         }

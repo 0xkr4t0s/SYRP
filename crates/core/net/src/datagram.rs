@@ -71,6 +71,10 @@ impl DatagramSocket {
             let sock = Socket::new(Domain::IPV4, Type::DGRAM, Some(Protocol::UDP))?;
             options.apply(&sock)?;
             sock.set_broadcast(enable_broadcasting)?;
+            // Non-blocking, so a datagram that vanishes between the readiness wait and the
+            // receive (another reader took it) sends the reader back to the wait, which
+            // notices `close`, instead of blocking in the OS.
+            sock.set_nonblocking(true)?;
             Ok(sock)
         };
         let sock = create().map_err(|e| socket_error("create", &e))?;
@@ -147,16 +151,17 @@ impl DatagramSocket {
             self.check_open()?;
             return Err(socket_error("read", &io::ErrorKind::NotConnected.into()));
         }
+        let nothing = (0, IpAddress::any(IpFamily::V4), 0);
         let timeout = (!block).then_some(Duration::ZERO);
-        if self.wait_until_ready(true, timeout)? == Readiness::TimedOut {
-            return Ok((0, IpAddress::any(IpFamily::V4), 0));
-        }
         // SAFETY: `[u8]` and `[MaybeUninit<u8>]` have the same size, alignment and layout,
         // the reborrow lives no longer than `buf`, and the OS only ever writes initialised
         // bytes into it, so `buf` is still fully initialised afterwards.
         let uninit = unsafe { &mut *(std::ptr::from_mut(buf) as *mut [MaybeUninit<u8>]) };
         let mut bufs = [MaybeUninitSlice::new(uninit)];
         loop {
+            if self.wait_until_ready(true, timeout)? == Readiness::TimedOut {
+                return Ok(nothing);
+            }
             // The vectored form truncates an oversized datagram on every OS (Windows would
             // otherwise fail with WSAEMSGSIZE).
             match self.sock.recv_from_vectored(&mut bufs) {
@@ -165,7 +170,8 @@ impl DatagramSocket {
                     let ip = from.map_or(IpAddress::any(IpFamily::V4), |a| a.ip().into());
                     return Ok((n.min(buf.len()), ip, from.map_or(0, |a| a.port())));
                 }
-                Err(e) if retryable(&e) => self.check_open()?,
+                Err(e) if retryable(&e) && !block => return Ok(nothing),
+                Err(e) if retryable(&e) => {}
                 Err(e) => return Err(self.error("read", &e)),
             }
         }
@@ -194,7 +200,9 @@ impl DatagramSocket {
         loop {
             match self.sock.send_to(buf, &SockAddr::from(target)) {
                 Ok(n) => return Ok(n),
-                Err(e) if retryable(&e) => self.check_open()?,
+                Err(e) if retryable(&e) => {
+                    self.wait_until_ready(false, None)?;
+                }
                 Err(e) => return Err(self.error("write", &e)),
             }
         }

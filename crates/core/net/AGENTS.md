@@ -21,7 +21,9 @@ juce_core/SocketOptions, juce_core/NamedPipe
 - Socket addresses from the OS are read with `read_unaligned`; every `unsafe` block has a
   `// SAFETY:` comment (clippy `undocumented_unsafe_blocks`).
 - `StreamingSocket` (`src/socket.rs`, socket2) takes `&self` everywhere; blocking waits poll
-  in 50 ms slices so `close` from another thread ends them with `NetError::Closed`. Writes
+  in 50 ms slices so `close` from another thread ends them with `NetError::Closed`. Connected
+  TCP and all UDP sockets are non-blocking: an OS call that would block (another reader
+  took the data) goes back to the readiness wait, so no thread can be stranded in the OS. Writes
   never raise `SIGPIPE` (`MSG_NOSIGNAL` on Linux, `SO_NOSIGPIPE` on Apple).
 - `SocketOptions` is a `Copy` value applied once, at creation, to TCP and UDP sockets.
 - `DatagramSocket` (`src/datagram.rs`) is IPv4 only (Syrp's choice) and shares the 50 ms

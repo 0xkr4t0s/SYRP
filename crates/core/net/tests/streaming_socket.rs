@@ -161,3 +161,35 @@ fn b3_errors_carry_codes() {
         "{err}"
     );
 }
+
+#[test]
+fn b3_close_wakes_two_readers_racing_for_bytes() {
+    use std::sync::{Arc, mpsc};
+    // As for datagrams: two readers wake for one byte, and the loser must stay reachable
+    // by `close`.
+    for trial in 0..20 {
+        let (client, server) = pair("127.0.0.1", SocketOptions::new()).expect("pair");
+        let server = Arc::new(server);
+        let (done, results) = mpsc::channel();
+        for _ in 0..2 {
+            let (server, done) = (Arc::clone(&server), done.clone());
+            thread::spawn(move || {
+                let _ = done.send(server.read(&mut [0u8; 1], false));
+            });
+        }
+        thread::sleep(Duration::from_millis(20));
+        client.write(b"x").expect("write");
+        let first = results
+            .recv_timeout(Duration::from_secs(10))
+            .expect("a reader got it");
+        assert_eq!(first, Ok(1), "trial {trial}");
+        thread::sleep(Duration::from_millis(20));
+        server.close();
+        let second = results.recv_timeout(Duration::from_secs(10));
+        assert_eq!(
+            second,
+            Ok(Err(NetError::Closed)),
+            "trial {trial}: reader stuck after close"
+        );
+    }
+}
