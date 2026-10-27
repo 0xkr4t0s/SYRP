@@ -20,6 +20,19 @@ increments: (1) B1–B2 plain RIFF; (2) B2 extensible/masks/RF64 and B3 metadata
 ## Ledger rows
 juce_audio_formats/WavAudioFormat
 
+## JUCE metadata keys → contract items (for WP-1.9's compat layer)
+Keys as named on the public `WavAudioFormat` page; `metadataValues` holds text.
+
+| JUCE key | Contract item |
+|---|---|
+| `bwavDescription`, `bwavOriginator`, `bwavOriginatorRef` | `Bext` description, originator, originator_reference |
+| `bwavOriginationDate`, `bwavOriginationTime`, `bwavCodingHistory` | `Bext` origination_date, origination_time, coding_history |
+| `bwavTimeReference` (decimal text) | `Bext::time_reference` |
+| `riffInfo*` keys for `INAM` `IART` `IPRD` `IGNR` `ICRD` `ICMT` `ITRK` `ICOP` `ISFT` | `Tag` Title, Artist, Album, Genre, Date, Comment, TrackNumber, Copyright, Encoder |
+| other `riffInfo*` keys | `Tag::Custom(<INFO id>)` |
+| `acid*`, `inst`, `iXML`, `axml`, `Trkn`, `cart` data | `Other(<chunk id>, bytes)` |
+| cue, label and loop keys (not in the public docs) | `CuePoint`, `SampleLoop`: confirm names from harness output |
+
 ## Invariants
 - Integer samples decode as `value / 2^(valid_bits - 1)` (8-bit offset by 128 first), the
   WP-2.1-02 B2 mapping, implemented locally (no `syrp-audio-basics` dependency). Bits below
@@ -77,12 +90,16 @@ experimental
 ## How to test
 ```sh
 cargo syrp test --crate syrp-format-wav
+PROPTEST_CASES=5000 cargo test -p syrp-format-wav --test robust
 cargo syrp wp check WP-2.1-14
 ```
 Test files are built byte by byte in `tests/common/mod.rs` from the public layouts.
+`tests/robust.rs` installs a counting `#[global_allocator]` (the crate's only `unsafe`) to bound
+the largest allocation while fuzzed files are opened and read. Parity scenarios (inputs only)
+are in `parity/scenarios/formats/wav/`, described by its `scenario.schema.json`.
 
 ## Known gaps
 - Contract gaps: `smpl` header fields (MIDI unity note, SMPTE), `ltxt`, and a `note` shadowed
-  by a `labl` are not reported.
-- Byte-flip/truncation proptest (B5) and parity scenarios (B6): final increment.
+  by a `labl` are not reported; `LoopKind` has no `Other` and `Bext` no UMID/loudness, so those
+  travel as `Other("smpl")` / `Other("bext")` until the contract grows.
 - Not in this WP: Wave64, ADPCM and other compressed codecs, memory-mapped readers.

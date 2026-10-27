@@ -1,0 +1,29 @@
+{
+  "id": "formats/wav/read_pcm_and_float",
+  "title": "Plain RIFF PCM at 8, 16, 24 and 32 bits and IEEE float at 32 and 64 bits",
+  "juce_tag": "9.0.4",
+  "tolerance": "exact",
+  "wp": "WP-2.1-14",
+  "ledger_rows": ["juce_audio_formats/WavAudioFormat"],
+  "docs": [{"page": "WavAudioFormat", "member": "createReaderFor", "says": "Creates a reader for a WAV stream; returns nullptr when the stream is not a format it can read."}, {"page": "AudioFormatReader", "member": "read", "says": "Integer samples are converted to floats in the range -1 to 1 when the destination is floating point."}],
+  "files": {
+    "pcm8": {"chunks": [{"id": "fmt ", "hex": "01000100401f0000401f000001000800"}, {"id": "data", "hex": "004080ff01"}]},
+    "pcm16": {"chunks": [{"id": "fmt ", "hex": "0100010044ac00008858010002001000"}, {"id": "data", "hex": "0080ffff00000040ff7f"}]},
+    "pcm24": {"chunks": [{"id": "fmt ", "hex": "0100020080bb00000065040006001800"}, {"id": "data", "hex": "000080ffff7fffffff010000"}]},
+    "pcm32": {"chunks": [{"id": "fmt ", "hex": "0100010080bb000000ee020004002000"}, {"id": "data", "hex": "0000008001000000ffffff7f"}]},
+    "pcm12_in_16": {"chunks": [{"id": "fmt ", "hex": "01000100401f0000803e000002000c00"}, {"id": "data", "hex": "f07ff0ff0800"}]},
+    "float32": {"chunks": [{"id": "fmt ", "hex": "030001000077010000dc050004002000"}, {"id": "data", "hex": "0000803e000000c00000c03f"}]},
+    "float64": {"chunks": [{"id": "fmt ", "hex": "030001000077010000b80b0008004000"}, {"id": "data", "hex": "9a9999999999b93f333333333333d3bf"}]},
+    "stereo16": {"chunks": [{"id": "fmt ", "hex": "01000200225600008858010004001000"}, {"id": "data", "hex": "002000e0004000c0"}]}
+  },
+  "steps": [
+    {"op": "read", "args": ["pcm8"]},
+    {"op": "read", "args": ["pcm16"]},
+    {"op": "read", "args": ["pcm24"]},
+    {"op": "read", "args": ["pcm32"]},
+    {"op": "read", "args": ["pcm12_in_16"]},
+    {"op": "read", "args": ["float32"]},
+    {"op": "read", "args": ["float64"]},
+    {"op": "read", "args": ["stereo16"]}
+  ]
+}
