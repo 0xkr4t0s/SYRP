@@ -4,15 +4,17 @@
 Layer L3, the base of JUCE's `juce_dsp` (master plan §4.9, §5.2; WP-2.1-10). It holds the
 processor model every `syrp-dsp-*` crate implements: `DspSpec` (JUCE's `ProcessSpec`),
 `ProcessContext` (replacing and non-replacing), the `DspProcessor<S>` trait, `ProcessorChain`,
-`ProcessorDuplicator` with its shared state and `ProcessorWrapper`. Later increments of the
-same WP add the FFT, windowing, lookup tables and maths helpers. `AudioBlock` is
+`ProcessorDuplicator` with its shared state and `ProcessorWrapper`; then `Fft` (wrapping
+`rustfft` 6.4 and `realfft` 3.5), `WindowingFunction` and `special::bessel_i0`. The last
+increment of the same WP adds lookup tables and the maths helpers. `AudioBlock` is
 `syrp-audio-api`'s view; `SIMDRegister` is answered by `syrp-simd` packs.
 
 ## Ledger rows
 juce_dsp/dsp::ProcessContextReplacing, juce_dsp/dsp::ProcessContextNonReplacing,
 juce_dsp/dsp::ProcessorBase, juce_dsp/dsp::ProcessorChain, juce_dsp/dsp::ProcessorWrapper,
-juce_dsp/dsp::ProcessorDuplicator, juce_dsp/dsp::ProcessorState.
-Later increments: dsp::SIMDRegister, dsp::FFT, dsp::WindowingFunction, dsp::LookupTable,
+juce_dsp/dsp::ProcessorDuplicator, juce_dsp/dsp::ProcessorState, juce_dsp/dsp::FFT,
+juce_dsp/dsp::WindowingFunction.
+Later increments: dsp::SIMDRegister, dsp::LookupTable,
 dsp::LookupTableTransform, dsp::FastMathApproximations, dsp::LogRampedValue, dsp::Phase,
 dsp::Matrix, dsp::Polynomial, dsp::SpecialFunctions.
 
@@ -29,11 +31,28 @@ dsp::Matrix, dsp::Polynomial, dsp::SpecialFunctions.
   `c / LANES`; one-lane `P` → one instance per channel run in place. A non-replacing input is
   copied to the output first. Blocks longer than the prepared maximum run in pieces.
 - `ProcessContext::copy_input_to_output` copies only the region both blocks have.
+- `Fft`: size `2^order`, `order <= Fft::MAX_ORDER` (20) else `SYRP-DSP-0002`. Plans and
+  scratch are made in `new`; `perform*` never allocate. Forward unscaled, inverse `1/N`.
+  Real-only buffers are `2 * size` floats, output interleaved `re, im` for all `size` bins.
+- `WindowingFunction`: symmetric tables (`x = i / (N - 1)`), `normalise` scales the sum to 1.
+
+## Open questions
+Choices made where the JUCE documentation is silent, each pinned by a test:
+- FFT scaling: forward unscaled, inverse (complex and real) scaled by `1/N`
+  (`b3_scaling_forward_unscaled_inverse_one_over_n_syrp_choice`).
+- `perform_real_only_forward_transform` fills the negative bins even with the hint;
+  `perform_frequency_only_forward_transform` zeroes everything it does not write; the
+  real inverse ignores the DC and Nyquist imaginary parts.
+- Window variants: Bartlett triangle (zero ends), symmetric `N - 1` denominators, flat-top
+  coefficients as listed in `WindowingMethod`'s docs. `normalise` read as "sum is one" from
+  "a DC amplitude response of one".
 
 ## Thread affinity
 Any thread. RT-safe: every `ProcessContext` method, `DspProcessor::process`/`reset` of the
-chain, duplicator and wrapper, and all accessors. Not RT-safe: `prepare` (allocates),
-`ProcessorDuplicator::new` (boxes the factory) and dropping a duplicator.
+chain, duplicator and wrapper, `Fft::perform*`, `WindowingFunction::multiply_with_windowing_table`
+and `fill_windowing_tables_into`, and all accessors. Not RT-safe: `prepare` (allocates),
+`ProcessorDuplicator::new`, `Fft::new`, `WindowingFunction::new`/`fill_windowing_tables`
+(may allocate) and dropping any of them.
 
 ## Stability
 experimental
@@ -41,12 +60,12 @@ experimental
 ## How to test
 ```sh
 cargo syrp test --crate syrp-dsp-core
-cargo test -p syrp-dsp-core --test composition
+cargo test -p syrp-dsp-core --test fft      # fft profile: relative RMS <= 1e-6 (f32)
 cargo syrp wp check WP-2.1-10
 ```
 Tests install `syrp_rt::GuardedAllocator` and wrap `process` in `syrp_rt::no_alloc`.
 
 ## Known gaps
-- Later WP-2.1-10 increments: FFT and windowing (B3–B4), then lookup tables, maths
-  helpers, the `SIMDRegister` → `syrp_simd` map and the Callgrind FFT bench (B5–B7).
+- Last WP-2.1-10 increment: lookup tables, maths helpers, the `SIMDRegister` → `syrp_simd` map and the Callgrind FFT bench (B5–B7).
+- `Fft` is `f32` only, like JUCE's.
 - `ProcessorChain` holds at most 8 members (nest chains for more).
