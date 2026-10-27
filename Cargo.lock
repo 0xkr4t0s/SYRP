@@ -1304,6 +1304,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "syrp-net"
+version = "0.0.1"
+dependencies = [
+ "libc",
+ "proptest",
+ "syrp-error",
+ "windows-sys",
+]
+
+[[package]]
 name = "syrp-peer-api"
 version = "0.0.1"
 dependencies = [

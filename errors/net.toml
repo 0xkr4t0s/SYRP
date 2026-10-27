@@ -1,0 +1,22 @@
+# Error catalogue: networking transport (syrp-net). Codes are permanent: never reuse or renumber one.
+
+[[error]]
+code = "SYRP-NET-0001"
+title = "Invalid IP address text"
+severity = "error"
+cause = "IpAddress::parse (or `str::parse::<IpAddress>`) was given text that is neither a dotted-quad IPv4 address such as 192.168.0.1 nor an IPv6 address in RFC 4291 text form such as 2001:db8::1."
+fix = "Pass a bare address: no port, no brackets, no zone index (`%eth0`) and no prefix length (`/24`). Leading and trailing whitespace is ignored."
+
+[[error]]
+code = "SYRP-NET-0002"
+title = "Network interface query failed"
+severity = "error"
+cause = "Listing the machine's network interfaces failed: getifaddrs(3) on Unix or GetAdaptersAddresses on Windows returned an error, or memory for the result could not be reserved."
+fix = "Retry. The message carries the OS error code when there is one; a sandbox that denies netlink or the IP helper API causes this."
+
+[[error]]
+code = "SYRP-NET-0003"
+title = "Networking unsupported on this target"
+severity = "error"
+cause = "The operation needs an operating-system network API that this target does not have (for example wasm32, or a Unix other than Linux, Android, macOS and iOS for interface enumeration)."
+fix = "Use the address value types only on this target, or build for Linux, macOS or Windows."
