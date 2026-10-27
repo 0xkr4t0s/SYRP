@@ -37,12 +37,12 @@ pub(crate) struct Poller;
 
 impl Poller {
     pub(crate) fn new(_waker: &Waker) -> Result<Self, EventsError> {
-        // SAFETY: timeBeginPeriod takes a plain integer; `Drop` makes the matching
-        // timeEndPeriod call. A refusal only leaves the coarser default resolution.
+        // SAFETY: takes a plain integer; `Drop` ends the request. A refusal only leaves the
+        // default resolution.
         #[cfg(windows)]
         unsafe {
-            windows_sys::Win32::Media::timeBeginPeriod(1);
-        }
+            windows_sys::Win32::Media::timeBeginPeriod(1)
+        };
         Ok(Poller)
     }
 
@@ -72,7 +72,7 @@ impl Drop for Poller {
         // SAFETY: ends the timeBeginPeriod(1) request made in `new`.
         #[cfg(windows)]
         unsafe {
-            windows_sys::Win32::Media::timeEndPeriod(1);
-        }
+            windows_sys::Win32::Media::timeEndPeriod(1)
+        };
     }
 }

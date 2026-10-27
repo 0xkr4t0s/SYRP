@@ -4,11 +4,12 @@
 //! increment and will share this epoll instance.
 
 use std::io;
-use std::os::fd::{AsRawFd, FromRawFd, OwnedFd, RawFd};
+use std::os::fd::{AsRawFd, OwnedFd};
 use std::time::Duration;
 
 use syrp_loop_api::MessageThread;
 
+use super::owned;
 use crate::EventsError;
 
 /// Events taken per `epoll_wait`; more ready descriptors are reported on the next pass.
@@ -93,14 +94,4 @@ impl Poller {
         }
         0
     }
-}
-
-/// Takes ownership of a descriptor a libc call returned, or reports the failed call.
-fn owned(fd: RawFd, call: &'static str) -> Result<OwnedFd, EventsError> {
-    if fd < 0 {
-        return Err(EventsError::os(call, &io::Error::last_os_error()));
-    }
-    // SAFETY: `fd` was just returned by a successful libc call, so it is open and owned by
-    // nobody else.
-    Ok(unsafe { OwnedFd::from_raw_fd(fd) })
 }
