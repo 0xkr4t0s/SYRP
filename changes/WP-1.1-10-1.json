@@ -1,0 +1,1 @@
+{"wp": "WP-1.1-10", "kind": "added", "summary": "syrp-net: new crate with IpAddress (IPv4 and IPv6, RFC 5952 text, IPv4-mapped conversions, interface enumeration through getifaddrs and GetAdaptersAddresses); errors/net.toml domain."}
