@@ -30,6 +30,15 @@ pub enum DspError {
         /// The number of elements requested.
         len: usize,
     },
+    /// [`Fft::new`](crate::Fft::new) was asked for an order above
+    /// [`Fft::MAX_ORDER`](crate::Fft::MAX_ORDER) (`SYRP-DSP-0002`).
+    #[non_exhaustive]
+    OrderTooLarge {
+        /// The requested order.
+        order: u32,
+        /// The largest supported order.
+        max: u32,
+    },
 }
 
 impl fmt::Display for DspError {
@@ -37,6 +46,12 @@ impl fmt::Display for DspError {
         match *self {
             Self::CannotAllocate { what, len } => {
                 write!(f, "cannot allocate the {what} ({len} elements)")
+            }
+            Self::OrderTooLarge { order, max } => {
+                write!(
+                    f,
+                    "FFT order {order} is above the largest supported order {max}"
+                )
             }
         }
     }
@@ -48,6 +63,7 @@ impl Diagnostic for DspError {
     fn code(&self) -> ErrorCode {
         match self {
             Self::CannotAllocate { .. } => ErrorCode::new("SYRP-DSP-0001"),
+            Self::OrderTooLarge { .. } => ErrorCode::new("SYRP-DSP-0002"),
         }
     }
 }

@@ -85,3 +85,51 @@ macro_rules! pack_impl {
 
 scalar_impl!(f32, f64);
 pack_impl!(F32x4, F32x8, F64x2, F64x4);
+
+/// A scalar sample type, `f32` or `f64`, that tables and helpers are generic over. Values
+/// are computed in `f64` and rounded to nearest on the way in.
+///
+/// ```
+/// use syrp_dsp_core::DspFloat;
+/// assert_eq!(f32::from_f64(0.1), 0.1_f32);
+/// assert_eq!(0.5_f32.to_f64(), 0.5);
+/// ```
+pub trait DspFloat: DspSample<Element = Self> {
+    /// `value` rounded to the nearest `Self`.
+    ///
+    /// ```
+    /// use syrp_dsp_core::DspFloat;
+    /// assert_eq!(f64::from_f64(1.5), 1.5);
+    /// ```
+    fn from_f64(value: f64) -> Self;
+
+    /// `self` as `f64` (exact).
+    ///
+    /// ```
+    /// use syrp_dsp_core::DspFloat;
+    /// assert_eq!(2.0_f64.to_f64(), 2.0);
+    /// ```
+    fn to_f64(self) -> f64;
+}
+
+impl DspFloat for f32 {
+    #[inline(always)]
+    fn from_f64(value: f64) -> Self {
+        value as f32
+    }
+    #[inline(always)]
+    fn to_f64(self) -> f64 {
+        f64::from(self)
+    }
+}
+
+impl DspFloat for f64 {
+    #[inline(always)]
+    fn from_f64(value: f64) -> Self {
+        value
+    }
+    #[inline(always)]
+    fn to_f64(self) -> f64 {
+        self
+    }
+}
