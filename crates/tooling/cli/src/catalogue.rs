@@ -9,13 +9,39 @@ use crate::envelope::{Diagnostic, ExitCode, Outcome};
 
 /// The catalogue sources, embedded. Add a domain here when adding `errors/<domain>.toml`.
 const SOURCES: &[(&str, &str)] = &[
+    ("audio", include_str!("../../../../errors/audio.toml")),
+    (
+        "cleanroom",
+        include_str!("../../../../errors/cleanroom.toml"),
+    ),
     ("cli", include_str!("../../../../errors/cli.toml")),
-    ("wp", include_str!("../../../../errors/wp.toml")),
-    ("pr", include_str!("../../../../errors/pr.toml")),
     (
         "conductor",
         include_str!("../../../../errors/conductor.toml"),
     ),
+    ("device", include_str!("../../../../errors/device.toml")),
+    ("doc", include_str!("../../../../errors/doc.toml")),
+    ("error", include_str!("../../../../errors/error.toml")),
+    ("eval", include_str!("../../../../errors/eval.toml")),
+    ("format", include_str!("../../../../errors/format.toml")),
+    ("gfx", include_str!("../../../../errors/gfx.toml")),
+    ("io", include_str!("../../../../errors/io.toml")),
+    ("loop", include_str!("../../../../errors/loop.toml")),
+    ("maths", include_str!("../../../../errors/maths.toml")),
+    ("midi", include_str!("../../../../errors/midi.toml")),
+    ("net", include_str!("../../../../errors/net.toml")),
+    ("peer", include_str!("../../../../errors/peer.toml")),
+    ("plugin", include_str!("../../../../errors/plugin.toml")),
+    ("pr", include_str!("../../../../errors/pr.toml")),
+    ("progress", include_str!("../../../../errors/progress.toml")),
+    ("rt", include_str!("../../../../errors/rt.toml")),
+    ("state", include_str!("../../../../errors/state.toml")),
+    ("strings", include_str!("../../../../errors/strings.toml")),
+    ("sys", include_str!("../../../../errors/sys.toml")),
+    ("testkit", include_str!("../../../../errors/testkit.toml")),
+    ("thread", include_str!("../../../../errors/thread.toml")),
+    ("var", include_str!("../../../../errors/var.toml")),
+    ("wp", include_str!("../../../../errors/wp.toml")),
 ];
 
 /// One catalogue entry.
@@ -97,6 +123,20 @@ mod tests {
             );
             assert!(parts[2].len() == 4 && parts[2].chars().all(|c| c.is_ascii_digit()));
             assert!(["error", "warning", "info"].contains(&e.severity.as_str()));
+        }
+    }
+
+    /// A new `errors/<domain>.toml` is invisible to `explain` until it is listed in `SOURCES`.
+    #[test]
+    fn every_errors_file_is_embedded() {
+        let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../errors");
+        let embedded: HashSet<&str> = SOURCES.iter().map(|(d, _)| *d).collect();
+        for f in crate::repo::files_with_suffix(&dir, ".toml") {
+            let domain = f.file_stem().unwrap().to_str().unwrap().to_owned();
+            assert!(
+                embedded.contains(domain.as_str()),
+                "errors/{domain}.toml is not in catalogue::SOURCES"
+            );
         }
     }
 
