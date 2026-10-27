@@ -147,3 +147,36 @@ fn b6_a_nested_pump_in_a_peer_handler_still_runs_tasks_and_timers() {
     // SAFETY: our own window, destroyed on its thread.
     unsafe { DestroyWindow(peer) };
 }
+
+#[test]
+fn b7_vblank_fallback_runs_under_a_nested_pump_unless_driven() {
+    let lp = EventLoop::new().unwrap();
+    let peer = peer_window();
+    let (free, driven) = (
+        syrp_loop_api::PeerId::from_raw(1),
+        syrp_loop_api::PeerId::from_raw(2),
+    );
+    let _g = lp.on_vblank(
+        free,
+        Box::new(|_, _| TIMERS_FIRED.set(TIMERS_FIRED.get() + 1)),
+    );
+    let _d = lp.vblank_driver(driven);
+    let driven_count = std::rc::Rc::new(Cell::new(0));
+    let c = driven_count.clone();
+    let _h = lp.on_vblank(driven, Box::new(move |_, _| c.set(c.get() + 1)));
+    // SAFETY: `peer` is a live window of this thread.
+    assert_ne!(unsafe { PostMessageW(peer, WM_PEER_MODAL, 0, 0) }, 0);
+    lp.dispatch_pending();
+    assert!(
+        SEEN_IN_PUMP.get().1 >= 2,
+        "fallback refreshes in the pump: {:?}",
+        SEEN_IN_PUMP.get()
+    );
+    assert_eq!(
+        driven_count.get(),
+        0,
+        "a driven peer's fallback stays stopped"
+    );
+    // SAFETY: our own window, destroyed on its thread.
+    unsafe { DestroyWindow(peer) };
+}
