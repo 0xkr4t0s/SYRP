@@ -1,0 +1,22 @@
+{
+  "id": "formats/wav/write_formats",
+  "title": "Writing every bit depth, float, surround layouts and BWAV/INFO metadata, then reading back",
+  "juce_tag": "9.0.4",
+  "tolerance": "exact",
+  "wp": "WP-2.1-14",
+  "ledger_rows": ["juce_audio_formats/WavAudioFormat"],
+  "docs": [{"page": "WavAudioFormat", "member": "createWriterFor", "says": "Creates a writer for the given sample rate, channel layout, bit depth and metadata values."}, {"page": "WavAudioFormat", "member": "bwavDescription", "says": "Metadata key for the BWAV description; the other bwav* keys name the remaining bext fields."}],
+  "files": {
+  },
+  "steps": [
+    {"op": "write", "args": [{"sample_rate": 48000, "layout": "mono", "bits_per_sample": 8, "float": false, "metadata": {}, "channels": [[-1.0, -0.5, 0.0, 0.25, 0.5, 0.9999]]}]},
+    {"op": "write", "args": [{"sample_rate": 48000, "layout": "stereo", "bits_per_sample": 16, "float": false, "metadata": {}, "channels": [[-1.0, -0.5, 0.0, 0.25, 0.5, 0.9999], [0.9999, 0.5, 0.25, 0.0, -0.5, -1.0]]}]},
+    {"op": "write", "args": [{"sample_rate": 48000, "layout": "mono", "bits_per_sample": 24, "float": false, "metadata": {"bwavDescription": "desc", "bwavOriginator": "orig", "bwavOriginatorRef": "ref", "bwavOriginationDate": "2026-10-27", "bwavOriginationTime": "01:02:03", "bwavTimeReference": "8589934592", "bwavCodingHistory": "A=PCM\r\n", "riffInfoTitle": "Title", "riffInfoArtist": "Artist"}, "channels": [[-1.0, -0.5, 0.0, 0.25, 0.5, 0.9999]]}]},
+    {"op": "write", "args": [{"sample_rate": 48000, "layout": "mono", "bits_per_sample": 32, "float": false, "metadata": {}, "channels": [[-1.0, -0.5, 0.0, 0.25, 0.5, 0.9999]]}]},
+    {"op": "write", "args": [{"sample_rate": 48000, "layout": "mono", "bits_per_sample": 32, "float": true, "metadata": {}, "channels": [[-1.0, -0.5, 0.0, 0.25, 0.5, 0.9999, 1.5, -2.0]]}]},
+    {"op": "write", "args": [{"sample_rate": 48000, "layout": "5.1", "bits_per_sample": 16, "float": false, "metadata": {}, "channels": [[0.0, 0.0], [0.125, 0.125], [0.25, 0.25], [0.375, 0.375], [0.5, 0.5], [0.625, 0.625]]}]},
+    {"op": "write", "args": [{"sample_rate": 48000, "layout": "7.1", "bits_per_sample": 16, "float": false, "metadata": {}, "channels": [[0.0, 0.0], [0.125, 0.125], [0.25, 0.25], [0.375, 0.375], [0.5, 0.5], [0.625, 0.625], [0.75, 0.75], [0.875, 0.875]]}]},
+    {"op": "write", "args": [{"sample_rate": 48000, "layout": "mono", "bits_per_sample": 16, "float": false, "metadata": {}, "channels": [[1.52587890625e-05, -1.52587890625e-05, 4.57763671875e-05, 1.5, -2.0]]}]}
+  ],
+  "notes": "Values in channels are written as float samples; the last step probes rounding of half steps and clipping."
+}

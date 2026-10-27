@@ -10,8 +10,6 @@
 //!   `axml`, `Trkn` and `cart` are kept byte for byte as `Other`.
 //! - [`WavError`]: the codec's coded errors (`SYRP-FORMAT-0006` onwards).
 //!
-//! WP-2.1-14 lands in increments: robustness tests and parity scenarios come last.
-//!
 //! The layouts come from public specifications only: Microsoft's RIFF and
 //! `WAVEFORMATEXTENSIBLE` documentation, EBU Tech 3285 (BWF), EBU Tech 3306 (RF64) and
 //! ITU-R BS.2088 (BW64).
