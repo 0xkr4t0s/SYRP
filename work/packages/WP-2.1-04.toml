@@ -1,0 +1,11 @@
+id = "WP-2.1-04"
+title = "syrp-audio-basics: the AudioSource family (memory, tone, mixer, resampling, remapping, IIR and reverb sources)"
+crate = "crates/audio/audio-basics"
+depends_on = ["WP-2.1-16"]
+ledger_rows = ["juce_audio_basics/AudioSource", "juce_audio_basics/AudioSourceChannelInfo", "juce_audio_basics/PositionableAudioSource", "juce_audio_basics/MemoryAudioSource", "juce_audio_basics/ToneGeneratorAudioSource", "juce_audio_basics/MixerAudioSource", "juce_audio_basics/ResamplingAudioSource", "juce_audio_basics/ChannelRemappingAudioSource", "juce_audio_basics/IIRFilterAudioSource", "juce_audio_basics/ReverbAudioSource"]
+spec = "work/specs/WP-2.1-04.md"
+risk = ["public-api", "rt-safety"]
+acceptance = "cargo syrp wp check WP-2.1-04 --json"
+platforms = ["linux", "macos", "windows"]
+role = "implementer"
+budget = { agent_hours = 32, max_review_rounds = 3, max_restarts = 2 }

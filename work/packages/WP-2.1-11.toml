@@ -1,0 +1,11 @@
+id = "WP-2.1-11"
+title = "syrp-dsp-filters: IIR and FIR filters, FilterDesign, SVF and TPT filters, Linkwitz-Riley, Ladder, Ballistics and DelayLine"
+crate = "crates/audio/dsp-filters"
+depends_on = ["WP-2.1-10"]
+ledger_rows = ["juce_dsp/dsp::IIR::Filter", "juce_dsp/dsp::IIR::Coefficients", "juce_dsp/dsp::IIR::ArrayCoefficients", "juce_dsp/dsp::FIR::Filter", "juce_dsp/dsp::FIR::Coefficients", "juce_dsp/dsp::FilterDesign", "juce_dsp/dsp::StateVariableTPTFilter", "juce_dsp/dsp::StateVariableFilter::Filter", "juce_dsp/dsp::StateVariableFilter::Parameters", "juce_dsp/dsp::FirstOrderTPTFilter", "juce_dsp/dsp::LinkwitzRileyFilter", "juce_dsp/dsp::LadderFilter", "juce_dsp/dsp::BallisticsFilter", "juce_dsp/dsp::DelayLine", "juce_dsp/dsp::DelayLineInterpolationTypes::None", "juce_dsp/dsp::DelayLineInterpolationTypes::Linear", "juce_dsp/dsp::DelayLineInterpolationTypes::Lagrange3rd", "juce_dsp/dsp::DelayLineInterpolationTypes::Thiran"]
+spec = "work/specs/WP-2.1-11.md"
+risk = ["public-api", "rt-safety"]
+acceptance = "cargo syrp wp check WP-2.1-11 --json"
+platforms = ["linux", "macos", "windows"]
+role = "implementer"
+budget = { agent_hours = 48, max_review_rounds = 3, max_restarts = 2 }

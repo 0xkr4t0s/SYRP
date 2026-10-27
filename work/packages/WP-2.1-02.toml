@@ -1,0 +1,11 @@
+id = "WP-2.1-02"
+title = "syrp-audio-basics: AudioData sample-format converters, interleaving and ChannelSet helpers"
+crate = "crates/audio/audio-basics"
+depends_on = ["WP-2.1-03", "WP-2.1-05"]
+ledger_rows = ["juce_audio_basics/AudioData"]
+spec = "work/specs/WP-2.1-02.md"
+risk = ["public-api", "rt-safety"]
+acceptance = "cargo syrp wp check WP-2.1-02 --json"
+platforms = ["linux", "macos", "windows"]
+role = "implementer"
+budget = { agent_hours = 24, max_review_rounds = 3, max_restarts = 2 }

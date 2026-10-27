@@ -1,0 +1,11 @@
+id = "WP-2.1-10"
+title = "syrp-dsp-core: processor model and chains, FFT, windowing, lookup tables and maths helpers"
+crate = "crates/audio/dsp-core"
+depends_on = ["WP-2.1-01", "WP-0.2-14", "WP-0.2-02"]
+ledger_rows = ["juce_dsp/dsp::ProcessContextReplacing", "juce_dsp/dsp::ProcessContextNonReplacing", "juce_dsp/dsp::ProcessorBase", "juce_dsp/dsp::ProcessorChain", "juce_dsp/dsp::ProcessorWrapper", "juce_dsp/dsp::ProcessorDuplicator", "juce_dsp/dsp::ProcessorState", "juce_dsp/dsp::SIMDRegister", "juce_dsp/dsp::FFT", "juce_dsp/dsp::WindowingFunction", "juce_dsp/dsp::LookupTable", "juce_dsp/dsp::LookupTableTransform", "juce_dsp/dsp::FastMathApproximations", "juce_dsp/dsp::LogRampedValue", "juce_dsp/dsp::Phase", "juce_dsp/dsp::Matrix", "juce_dsp/dsp::Polynomial", "juce_dsp/dsp::SpecialFunctions"]
+spec = "work/specs/WP-2.1-10.md"
+risk = ["public-api", "rt-safety", "supply-chain"]
+acceptance = "cargo syrp wp check WP-2.1-10 --json"
+platforms = ["linux", "macos", "windows"]
+role = "implementer"
+budget = { agent_hours = 40, max_review_rounds = 3, max_restarts = 2 }
