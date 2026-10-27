@@ -41,26 +41,37 @@ mod unix {
     /// Reads the IP address from a socket address of family `AF_INET` or `AF_INET6`.
     ///
     /// # Safety
-    /// `sa` is null or points to a readable socket address whose length is at least that of
-    /// the structure its `sa_family` names (`sockaddr_in` or `sockaddr_in6`); for other
-    /// families only `sa_family` needs to be readable. No alignment is required.
+    /// `sa` is null or points to a socket address whose `sa_family` field (and, on Apple
+    /// platforms, `sa_len` field) is readable. Beyond those fields, the address must be
+    /// readable for its full length: on Apple that is `sa_len` bytes, and elsewhere it is
+    /// the size of the structure `sa_family` names. No alignment is required.
     unsafe fn sockaddr_ip(sa: *const libc::sockaddr) -> Option<IpAddr> {
+        use std::mem::size_of;
+        use std::ptr::addr_of;
         if sa.is_null() {
             return None;
         }
-        // SAFETY: `sa` is non-null and readable per this fn's contract; read_unaligned
-        // needs no alignment.
-        let family = i32::from(unsafe { sa.read_unaligned() }.sa_family);
+        // SAFETY: `sa` is non-null and its sa_family field is readable (contract); addr_of!
+        // reads only that field, without a reference, and read_unaligned needs no alignment.
+        let family = i32::from(unsafe { addr_of!((*sa).sa_family).read_unaligned() });
+        // Apple can return sockaddrs shorter than their family's structure; sa_len says how
+        // many bytes are really there. Elsewhere the full structure is readable.
+        #[cfg(target_vendor = "apple")]
+        // SAFETY: as above, for the sa_len field.
+        let len = usize::from(unsafe { addr_of!((*sa).sa_len).read_unaligned() });
+        #[cfg(not(target_vendor = "apple"))]
+        let len = usize::MAX;
         match family {
-            libc::AF_INET => {
-                // SAFETY: the family is AF_INET, so per the contract the whole sockaddr_in
-                // is readable.
+            libc::AF_INET if len >= size_of::<libc::sockaddr_in>() => {
+                // SAFETY: the family is AF_INET and the length check passed, so per the
+                // contract the whole sockaddr_in is readable.
                 let sin = unsafe { sa.cast::<libc::sockaddr_in>().read_unaligned() };
                 let bytes = sin.sin_addr.s_addr.to_ne_bytes();
                 Some(IpAddr::V4(Ipv4Addr::from(bytes)))
             }
-            libc::AF_INET6 => {
-                // SAFETY: the family is AF_INET6, so the whole sockaddr_in6 is readable.
+            libc::AF_INET6 if len >= size_of::<libc::sockaddr_in6>() => {
+                // SAFETY: the family is AF_INET6 and the length check passed, so the whole
+                // sockaddr_in6 is readable.
                 let sin6 = unsafe { sa.cast::<libc::sockaddr_in6>().read_unaligned() };
                 Some(IpAddr::V6(Ipv6Addr::from(sin6.sin6_addr.s6_addr)))
             }
@@ -114,7 +125,7 @@ mod unix {
 
 #[cfg(windows)]
 mod windows {
-    use std::mem::offset_of;
+    use std::mem::{offset_of, size_of};
     use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 
     use windows_sys::Win32::Foundation::{ERROR_BUFFER_OVERFLOW, ERROR_NO_DATA, ERROR_SUCCESS};
@@ -132,26 +143,26 @@ mod windows {
     /// Reads the IP address from a `SOCKADDR_IN` or `SOCKADDR_IN6`.
     ///
     /// # Safety
-    /// `sa` is null or points to a readable socket address of at least the size of the
-    /// structure its `sa_family` names; for other families only `sa_family` needs to be
-    /// readable. No alignment is required.
-    unsafe fn sockaddr_ip(sa: *const SOCKADDR) -> Option<IpAddr> {
+    /// `sa` is null or points to `len` readable bytes holding a socket address, and its
+    /// `sa_family` field is readable whatever `len` says. No alignment is required.
+    unsafe fn sockaddr_ip(sa: *const SOCKADDR, len: usize) -> Option<IpAddr> {
         if sa.is_null() {
             return None;
         }
-        // SAFETY: non-null and readable per the contract; no alignment is assumed.
-        let family = unsafe { sa.read_unaligned() }.sa_family;
+        // SAFETY: non-null and sa_family is readable per the contract; addr_of! reads only
+        // that field, without a reference, and no alignment is assumed.
+        let family = unsafe { std::ptr::addr_of!((*sa).sa_family).read_unaligned() };
         let base = sa.cast::<u8>();
-        if family == AF_INET {
+        if family == AF_INET && len >= size_of::<SOCKADDR_IN>() {
             let at = base.wrapping_add(offset_of!(SOCKADDR_IN, sin_addr));
-            // SAFETY: the family is AF_INET, so a whole SOCKADDR_IN is readable and its
-            // 4-byte sin_addr starts at `at`; no alignment is assumed.
+            // SAFETY: `len` covers a whole SOCKADDR_IN, so its 4-byte sin_addr, which starts
+            // at `at`, is readable; no alignment is assumed.
             let b = unsafe { at.cast::<[u8; 4]>().read_unaligned() };
             Some(IpAddr::V4(Ipv4Addr::from(b)))
-        } else if family == AF_INET6 {
+        } else if family == AF_INET6 && len >= size_of::<SOCKADDR_IN6>() {
             let at = base.wrapping_add(offset_of!(SOCKADDR_IN6, sin6_addr));
-            // SAFETY: the family is AF_INET6, so a whole SOCKADDR_IN6 is readable and its
-            // 16-byte sin6_addr starts at `at`; no alignment is assumed.
+            // SAFETY: `len` covers a whole SOCKADDR_IN6, so its 16-byte sin6_addr, which
+            // starts at `at`, is readable; no alignment is assumed.
             let b = unsafe { at.cast::<[u8; 16]>().read_unaligned() };
             Some(IpAddr::V6(Ipv6Addr::from(b)))
         } else {
@@ -208,11 +219,13 @@ mod windows {
             let mut unicast = a.FirstUnicastAddress.cast_const();
             while !unicast.is_null() {
                 // SAFETY: a non-null node of the adapter's unicast list, valid with the
-                // adapter list; its lpSockaddr is null or a valid SOCKADDR_IN / SOCKADDR_IN6.
+                // adapter list; its lpSockaddr is null or points to iSockaddrLength readable
+                // bytes of socket address, which always include sa_family.
                 let (ip, prefix) = unsafe {
                     let u = &*unicast;
                     unicast = u.Next.cast_const();
-                    (sockaddr_ip(u.Address.lpSockaddr), u.OnLinkPrefixLength)
+                    let len = usize::try_from(u.Address.iSockaddrLength).unwrap_or(0);
+                    (sockaddr_ip(u.Address.lpSockaddr, len), u.OnLinkPrefixLength)
                 };
                 let Some(ip) = ip else { continue };
                 // Windows reports no broadcast address; derive it from the on-link prefix.
