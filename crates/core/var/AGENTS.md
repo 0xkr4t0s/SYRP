@@ -34,7 +34,8 @@ follows with the parser)
   `children: Vec<XmlNode>`; `XmlNode` is an element or a text `String`. No `Rc`, so both are
   `Send + Sync`. Tag and attribute names always pass `is_valid_xml_name` (`SYRP-VAR-0004`).
   `Clone`, `Drop`, `is_equivalent_to` (also `==`) and `all_sub_text` use explicit stacks,
-  never recursion (100,000-level tests); `Debug` is shallow.
+  never recursion (100,000-level tests); `Debug` is shallow. Attribute text conversions call
+  the same `convert::text_as_*` helpers as `Var`.
 
 ## Features
 `serde` (default): public `Serialize`/`Deserialize` for `Var`. `json` works without it
@@ -75,13 +76,15 @@ The JUCE `var` documentation does not decide these; the choices here are documen
 - JSON writes undefined as `null`, NaN and infinities as `null`, binary as an array of byte
   values, `f64` always with a fraction or exponent (`2.0`); unsigned integers above `i64::MAX`
   parse as `f64`; a repeated key keeps its first position and last value.
-- XML model (WP-1.1-15): text is a separate `XmlNode` variant, not an element;
-  `set_attribute` with an invalid name is an error (not ignored); `f64` attribute values are
-  written with Rust's shortest round-trip text.
+- XML model (WP-1.1-15): text is a separate `XmlNode` variant, not an element; the namespace
+  prefix is the text before the *first* `:`; `has_tag_name_ignoring_namespace(n)` matches the
+  full tag or the local part; `set_attribute` with an invalid name is an error (not ignored);
+  `f64` attributes use Rust's shortest text, so non-finite values read back as 0;
+  `sort_child_elements` sorts text nodes too; `delete_all_child_elements` removes text nodes;
+  `replace_child_element` past the end gives the new node back; `compare_attribute` with
+  `ignore_case` compares Unicode lower-case forms.
 
 ## Known gaps
 WP-1.1-01 is complete (B1-B7). The CLI catalogue entry for the new `errors/var.toml` domain is
-tracked on CR #5. WP-1.1-15 increment 1 delivers the XML element model: B1, the
-attribute setters and string getters of B2, the core of B3 (equivalence), and B5 for clone, drop
-and comparison. Typed attribute getters, namespaces, the rest of B3, the parser (B4-B5) and the
-writer (B6-B8) follow in later increments.
+tracked on CR #5. WP-1.1-15 increments 1-2 deliver the XML element model (B1-B3, and B5 for clone, drop and
+comparison); the parser (B4-B5) and the writer (B6-B8) follow.

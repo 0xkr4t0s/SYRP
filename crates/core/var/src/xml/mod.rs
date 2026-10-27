@@ -32,6 +32,7 @@
 //! and `Sync`: a document can be built or parsed on a worker thread and moved to another.
 
 mod attribute;
+mod children;
 mod element;
 mod node;
 

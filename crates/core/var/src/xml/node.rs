@@ -163,6 +163,22 @@ impl XmlNode {
             NodeRepr::Text(_) => None,
         }
     }
+
+    /// Takes the element out, or gives the node back when it is text.
+    ///
+    /// ```
+    /// use syrp_var::xml::{XmlElement, XmlNode};
+    /// let element = XmlNode::from(XmlElement::new("a")?).into_element().unwrap();
+    /// assert_eq!(element.tag_name(), "a");
+    /// assert!(XmlNode::text("t").into_element().is_err());
+    /// # Ok::<(), syrp_var::VarError>(())
+    /// ```
+    pub fn into_element(self) -> Result<XmlElement, XmlNode> {
+        match self.repr {
+            NodeRepr::Element(element) => Ok(element),
+            repr @ NodeRepr::Text(_) => Err(Self { repr }),
+        }
+    }
 }
 
 impl From<XmlElement> for XmlNode {
