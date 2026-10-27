@@ -5,9 +5,10 @@ The L2 stream layer (master plan §5.2, Wave 1.1 item 3). `InputStream` and `Out
 traits over `std::io::Read`/`Write` with JUCE's positioned, typed API; `StdInputStream` and
 `StdOutputStream` adapt any `Read + Seek`/`Write + Seek`. `MemoryBlock` is JUCE's
 `MemoryBlock`. `IoError` (codes in `errors/io.toml`) converts both ways with `std::io::Error`.
-Modules: `error`, `input`, `output`, `memory_block`. Later increments add `memory_stream`
-(`MemoryInputStream`/`MemoryOutputStream`), `buffered`, `subregion` and `source`
-(`InputSource`) here (WP-1.1-03), files (WP-1.1-04) and zip/gzip (WP-1.1-05).
+`MemoryInputStream`/`MemoryOutputStream` stream over bytes in memory and `InputSource` opens
+fresh streams on demand. Modules: `error`, `input`, `output`, `memory_block`, `memory_stream`,
+`source`. Later increments add `buffered` and `subregion` here (WP-1.1-03), files (WP-1.1-04)
+and zip/gzip (WP-1.1-05).
 
 ## Ledger rows
 juce_core/InputStream, juce_core/OutputStream, juce_core/MemoryBlock,
@@ -20,6 +21,13 @@ juce_core/SubregionStream, juce_core/InputSource
 - Text reads decode UTF-16 when a BOM is present (either order), drop a UTF-8 BOM, and replace
   invalid sequences with U+FFFD. `read_next_line` splits on `\n` and strips one `\r` before it.
 - The std adapters track the position themselves; the inner value is never lent mutably.
+- `Box` and `&mut` forward every required method and every provided one a stream may override
+  with a cheaper version, so overrides are not bypassed behind `Box<dyn ...>`.
+- `MemoryInputStream::set_position` past the end clips to the end (Syrp's choice).
+  `MemoryOutputStream::set_position` past `len()` zero-fills up to the new position at once
+  (Syrp's choice, pinned by `b4_output_set_position_past_end_zero_fills_syrp_choice`).
+- A fixed-slice `MemoryOutputStream` write or seek that does not fit changes nothing and is
+  `SYRP-IO-0002`; growth failures are `SYRP-IO-0005`.
 - `MemoryBlock` never panics on out-of-range offsets (clips; `copy_to` zero-fills) and never
   exposes uninitialised bytes. Resizes by a size argument use `try_reserve_exact` (`SYRP-IO-0005`).
 - Bit ranges: bit `i` is bit `i % 8` of byte `i / 8`; at most 32 bits; bits past the end read as
@@ -51,6 +59,5 @@ B2 and B3 use proptest (typed round trips; `MemoryBlock` against a `Vec<u8>` mod
 - `write_text` with `write_bom` writes `FF FE` for UTF-16 only; UTF-8 never gets a BOM.
 
 ## Known gaps
-WP-1.1-03 is in progress; B1, B2, B3 and the `IoError` part of B7 are done. Still to come:
-B4 `MemoryInputStream`/`MemoryOutputStream` (uses `SYRP-IO-0002`), B5 `BufferedInputStream`
-and `SubregionStream`, B6 `InputSource`, the rest of B7, and the Miri run.
+WP-1.1-03 is in progress; B1, B2, B3, B4, B6 and the error codes of B7 are done. Still to
+come: B5 `BufferedInputStream` and `SubregionStream`, and the Miri run.

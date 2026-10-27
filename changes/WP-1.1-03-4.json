@@ -1,0 +1,1 @@
+{"wp": "WP-1.1-03", "kind": "added", "summary": "syrp-io (fourth increment): MemoryInputStream over borrowed or owned bytes; MemoryOutputStream into its own MemoryBlock, onto a caller's block or into a fixed slice (SYRP-IO-0002 when full); the InputSource trait."}
