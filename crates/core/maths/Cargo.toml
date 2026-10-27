@@ -1,6 +1,6 @@
 [package]
 name = "syrp-maths"
-description = "Numeric types for Syrp: Range, NormalisableRange, Random, StatisticsAccumulator and numeric helpers."
+description = "Numeric types for Syrp: Range, NormalisableRange, Random, StatisticsAccumulator, BigInteger and numeric helpers."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -16,6 +16,9 @@ wp = "WP-1.1-11"
 [dependencies]
 syrp-error = { version = "0.0.1", path = "../../foundation/error" }
 syrp-rt = { version = "0.0.1", path = "../../foundation/rt" }
+
+[dev-dependencies]
+proptest = { version = "1.5", default-features = false, features = ["std"] }
 
 [lints]
 workspace = true
