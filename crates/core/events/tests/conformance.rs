@@ -160,6 +160,9 @@ fn timer_made_in_callback_fires_one_period_later<D: Driver>() {
                 return;
             }
             let (w, f) = (weak.clone(), fst.clone());
+            // Read the clock before creating the timer: its due time is taken inside
+            // `timer`, and a precise backend may fire it before a later clock read.
+            let made = lp.clock();
             let inner = lp.timer(
                 ms(30),
                 Box::new(move |_| {
@@ -167,7 +170,7 @@ fn timer_made_in_callback_fires_one_period_later<D: Driver>() {
                     f.borrow_mut().get_or_insert(now.unwrap());
                 }),
             );
-            *c.borrow_mut() = Some((lp.clock(), inner));
+            *c.borrow_mut() = Some((made, inner));
         }),
     );
     lp.pass_time(ms(60));
