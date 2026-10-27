@@ -1,0 +1,1 @@
+{"wp": "WP-1.1-03", "kind": "added", "summary": "syrp-io (second increment): InputStream trait with typed little- and big-endian readers, compressed ints, NUL-terminated strings, lines and BOM-aware text, plus the StdInputStream adapter for any Read + Seek."}
