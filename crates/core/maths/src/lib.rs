@@ -9,7 +9,7 @@
 //!   [`round_to_int`] and the [`MathConstants`] for `f32` and `f64`.
 //! - [`Random`]: a seedable SplitMix64 generator, and the shared [`system_random`].
 //! - [`StatisticsAccumulator`]: running mean, variance, minimum and maximum (Welford).
-//! - [`BigInteger`]: an arbitrary-size signed integer with arithmetic and division.
+//! - [`BigInteger`]: an arbitrary-size signed integer with arithmetic and bit operations.
 //!
 //! Nothing here allocates except [`BigInteger`], [`Random::with_entropy`] and
 //! [`system_random`]. `Range`,
