@@ -1,0 +1,1 @@
+{"wp": "WP-1.2-11", "kind": "added", "summary": "New syrp-analytics crate: AnalyticsEvent (with AnalyticsEventView), the AnalyticsDestination trait and Analytics (global instance, user id and properties, ordered destinations, suspension, panic isolation)."}
