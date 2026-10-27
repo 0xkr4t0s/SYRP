@@ -35,10 +35,12 @@ mod attribute;
 mod children;
 mod element;
 mod node;
+mod parse;
 
 pub use attribute::{IntoAttributeValue, XmlAttribute};
 pub use element::{ChildElements, XmlElement};
 pub use node::{XmlNode, XmlNodeView};
+pub use parse::XmlDocument;
 
 /// Returns whether `name` matches the XML 1.0 (fifth edition) `Name` production, the rule for
 /// tag and attribute names.
