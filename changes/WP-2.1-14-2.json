@@ -1,0 +1,1 @@
+{"wp": "WP-2.1-14", "kind": "added", "summary": "syrp-format-wav: WAVE_FORMAT_EXTENSIBLE (valid bits, PCM and float sub-formats), channel masks mapped to ChannelSet, and RF64/BW64 sizes from ds64 (increment 2: B1-B2)."}

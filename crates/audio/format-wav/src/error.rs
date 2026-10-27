@@ -27,10 +27,10 @@ use syrp_format_api::FormatError;
 pub enum WavError {
     /// The stream failed (`SYRP-FORMAT-0001`).
     Io(io::Error),
-    /// The input does not start with a `RIFF` header of form `WAVE`
+    /// The input does not start with a `RIFF`, `RF64` or `BW64` header of form `WAVE`
     /// (`SYRP-FORMAT-0006`).
     NotWave,
-    /// The `fmt ` chunk claims more bytes than the input holds (`SYRP-FORMAT-0007`).
+    /// A chunk the reader needs claims more bytes than the input holds (`SYRP-FORMAT-0007`).
     #[non_exhaustive]
     Truncated {
         /// The chunk's four-character id.
@@ -56,6 +56,8 @@ pub enum WavError {
     },
     /// A size from the input needs more memory than could be reserved (`SYRP-FORMAT-0011`).
     OutOfMemory,
+    /// An `RF64`/`BW64` file has no valid `ds64` chunk first (`SYRP-FORMAT-0012`).
+    BadDs64,
 }
 
 impl WavError {
@@ -76,7 +78,7 @@ impl fmt::Display for WavError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Io(e) => write!(f, "WAV I/O failed: {e}"),
-            Self::NotWave => f.write_str("not a RIFF WAVE file"),
+            Self::NotWave => f.write_str("not a RIFF, RF64 or BW64 WAVE file"),
             Self::Truncated { chunk } => {
                 write!(f, "chunk '{}' runs past the end of the input", id(chunk))
             }
@@ -85,6 +87,7 @@ impl fmt::Display for WavError {
             Self::UnsupportedEncoding { tag } => {
                 write!(f, "WAV encoding 0x{tag:04X} is not supported")
             }
+            Self::BadDs64 => f.write_str("RF64/BW64 file without a valid 'ds64' chunk"),
             Self::OutOfMemory => f.write_str("not enough memory for a size read from the file"),
         }
     }
@@ -115,6 +118,7 @@ impl Diagnostic for WavError {
             Self::BadFormat { .. } => "SYRP-FORMAT-0009",
             Self::UnsupportedEncoding { .. } => "SYRP-FORMAT-0010",
             Self::OutOfMemory => "SYRP-FORMAT-0011",
+            Self::BadDs64 => "SYRP-FORMAT-0012",
         })
     }
 }
