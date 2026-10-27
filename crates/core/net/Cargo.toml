@@ -16,6 +16,9 @@ wp = "WP-1.1-10"
 [dependencies]
 syrp-error = { version = "0.0.1", path = "../../foundation/error" }
 
+[target.'cfg(any(unix, windows))'.dependencies]
+socket2 = { version = "0.6.5", features = ["all"] }
+
 [target.'cfg(unix)'.dependencies]
 libc = { version = "0.2.186", default-features = false }
 

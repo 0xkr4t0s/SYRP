@@ -20,3 +20,31 @@ title = "Networking unsupported on this target"
 severity = "error"
 cause = "The operation needs an operating-system network API that this target does not have (for example wasm32, or a Unix other than Linux, Android, macOS and iOS for interface enumeration)."
 fix = "Use the address value types only on this target, or build for Linux, macOS or Windows."
+
+[[error]]
+code = "SYRP-NET-0004"
+title = "Invalid MAC address text"
+severity = "error"
+cause = "MacAddress::parse (or `str::parse::<MacAddress>`) was given text that is not six two-digit hex bytes separated consistently by `-`, by `:`, or by nothing."
+fix = "Pass a form such as 00-1a-2b-3c-4d-5e, 00:1a:2b:3c:4d:5e or 001a2b3c4d5e. Hex digits may be either case and surrounding whitespace is ignored."
+
+[[error]]
+code = "SYRP-NET-0005"
+title = "Host did not resolve"
+severity = "error"
+cause = "A host name or address given to StreamingSocket::connect or create_listener did not resolve to any socket address: the name lookup failed, returned nothing, or a listener's local host is not an IP address."
+fix = "Check the spelling and the machine's DNS, or pass an IP address. The message carries the OS error code when there is one."
+
+[[error]]
+code = "SYRP-NET-0006"
+title = "Socket operation failed"
+severity = "error"
+cause = "The OS refused a socket operation (connect, listen, accept, read, write or wait): for example the peer refused or reset the connection, the port is in use, or the connection timed out. It is also returned for reading or writing a listener."
+fix = "The message names the operation and the I/O error kind, and carries the OS error code when there is one; fix the address, port or peer accordingly."
+
+[[error]]
+code = "SYRP-NET-0007"
+title = "Socket closed"
+severity = "error"
+cause = "The socket was closed with close(), either before the call or by another thread while the call was blocked."
+fix = "Create a new socket. A closed socket cannot be reopened."

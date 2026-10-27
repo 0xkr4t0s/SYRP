@@ -255,7 +255,9 @@ impl IpAddress {
     pub fn all_addresses(include_ipv6: bool) -> Result<Vec<Self>, NetError> {
         let mut out = Vec::new();
         for entry in ifaces::interfaces()? {
-            let ip = Self(entry.ip);
+            let Some(ip) = entry.ip.map(Self) else {
+                continue;
+            };
             if (include_ipv6 || !ip.is_ipv6()) && !out.contains(&ip) {
                 out.push(ip);
             }
@@ -304,7 +306,7 @@ impl IpAddress {
     pub fn interface_broadcast_address(address: Self) -> Result<Option<Self>, NetError> {
         Ok(ifaces::interfaces()?
             .into_iter()
-            .find(|e| e.ip == address.0)
+            .find(|e| e.ip == Some(address.0))
             .and_then(|e| e.broadcast)
             .map(|b| Self(IpAddr::V4(b))))
     }

@@ -1,0 +1,1 @@
+{"wp": "WP-1.1-10", "kind": "added", "summary": "syrp-net: MacAddress (text forms, find_all_addresses) and StreamingSocket (TCP connect, listen, accept, read, write, wait_until_ready, close from another thread); SYRP-NET-0004 to 0007."}

@@ -37,6 +37,35 @@ pub enum NetError {
         /// The operation that was attempted.
         operation: &'static str,
     },
+    /// SYRP-NET-0004: text given to [`MacAddress::parse`](crate::MacAddress::parse) is not six
+    /// hex bytes.
+    #[non_exhaustive]
+    InvalidMacAddress {
+        /// The text that was rejected.
+        input: String,
+        /// What was wrong with it.
+        reason: &'static str,
+    },
+    /// SYRP-NET-0005: a host name or address did not resolve to any socket address.
+    #[non_exhaustive]
+    Resolve {
+        /// The host that was looked up.
+        host: String,
+        /// The OS error code, when the OS reported one.
+        os_error: Option<i32>,
+    },
+    /// SYRP-NET-0006: a socket operation failed.
+    #[non_exhaustive]
+    Socket {
+        /// The operation, such as `"connect"`, `"listen"`, `"accept"`, `"read"` or `"write"`.
+        operation: &'static str,
+        /// The kind of I/O failure.
+        kind: std::io::ErrorKind,
+        /// The OS error code, when the OS reported one.
+        os_error: Option<i32>,
+    },
+    /// SYRP-NET-0007: the socket was closed, before or during the call.
+    Closed,
 }
 
 impl NetError {
@@ -48,8 +77,13 @@ impl NetError {
     /// ```
     pub fn os_error(&self) -> Option<i32> {
         match self {
-            Self::InterfaceQuery { os_error } => *os_error,
-            Self::InvalidIpAddress { .. } | Self::Unsupported { .. } => None,
+            Self::InterfaceQuery { os_error }
+            | Self::Resolve { os_error, .. }
+            | Self::Socket { os_error, .. } => *os_error,
+            Self::InvalidIpAddress { .. }
+            | Self::InvalidMacAddress { .. }
+            | Self::Unsupported { .. }
+            | Self::Closed => None,
         }
     }
 }
@@ -60,6 +94,10 @@ impl Diagnostic for NetError {
             Self::InvalidIpAddress { .. } => "SYRP-NET-0001",
             Self::InterfaceQuery { .. } => "SYRP-NET-0002",
             Self::Unsupported { .. } => "SYRP-NET-0003",
+            Self::InvalidMacAddress { .. } => "SYRP-NET-0004",
+            Self::Resolve { .. } => "SYRP-NET-0005",
+            Self::Socket { .. } => "SYRP-NET-0006",
+            Self::Closed => "SYRP-NET-0007",
         })
     }
 
@@ -70,6 +108,12 @@ impl Diagnostic for NetError {
             }
             Self::InterfaceQuery { .. } => "retry; a sandbox may deny interface listing".into(),
             Self::Unsupported { .. } => "build for Linux, macOS or Windows".into(),
+            Self::InvalidMacAddress { .. } => {
+                "use 00-1a-2b-3c-4d-5e, 00:1a:2b:3c:4d:5e or 001a2b3c4d5e".into()
+            }
+            Self::Resolve { .. } => "check the host name, or pass an IP address".into(),
+            Self::Socket { .. } => "check the address, port and peer; the OS code says more".into(),
+            Self::Closed => "create a new socket; a closed one cannot be reopened".into(),
         })
     }
 }
@@ -93,6 +137,18 @@ impl fmt::Display for NetError {
             Self::Unsupported { operation } => {
                 write!(f, "{code}: {operation} is not supported on this target")
             }
+            Self::InvalidMacAddress { input, reason } => {
+                write!(f, "{code}: {input:?} is not a MAC address: {reason}")
+            }
+            Self::Resolve { host, .. } => write!(f, "{code}: could not resolve host {host:?}"),
+            Self::Socket {
+                operation, kind, ..
+            } => {
+                write!(f, "{code}: socket {operation} failed ({kind})")?;
+                self.os_error()
+                    .map_or(Ok(()), |e| write!(f, " (OS error {e})"))
+            }
+            Self::Closed => write!(f, "{code}: the socket is closed"),
         }
     }
 }
