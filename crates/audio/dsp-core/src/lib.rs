@@ -10,6 +10,7 @@
 //! - [`Fft`]: power-of-two FFTs with JUCE's buffer layout, on `rustfft` and `realfft`;
 //!   [`Complex`] is `num_complex`'s, re-exported.
 //! - [`WindowingFunction`]: window tables; [`special`] holds the Bessel `I0` they use.
+//! - Tables: [`LookupTable`] and [`LookupTableTransform`].
 //!
 //! Per-instance DSP is written against [`syrp_simd::Sample`] (ADR 0003 D5); [`DspSample`]
 //! adds the lane access the processor model needs. Audio arrives as
@@ -49,6 +50,7 @@ mod processor;
 mod sample;
 mod spec;
 pub mod special;
+mod table;
 mod window;
 
 pub use chain::{ChainIndex, ChainProcessors, ProcessorChain};
@@ -60,4 +62,5 @@ pub use processor::{DspProcessor, ProcessorWrapper};
 pub use rustfft::num_complex::Complex;
 pub use sample::{DspFloat, DspSample};
 pub use spec::DspSpec;
+pub use table::{LookupTable, LookupTableTransform};
 pub use window::{WindowingFunction, WindowingMethod};

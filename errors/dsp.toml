@@ -13,3 +13,10 @@ title = "FFT order too large"
 severity = "error"
 cause = "Fft::new was asked for an order above Fft::MAX_ORDER (20, that is 1048576 points)."
 fix = "Use a smaller order: spectrum displays and convolution use orders of about 8 to 16. Split longer signals into blocks."
+
+[[error]]
+code = "SYRP-DSP-0003"
+title = "Invalid lookup table parameters"
+severity = "error"
+cause = "LookupTable::new or initialise was asked for fewer than 2 points, or LookupTableTransform::new, initialise or calculate_max_relative_error for an input range that is not finite or whose minimum is not below its maximum."
+fix = "Use at least 2 points (typically 64 to 4096) and a finite range with min < max."
