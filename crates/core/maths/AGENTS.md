@@ -34,6 +34,9 @@ juce_core/BigInteger
   can reach the public API. Division truncates toward zero; the remainder has the dividend's
   sign. Bit operations, shifts and `&`/`|`/`^` act on the magnitude; `>>` keeps the sign.
   Bit indices are `u32`.
+- `BigInteger` text: bases 2, 8, 10 and 16 only; anything else, empty text or a non-digit is
+  `MathsError::InvalidBaseOrDigit` (`SYRP-MATHS-0002`). `to_le_bytes` drops high zero bytes
+  and the sign; `from_le_bytes` accepts any bytes and is never negative.
 
 ## Thread affinity
 `Range`, `NormalisableRange`, `Random` and `StatisticsAccumulator` are `RtSafe`: any thread,
@@ -48,13 +51,13 @@ experimental
 ```sh
 cargo syrp test --crate syrp-maths
 ```
-`tests/big_integer.rs` and `tests/big_integer_bits.rs` check against `i128`/`u128` for small
+`tests/big_integer*.rs` check against `i128`/`u128` for small
 values and algebraic identities for large ones. `tests/no_alloc.rs` installs
 `syrp_rt::GuardedAllocator`; keep it its own test binary.
 
 ## Known gaps
-All WP-1.1-11 behaviours (B1-B6) are covered. WP-1.1-16 increments 1-2 cover BigInteger B1-B3;
-text and bytes (B4), number theory (B5) and the parity scenarios (B6) come in increment 3.
+All WP-1.1-11 behaviours (B1-B6) are covered. WP-1.1-16 increments 1-2 cover BigInteger B1-B4;
+number theory (B5) and the parity scenarios (B6) come in increment 3.
 `Expression` is a later WP. Multiplication is schoolbook (no Karatsuba).
 
 ## Open questions
@@ -68,3 +71,6 @@ text and bytes (B4), number theory (B5) and the parity scenarios (B6) come in in
 - `BigInteger` `&`, `|`, `^`: magnitudes combined, result keeps the left operand's sign.
   Syrp's choice, pinned by `b3_bitwise_keeps_left_sign_syrp_choice`; compare with the harness.
 - `bit_range_as_u32` and `set_bit_range_as_u32` treat a count above 32 as 32 (Syrp's choice).
+- `BigInteger::to_string_radix`: hex is lowercase, the `-` goes before the zero padding and is
+  not counted in `minimum_digits`, and an unsupported base is an error (Syrp's choices; the
+  JUCE documentation does not say). `to_le_bytes` of zero is empty.

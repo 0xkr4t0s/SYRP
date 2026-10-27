@@ -1,1 +1,1 @@
-{"wp": "WP-1.1-16", "kind": "added", "summary": "syrp-maths: BigInteger bit access, bit ranges, bit searches, shifts and bitwise operators on the magnitude."}
+{"wp": "WP-1.1-16", "kind": "added", "summary": "syrp-maths: BigInteger bit operations, shifts and bitwise operators; text in bases 2, 8, 10 and 16, Display and hex formatting, and little-endian bytes."}

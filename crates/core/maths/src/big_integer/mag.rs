@@ -73,8 +73,21 @@ pub(super) fn mul(a: &[u64], b: &[u64]) -> Vec<u64> {
     out
 }
 
+/// `v = v * m + a` in place, for single limbs `m` and `a`.
+pub(super) fn mul_add_limb(v: &mut Vec<u64>, m: u64, a: u64) {
+    let mut carry = u128::from(a);
+    for x in v.iter_mut() {
+        let t = u128::from(*x) * u128::from(m) + carry;
+        *x = t as u64;
+        carry = t >> 64;
+    }
+    if carry != 0 {
+        v.push(carry as u64);
+    }
+}
+
 /// `(a / d, a % d)` for a single non-zero limb `d`.
-fn div_rem_limb(a: &[u64], d: u64) -> (Vec<u64>, u64) {
+pub(super) fn div_rem_limb(a: &[u64], d: u64) -> (Vec<u64>, u64) {
     let mut q = vec![0_u64; a.len()];
     let mut rem = 0_u128;
     let d = u128::from(d);
