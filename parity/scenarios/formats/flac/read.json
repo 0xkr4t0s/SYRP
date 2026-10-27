@@ -1,0 +1,17 @@
+{
+  "id": "formats/flac/read",
+  "title": "FLAC files written by Syrp decode to the same samples and metadata",
+  "juce_tag": "9.0.4",
+  "tolerance": "exact",
+  "wp": "WP-2.1-15",
+  "ledger_rows": ["juce_audio_formats/FlacAudioFormat"],
+  "docs": [
+    {"page": "FlacAudioFormat", "member": "FlacAudioFormat", "says": "Reads and writes the lossless-compression FLAC audio format."}
+  ],
+  "steps": [
+    {"op": "read", "file": "inputs/mono_16.flac", "ranges": [[0, 3000], [-10, 20], [2990, 20], [1500, 7]]},
+    {"op": "read", "file": "inputs/stereo_24_tags.flac", "ranges": [[0, 2000], [1999, 1], [700, 300]]},
+    {"op": "read", "file": "inputs/six_16_q0.flac", "ranges": [[0, 1200], [1100, 200]]}
+  ],
+  "notes": "The inputs are produced by Syrp's writer from the ramp signal (tests/scenarios.rs in syrp-format-flac regenerates and checks them): mono 16-bit 44.1 kHz 3,000 frames at quality 5; stereo 24-bit 48 kHz 2,000 frames at quality 8 with TITLE=Ramp and ARTIST=Syrp; six channels 16-bit 96 kHz 1,200 frames at quality 0."
+}
