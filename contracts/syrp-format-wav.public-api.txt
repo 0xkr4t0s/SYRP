@@ -1,0 +1,52 @@
+pub mod syrp_format_wav
+#[non_exhaustive] pub enum syrp_format_wav::WavError
+pub syrp_format_wav::WavError::BadDs64
+#[non_exhaustive] pub syrp_format_wav::WavError::BadFormat
+pub syrp_format_wav::WavError::BadFormat::reason: &'static str
+#[non_exhaustive] pub syrp_format_wav::WavError::BadMetadata
+pub syrp_format_wav::WavError::BadMetadata::chunk: [u8; 4]
+pub syrp_format_wav::WavError::Io(core::io::error::Error)
+#[non_exhaustive] pub syrp_format_wav::WavError::MissingChunk
+pub syrp_format_wav::WavError::MissingChunk::chunk: [u8; 4]
+pub syrp_format_wav::WavError::NotWave
+pub syrp_format_wav::WavError::OutOfMemory
+#[non_exhaustive] pub syrp_format_wav::WavError::Truncated
+pub syrp_format_wav::WavError::Truncated::chunk: [u8; 4]
+#[non_exhaustive] pub syrp_format_wav::WavError::UnsupportedEncoding
+pub syrp_format_wav::WavError::UnsupportedEncoding::tag: u16
+impl core::convert::From<core::io::error::Error> for syrp_format_wav::WavError
+pub fn syrp_format_wav::WavError::from(core::io::error::Error) -> Self
+impl core::convert::From<syrp_format_wav::WavError> for syrp_format_api::FormatError
+pub fn syrp_format_api::FormatError::from(syrp_format_wav::WavError) -> Self
+impl core::error::Error for syrp_format_wav::WavError
+pub fn syrp_format_wav::WavError::source(&self) -> core::option::Option<&(dyn core::error::Error + 'static)>
+impl core::fmt::Display for syrp_format_wav::WavError
+pub fn syrp_format_wav::WavError::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl syrp_error::Diagnostic for syrp_format_wav::WavError
+pub fn syrp_format_wav::WavError::code(&self) -> syrp_error::ErrorCode
+pub struct syrp_format_wav::WavAudioFormat
+impl syrp_format_wav::WavAudioFormat
+pub const syrp_format_wav::WavAudioFormat::DEFAULT_RF64_THRESHOLD: u64
+pub const fn syrp_format_wav::WavAudioFormat::new() -> Self
+pub const fn syrp_format_wav::WavAudioFormat::rf64_threshold(&self) -> u64
+pub const fn syrp_format_wav::WavAudioFormat::with_rf64_threshold(self, u64) -> Self
+impl core::default::Default for syrp_format_wav::WavAudioFormat
+pub fn syrp_format_wav::WavAudioFormat::default() -> Self
+impl syrp_format_api::format::AudioFormat for syrp_format_wav::WavAudioFormat
+pub fn syrp_format_wav::WavAudioFormat::bit_depths(&self) -> &[u32]
+pub fn syrp_format_wav::WavAudioFormat::can_read(&self, &[u8]) -> bool
+pub fn syrp_format_wav::WavAudioFormat::create_reader(&self, alloc::boxed::Box<dyn syrp_format_api::format::ReadSeek>) -> core::result::Result<alloc::boxed::Box<dyn syrp_format_api::format::AudioReader>, syrp_format_api::FormatError>
+pub fn syrp_format_wav::WavAudioFormat::create_writer(&self, alloc::boxed::Box<dyn syrp_format_api::format::WriteSeek>, &syrp_format_api::spec::WriterOptions) -> core::result::Result<alloc::boxed::Box<dyn syrp_format_api::format::AudioWriter>, syrp_format_api::FormatError>
+pub fn syrp_format_wav::WavAudioFormat::file_extensions(&self) -> &[&str]
+pub fn syrp_format_wav::WavAudioFormat::name(&self) -> &str
+pub fn syrp_format_wav::WavAudioFormat::sample_rates(&self) -> &[u32]
+pub struct syrp_format_wav::WavReader
+impl syrp_format_wav::WavReader
+pub fn syrp_format_wav::WavReader::open(alloc::boxed::Box<dyn syrp_format_api::format::ReadSeek>) -> core::result::Result<Self, syrp_format_wav::WavError>
+impl core::fmt::Debug for syrp_format_wav::WavReader
+pub fn syrp_format_wav::WavReader::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl syrp_format_api::format::AudioReader for syrp_format_wav::WavReader
+pub fn syrp_format_wav::WavReader::length(&self) -> u64
+pub fn syrp_format_wav::WavReader::metadata(&self) -> &syrp_format_api::metadata::Metadata
+pub fn syrp_format_wav::WavReader::read_samples(&mut self, syrp_format_api::block::AnyBlockMut<'_>, u64) -> core::result::Result<(), syrp_format_api::FormatError>
+pub fn syrp_format_wav::WavReader::spec(&self) -> &syrp_format_api::spec::AudioSpec

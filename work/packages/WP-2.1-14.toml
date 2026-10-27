@@ -9,4 +9,5 @@ risk = ["public-api"]
 acceptance = "cargo syrp wp check WP-2.1-14 --json"
 platforms = ["linux", "macos", "windows"]
 role = "implementer"
+status = "done"
 budget = { agent_hours = 32, max_review_rounds = 3, max_restarts = 2 }
