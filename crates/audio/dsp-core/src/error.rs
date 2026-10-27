@@ -39,6 +39,13 @@ pub enum DspError {
         /// The largest supported order.
         max: u32,
     },
+    /// A lookup table was asked for fewer than two points, or a transform for an input
+    /// range that is not finite with `min < max` (`SYRP-DSP-0003`).
+    #[non_exhaustive]
+    InvalidTable {
+        /// The requested number of points.
+        num_points: usize,
+    },
 }
 
 impl fmt::Display for DspError {
@@ -53,6 +60,11 @@ impl fmt::Display for DspError {
                     "FFT order {order} is above the largest supported order {max}"
                 )
             }
+            Self::InvalidTable { num_points } => write!(
+                f,
+                "a lookup table needs at least 2 points and a finite range with min < max \
+                 (got {num_points} points)"
+            ),
         }
     }
 }
@@ -64,6 +76,7 @@ impl Diagnostic for DspError {
         match self {
             Self::CannotAllocate { .. } => ErrorCode::new("SYRP-DSP-0001"),
             Self::OrderTooLarge { .. } => ErrorCode::new("SYRP-DSP-0002"),
+            Self::InvalidTable { .. } => ErrorCode::new("SYRP-DSP-0003"),
         }
     }
 }
