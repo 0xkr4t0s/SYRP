@@ -5,13 +5,16 @@ use std::cmp::Ordering;
 use std::fmt;
 use std::hash::{Hash, Hasher};
 
-mod mag;
+// `ops` defines the `binary_op!` macro that `bits` also uses, so it comes first.
+#[macro_use]
 mod ops;
+mod bits;
+mod mag;
 
 /// An arbitrary-size signed integer.
 ///
 /// The value is a sign and a magnitude, not two's complement, as JUCE's `BigInteger`
-/// documentation describes. Zero is never negative.
+/// documentation describes; bit operations act on the magnitude. Zero is never negative.
 /// Arithmetic allocates, so `BigInteger` is not [`syrp_rt::RtSafe`]. Division by zero does
 /// not panic: see [`checked_div_rem`](Self::checked_div_rem).
 ///
