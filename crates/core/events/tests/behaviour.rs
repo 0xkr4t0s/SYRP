@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only OR BUSL-1.1
-//! Tests for B1, B3, B4 (the eventfd wake; `add_fd` is the next increment) and B9 of
-//! work/specs/WP-1.1-14.md. B2 is in `conformance.rs`.
+//! Tests for B1, B3 and B9 of work/specs/WP-1.1-14.md. B2 is in `conformance.rs`.
 
 use std::cell::Cell;
 use std::rc::Rc;
@@ -104,18 +103,6 @@ fn b3_blocked_timer_fires_once_not_a_burst_syrp_choice() {
     thread::sleep(ms(55));
     assert_eq!(lp.dispatch_pending(), 1);
     assert_eq!(count.get(), 1);
-}
-
-#[test]
-fn b4_a_posted_task_wakes_a_blocked_run() {
-    let lp = EventLoop::new().unwrap();
-    let (sender, quit) = (lp.task_sender(), lp.quit_handle());
-    let t = thread::spawn(move || {
-        thread::sleep(ms(20));
-        sender.post(Task::new(move |_| quit.quit()));
-    });
-    lp.run(); // no timers: only the wake can end the wait
-    t.join().unwrap();
 }
 
 #[test]

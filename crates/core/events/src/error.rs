@@ -24,7 +24,7 @@ pub enum EventsError {
     /// SYRP-LOOP-0005: the operating system refused a call the loop needs.
     #[non_exhaustive]
     Os {
-        /// The OS call that failed, such as `"epoll_create1"`.
+        /// The OS call that failed, such as `"kqueue"`.
         call: &'static str,
         /// The OS error number (`errno` or `GetLastError`), when the OS reported one.
         os_error: Option<i32>,
@@ -35,7 +35,7 @@ pub enum EventsError {
 
 impl EventsError {
     /// The error for a failed OS call, taking the error number from `err`.
-    #[cfg_attr(not(any(target_os = "linux", target_os = "macos")), allow(dead_code))]
+    #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
     pub(crate) fn os(call: &'static str, err: &io::Error) -> Self {
         Self::Os {
             call,

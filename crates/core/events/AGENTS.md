@@ -43,10 +43,9 @@ cargo check -p syrp-events --target x86_64-pc-windows-msvc
 there, never in two places. Timing tests use loose bounds.
 
 ## Known gaps
-WP-1.1-14 increment 1 (B1-B3, the B4 epoll/eventfd core, B9 codes). Next: B4's
-`add_fd(fd, Interest, callback) -> FdGuard` on the same epoll instance. macOS and Windows run interim
-backends with no OS sources: a `kqueue` with a `NOTE_CRITICAL` timer on macOS (Darwin coalesces
-ordinary timed waits), and a condvar under `timeBeginPeriod(1)` on Windows. The `CFRunLoop`
-(B5) and Win32 (B6) backends replace them.
+WP-1.1-14 increment 1 (B1-B3, B9 codes). Every backend is interim, with no OS event sources:
+a condvar on Linux, a condvar under `timeBeginPeriod(1)` on Windows, and a `kqueue` with a
+`NOTE_CRITICAL` timer on macOS (Darwin coalesces ordinary timed waits). The `epoll` backend
+with `add_fd` (B4), `CFRunLoop` (B5) and Win32 (B6) replace them.
 `on_vblank` always uses the 60 Hz fallback timer; `VBlankDriver` (B7) and the migration page
 (B8) follow. `errors/loop.toml` codes 0004-0006 are in the existing domain.

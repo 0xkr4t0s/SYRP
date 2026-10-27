@@ -4,7 +4,7 @@
 //! timed waits (condvars, `nanosleep`, the `kevent` timeout), which on CI overshot 10 ms waits
 //! by more than a period; critical timers are not coalesced.
 
-use std::os::fd::{AsRawFd, OwnedFd};
+use std::os::fd::{AsRawFd, FromRawFd, OwnedFd};
 use std::{io, ptr, time::Duration};
 
 use syrp_loop_api::MessageThread;
@@ -31,7 +31,12 @@ pub(crate) struct Waker {
 impl Waker {
     pub(crate) fn new() -> Result<Self, EventsError> {
         // SAFETY: kqueue takes no arguments and touches no memory of ours.
-        let kq = super::owned(unsafe { libc::kqueue() }, "kqueue")?;
+        let fd = unsafe { libc::kqueue() };
+        if fd < 0 {
+            return Err(EventsError::os("kqueue", &io::Error::last_os_error()));
+        }
+        // SAFETY: `fd` was just returned by a successful kqueue call, so nobody else owns it.
+        let kq = unsafe { OwnedFd::from_raw_fd(fd) };
         let waker = Waker { kq };
         let add = ev(0, libc::EVFILT_USER, libc::EV_ADD | libc::EV_CLEAR, 0, 0);
         let rc = waker.kevent(&[add], 0, None);
@@ -40,11 +45,8 @@ impl Waker {
 
     pub(crate) fn wake(&self) {
         // A failure leaves the loop to its timeout; there is nobody to report it to.
-        let _ = self.kevent(
-            &[ev(0, libc::EVFILT_USER, 0, libc::NOTE_TRIGGER, 0)],
-            0,
-            None,
-        );
+        let trigger = ev(0, libc::EVFILT_USER, 0, libc::NOTE_TRIGGER, 0);
+        let _ = self.kevent(&[trigger], 0, None);
     }
 
     /// Applies `changes`, then waits for up to `max` (0..=2) events or `timeout`.
@@ -96,10 +98,8 @@ impl Poller {
             Some(t) if t.is_zero() => waker.kevent(&[], 2, Some(&zero)),
             Some(t) => {
                 let ns = isize::try_from(t.as_nanos()).unwrap_or(isize::MAX);
-                let (flags, fflags) = (
-                    libc::EV_ADD | libc::EV_ONESHOT,
-                    libc::NOTE_NSECONDS | libc::NOTE_CRITICAL,
-                );
+                let flags = libc::EV_ADD | libc::EV_ONESHOT;
+                let fflags = libc::NOTE_NSECONDS | libc::NOTE_CRITICAL;
                 waker.kevent(&[ev(1, libc::EVFILT_TIMER, flags, fflags, ns)], 2, None)
             }
             None => waker.kevent(&[], 2, None),

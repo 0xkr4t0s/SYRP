@@ -4,8 +4,7 @@
 //! [`EventLoop`] is the loop an app runs on its main thread. It implements
 //! [`syrp_loop_api::MessageLoop`], so code written against the contract (and tested on
 //! `ManualLoop`) runs on it unchanged, and adds what only an owned loop has: [`run`],
-//! [`run_for`], [`dispatch_pending`], [`with_token`] and a [`QuitHandle`]. On Linux it is an
-//! `epoll` loop.
+//! [`run_for`], [`dispatch_pending`], [`with_token`] and a [`QuitHandle`].
 //!
 //! [`run`]: EventLoop::run
 //! [`run_for`]: EventLoop::run_for
