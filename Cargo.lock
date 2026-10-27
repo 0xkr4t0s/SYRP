@@ -1166,6 +1166,7 @@ dependencies = [
 name = "syrp-analytics"
 version = "0.0.1"
 dependencies = [
+ "proptest",
  "syrp-error",
  "syrp-sys",
 ]

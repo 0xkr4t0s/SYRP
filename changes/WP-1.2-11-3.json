@@ -1,0 +1,1 @@
+{"wp": "WP-1.2-11", "kind": "added", "summary": "syrp-analytics: B4 proptest (no event lost or duplicated across failures, stops and restarts) and real-thread tests for batching, stop, timeout, drop, queue overflow and restart."}

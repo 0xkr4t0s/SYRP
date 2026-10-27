@@ -265,7 +265,7 @@ fn b5_a_thread_name_with_nul_is_rejected_with_a_code() {
 #[test]
 fn b5_every_code_is_in_the_catalogue() {
     use crate::{AnalyticsError, Diagnostic};
-    let catalogue = include_str!("../../../../../errors/analytics.toml");
+    let catalogue = include_str!("../../../../../../errors/analytics.toml");
     let codes: Vec<&str> = catalogue
         .lines()
         .filter_map(|l| l.strip_prefix("code = \""))
@@ -288,3 +288,5 @@ fn b5_every_code_is_in_the_catalogue() {
     }
     assert_eq!(codes.len(), errors.len());
 }
+
+mod robustness;

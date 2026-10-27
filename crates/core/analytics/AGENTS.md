@@ -51,10 +51,10 @@ experimental
 cargo syrp test --crate syrp-analytics
 ```
 `tests/panics.rs` installs a process-wide logger, so it lives in its own test binary. The
-batching rules are unit tests in `src/threaded/tests.rs` on a manual clock; do not add tests
-that sleep or assert on elapsed time.
+batching rules are unit tests in `src/threaded/tests/` on a manual clock (`robustness.rs` has
+the B4 proptest); `tests/threaded.rs` drives a real thread, waiting on a `Condvar` for what the
+sink saw. Do not add tests that sleep or assert on elapsed time.
 
 ## Known gaps
-- Proptest over failure patterns and real-thread tests: WP-1.2-11 increment 3.
 - `SYRP-ANALYTICS-0001` (thread spawn failure) has no test: it cannot be provoked portably.
 - Network destinations (Wave 5.1) and `ButtonTracker` (needs `syrp-ui`).
