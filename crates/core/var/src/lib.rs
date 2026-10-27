@@ -106,4 +106,4 @@ pub use identifier::Identifier;
 pub use object::{DynamicObject, NamedValueIter, NamedValueSet};
 pub use syrp_error::Diagnostic;
 pub use var::{Var, VarView};
-pub use xml::{XmlAttribute, XmlDocument, XmlElement, XmlNode, XmlNodeView};
+pub use xml::{TextFormat, XmlAttribute, XmlDocument, XmlElement, XmlNode, XmlNodeView};

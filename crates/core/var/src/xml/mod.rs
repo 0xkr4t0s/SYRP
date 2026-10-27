@@ -1,5 +1,5 @@
-//! An XML document model: [`XmlElement`] trees whose children are [`XmlNode`]s (elements or
-//! text), with ordered [`XmlAttribute`]s.
+//! XML: [`XmlElement`] trees whose children are [`XmlNode`]s (elements or text), with ordered
+//! [`XmlAttribute`]s, read by [`XmlDocument`] and written with a [`TextFormat`].
 //!
 //! The behaviour follows JUCE's public documentation for `XmlElement`; where it leaves a case
 //! open, the choice made here is stated in the item's documentation and listed in the crate's
@@ -23,9 +23,10 @@
 //! ```
 //!
 //! # Depth
-//! Cloning, dropping, comparing ([`XmlElement::is_equivalent_to`]) and collecting text
-//! ([`XmlElement::all_sub_text`]) walk the tree with an explicit stack, never by recursion, so
-//! a tree nested 100,000 levels deep works without a depth limit.
+//! Parsing ([`XmlDocument`]), writing ([`XmlElement::to_string`]), cloning, dropping, comparing
+//! ([`XmlElement::is_equivalent_to`]) and collecting text ([`XmlElement::all_sub_text`]) walk
+//! the tree with an explicit stack, never by recursion, so a tree nested 100,000 levels deep
+//! works without a depth limit.
 //!
 //! # Threads
 //! [`XmlElement`] and [`XmlNode`] own plain `String`s and `Vec`s (no `Rc`), so they are `Send`
@@ -36,11 +37,13 @@ mod children;
 mod element;
 mod node;
 mod parse;
+mod write;
 
 pub use attribute::{IntoAttributeValue, XmlAttribute};
 pub use element::{ChildElements, XmlElement};
 pub use node::{XmlNode, XmlNodeView};
 pub use parse::XmlDocument;
+pub use write::TextFormat;
 
 /// Returns whether `name` matches the XML 1.0 (fifth edition) `Name` production, the rule for
 /// tag and attribute names.
