@@ -69,6 +69,78 @@ pub(crate) struct Inner {
     next_id: Cell<u64>,
 }
 
+impl Inner {
+    fn now(&self) -> Duration {
+        self.epoch.elapsed()
+    }
+
+    fn next_timer(&self) -> Option<Duration> {
+        self.timers.borrow().order.first().map(|&(due, _)| due)
+    }
+
+    /// Tells the backend when the next timer is due, for when something else drives the OS
+    /// loop (macOS arms its critical timer; Linux has nothing to do).
+    fn rearm(&self) {
+        let next = self.next_timer().map(|due| due.saturating_sub(self.now()));
+        self.poller.arm(next);
+    }
+
+    /// Runs the tasks queued when it starts, then the due timers, without waiting. Returns how
+    /// many callbacks ran. Backends whose OS loop may be driven by someone else call it from
+    /// their callbacks.
+    fn dispatch(&self, mt: &MessageThread<'_>) -> usize {
+        let shared = &self.shared;
+        // Only the tasks queued now; ones posted meanwhile wait for the next pass.
+        let queued = shared.queue().len();
+        let mut ran = 0;
+        for _ in 0..queued {
+            let Some(task) = shared.queue().pop_front() else {
+                break;
+            };
+            task.run(mt);
+            ran += 1;
+        }
+        ran += self.fire_timers(mt);
+        self.rearm();
+        ran
+    }
+
+    /// Fires every timer due at the start of the pass once, in (due, creation) order.
+    fn fire_timers(&self, mt: &MessageThread<'_>) -> usize {
+        let now = self.now();
+        let timers = &self.timers;
+        let mut fired = 0;
+        loop {
+            let (due, id, period, mut f) = {
+                let mut t = timers.borrow_mut();
+                let Some(&(due, id)) = t.order.first().filter(|&&(due, _)| due <= now) else {
+                    break;
+                };
+                t.order.pop_first();
+                let Some(slot) = t.slots.get_mut(&id) else {
+                    continue;
+                };
+                let Some(f) = slot.f.take() else { continue };
+                (due, id, slot.period, f)
+            };
+            match &mut f {
+                Callback::Timer(f) => f(mt),
+                Callback::VBlank(f) => f(mt, due),
+            }
+            fired += 1;
+            let mut t = timers.borrow_mut();
+            if let Some(slot) = t.slots.get_mut(&id) {
+                slot.f = Some(f);
+                t.order.insert((next_due(due, period, now), id));
+            } else {
+                drop(t); // the guard was dropped in the callback; drop it outside the borrow
+                drop(f);
+            }
+        }
+        fired
+    }
+}
+
 /// The owned message loop of the calling thread (master plan §5.5, kind 1).
 ///
 /// Create it on the thread that becomes its message thread; it is `!Send` and there is at most
@@ -79,8 +151,9 @@ pub(crate) struct Inner {
 /// burst to catch up.
 ///
 /// Backends: `epoll` with a non-blocking `eventfd` on Linux, where peers add descriptors with
-/// `add_fd`. macOS (a `kqueue`) and Windows (a condition variable) use interim backends until
-/// the `CFRunLoop` and Win32 ones land.
+/// `add_fd`; the thread's `CFRunLoop` on macOS, which also delivers tasks and timers when
+/// something else runs it (such as `NSApplication run`); and a message-only window on
+/// Windows, whose waits also dispatch the thread's other windows' messages.
 /// ```
 /// use std::time::Duration;
 /// use syrp_events::EventLoop;
@@ -169,9 +242,20 @@ impl EventLoop {
             timers: RefCell::default(),
             next_id: Cell::new(0),
         };
-        Ok(EventLoop {
-            inner: Rc::new(inner),
-        })
+        let inner = Rc::new(inner);
+        // The OS loop calls back into the core for tasks and timers when something else (such
+        // as `NSApplication run`, or a modal loop on Windows) drives it.
+        let weak = Rc::downgrade(&inner);
+        inner.poller.attach(Rc::new(move || {
+            let Some(inner) = weak.upgrade() else {
+                return 0;
+            };
+            // SAFETY: backends call this only from OS callbacks registered on this thread's
+            // run loop or window, so on the message thread; the token lives for one dispatch.
+            let mt = unsafe { MessageThread::new_unchecked() };
+            inner.dispatch(&mt)
+        }));
+        Ok(EventLoop { inner })
     }
 
     /// Time since the loop was created, on the monotonic clock its timers use.
@@ -182,7 +266,7 @@ impl EventLoop {
     /// ```
     #[must_use]
     pub fn now(&self) -> Duration {
-        self.inner.epoch.elapsed()
+        self.inner.now()
     }
 
     /// A handle that stops `run` and `run_for` from any thread.
@@ -280,18 +364,8 @@ impl EventLoop {
         // the token lives only for this pass.
         let mt = unsafe { MessageThread::new_unchecked() };
         let timeout = self.timeout(deadline);
-        let shared = &self.inner.shared;
-        let mut ran = self.inner.poller.wait(&shared.waker, timeout, &mt);
-        // Only the tasks queued now; ones posted meanwhile wait for the next pass.
-        let queued = shared.queue().len();
-        for _ in 0..queued {
-            let Some(task) = shared.queue().pop_front() else {
-                break;
-            };
-            task.run(&mt);
-            ran += 1;
-        }
-        ran + self.fire_timers(&mt)
+        let inner = &self.inner;
+        inner.poller.wait(&inner.shared.waker, timeout, &mt) + inner.dispatch(&mt)
     }
 
     fn timeout(&self, deadline: Option<Duration>) -> Option<Duration> {
@@ -299,54 +373,12 @@ impl EventLoop {
         if shared.quit.load(Ordering::SeqCst) || !shared.queue().is_empty() {
             return Some(Duration::ZERO);
         }
-        let next_timer = self
-            .inner
-            .timers
-            .borrow()
-            .order
-            .first()
-            .map(|&(due, _)| due);
         let now = self.now();
-        next_timer
+        (self.inner.next_timer())
             .into_iter()
             .chain(deadline)
             .min()
             .map(|t| t.saturating_sub(now))
-    }
-
-    /// Fires every timer due at the start of the pass once, in (due, creation) order.
-    fn fire_timers(&self, mt: &MessageThread<'_>) -> usize {
-        let now = self.now();
-        let timers = &self.inner.timers;
-        let mut fired = 0;
-        loop {
-            let (due, id, period, mut f) = {
-                let mut t = timers.borrow_mut();
-                let Some(&(due, id)) = t.order.first().filter(|&&(due, _)| due <= now) else {
-                    break;
-                };
-                t.order.pop_first();
-                let Some(slot) = t.slots.get_mut(&id) else {
-                    continue;
-                };
-                let Some(f) = slot.f.take() else { continue };
-                (due, id, slot.period, f)
-            };
-            match &mut f {
-                Callback::Timer(f) => f(mt),
-                Callback::VBlank(f) => f(mt, due),
-            }
-            fired += 1;
-            let mut t = timers.borrow_mut();
-            if let Some(slot) = t.slots.get_mut(&id) {
-                slot.f = Some(f);
-                t.order.insert((next_due(due, period, now), id));
-            } else {
-                drop(t); // the guard was dropped in the callback; drop it outside the borrow
-                drop(f);
-            }
-        }
-        fired
     }
 
     fn add_timer(&self, period: Duration, f: Callback) -> CallbackGuard {
@@ -359,6 +391,7 @@ impl EventLoop {
             t.slots.insert(id, Slot { period, f: Some(f) });
             t.order.insert((due, id));
         }
+        self.inner.rearm();
         let weak: Weak<Inner> = Rc::downgrade(&self.inner);
         CallbackGuard::new(move || {
             let Some(inner) = weak.upgrade() else { return };
