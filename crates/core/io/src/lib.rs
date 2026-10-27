@@ -1,27 +1,34 @@
-//! Syrp's stream layer (master plan §5.2, L2 Core).
+//! Syrp's stream layer (master plan §5.2, L2 Core): JUCE's `InputStream`, `OutputStream` and
+//! `MemoryBlock`.
 //!
-//! - [`InputStream`]: JUCE's positioned byte stream, built on [`std::io::Read`], with typed
-//!   little- and big-endian readers, compressed integers, NUL-terminated strings and text.
-//! - [`StdInputStream`]: an adapter that gives any `Read + Seek` value that trait.
-//! - [`MemoryBlock`]: an owned, growable byte block (JUCE's `MemoryBlock`).
+//! - [`InputStream`] and [`OutputStream`]: positioned byte streams built on [`std::io::Read`]
+//!   and [`std::io::Write`], with typed little- and big-endian readers and writers, compressed
+//!   integers, NUL-terminated strings and text.
+//! - [`StdInputStream`] and [`StdOutputStream`]: adapters that give any `Read + Seek` or
+//!   `Write + Seek` value those traits.
+//! - [`MemoryBlock`]: an owned, growable byte block.
 //! - [`IoError`]: the error type, with `SYRP-IO-*` codes, convertible to and from
 //!   [`std::io::Error`].
 //!
-//! `OutputStream` and the memory, buffered and subregion streams follow in later increments of
-//! WP-1.1-03. This is cold-path code: everything may allocate and none of it is real-time safe.
+//! This is cold-path code: everything may allocate and none of it is real-time safe.
 //!
 //! ```
-//! use syrp_io::{InputStream, StdInputStream};
-//! let mut s = StdInputStream::new(std::io::Cursor::new(b"\x00\x00\x00\x2aline\n".to_vec()))?;
-//! assert_eq!(s.read_i32_be()?, 42);
-//! assert_eq!(s.read_next_line()?, "line");
+//! use syrp_io::{InputStream, OutputStream, StdInputStream, StdOutputStream};
+//! let mut out = StdOutputStream::new(std::io::Cursor::new(Vec::new()))?;
+//! out.write_f64_be(0.5)?;
+//! out.write_compressed_int(-70000)?;
+//! let mut inp = StdInputStream::new(std::io::Cursor::new(out.into_inner().into_inner()))?;
+//! assert_eq!(inp.read_f64_be()?, 0.5);
+//! assert_eq!(inp.read_compressed_int()?, -70000);
 //! # Ok::<(), syrp_io::IoError>(())
 //! ```
 
 mod error;
 mod input;
 mod memory_block;
+mod output;
 
 pub use error::{IoError, IoErrorKind};
 pub use input::{InputStream, StdInputStream};
 pub use memory_block::MemoryBlock;
+pub use output::{DEFAULT_NEW_LINE, OutputStream, StdOutputStream};

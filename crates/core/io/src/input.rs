@@ -238,6 +238,7 @@ pub trait InputStream: Read {
     /// set for a negative value) is Syrp's choice, an open question for WP-0.1-11. So
     /// `[0x01, 0xFF]` is `255` and `[0x81, 0x01]` is `-1`. A length above four, or a magnitude
     /// no `i32` has (above `i32::MAX`, or above 2^31 when negative), is `SYRP-IO-0004`.
+    /// The inverse of [`OutputStream::write_compressed_int`](crate::OutputStream::write_compressed_int).
     ///
     /// ```
     /// # use syrp_io::{InputStream, StdInputStream};
