@@ -35,8 +35,7 @@ directory and need `git` on `PATH`.
 ## Known gaps
 - Module phase and difficulty live in `src/page.html`, copied from master plan §3. The treemap
   layout is written in the page; it loads no third-party script.
-- Links point at `https://github.com/SYRP-Foundation/SYRP` (the `REPO` constant in `src/page.html`); the
-  workspace `repository` key still names the old home, so the page does not read it.
+- Links point at `https://github.com/SYRP-Foundation/SYRP`, the `REPO` constant in `src/page.html`.
 - The page script escapes every value it puts into `innerHTML`, numbers included; tooltips use
   `textContent`.
 - Open PRs come only from `--open-prs`; without it, WPs with only an open PR show as planned.
