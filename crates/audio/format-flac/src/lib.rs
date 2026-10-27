@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only OR BUSL-1.1
 //! FLAC files for Syrp, behind the `syrp-format-api` contract (master plan §4.2).
 //!
-//! [`FlacAudioFormat`] reads native FLAC streams through [`claxon`] 0.4 and parses the
-//! metadata blocks itself, from the layout in RFC 9639. Both crates stay behind this crate's
-//! own types, so either can be replaced without an API change.
+//! [`FlacAudioFormat`] reads native FLAC streams through [`claxon`] 0.4, parses the metadata
+//! blocks itself from the layout in RFC 9639, and writes through [`flacenc`] 0.5. Both crates
+//! stay behind this crate's own types, so either can be replaced without an API change.
 //!
 //! # Reading
 //! - The stream shape and length come from `STREAMINFO`. A stream whose total length is
@@ -12,9 +12,24 @@
 //! - Integer samples are divided by 2^(bits − 1), the converters' rule (WP-2.1-02 B2). `claxon`
 //!   decodes frames whose header names its bit depth: 8, 12, 16, 20 and 24 bits. Other depths
 //!   are refused with `SYRP-FORMAT-0003` when the reader is created.
-//! - Metadata blocks other than `STREAMINFO` and `SEEKTABLE` are checked for length and
-//!   skipped; mapping them to tags and cue points is the next increment (B3).
+//! - Metadata is reported in file order: `VORBIS_COMMENT` fields become [`Tag`]s,
+//!   `CUESHEET` indices become [`CuePoint`]s, and `APPLICATION` and `PICTURE` blocks become
+//!   [`MetadataItem::Other`] with the block's name and its whole body.
 //! - Damaged or truncated streams give `SYRP-FORMAT-0002`, never a panic.
+//!
+//! # Writing
+//! - 16 or 24-bit integer streams of 1 to 8 channels at a rate in
+//!   [`sample_rates`](AudioFormat::sample_rates). Input samples are multiplied by
+//!   2^(bits − 1), rounded to nearest with ties away from zero, clipped to the integer range,
+//!   and NaN becomes 0 (WP-2.1-02 B2's rule).
+//! - Each block (1,152 or 4,096 frames, by level) is encoded as soon as it is full, so memory
+//!   stays at one block whatever the file length. [`flush`](AudioWriter::flush) pushes the
+//!   frames written so far; the partly filled block waits for more samples or `finish`.
+//! - [`FlacAudioFormat::quality_options`] lists the compression levels.
+//! - Tags go into a `VORBIS_COMMENT` block with Syrp's vendor string, written when the writer
+//!   is created; other metadata items are skipped. `finish` encodes the last block and seeks
+//!   back to fill in `STREAMINFO`: block and frame sizes, the total length and the MD5 of the
+//!   decoded audio.
 //!
 //! # Random access and its cost
 //! The reader keeps the last decoded frame and the byte offset of the frame after it.
@@ -28,6 +43,10 @@
 //! file without a `SEEKTABLE`, decodes everything between the nearest known frame and the
 //! target. Memory is one decoded block (at most 8 channels × 65,535 samples × 4 bytes) plus
 //! 16 bytes per remembered frame.
+//!
+//! [`Tag`]: syrp_format_api::Tag
+//! [`CuePoint`]: syrp_format_api::CuePoint
+//! [`MetadataItem::Other`]: syrp_format_api::MetadataItem::Other
 //!
 //! ```
 //! use syrp_format_api::AudioFormat;
@@ -43,6 +62,8 @@ use syrp_format_api::{AudioFormat, AudioReader, AudioWriter, FormatError, ReadSe
 mod meta;
 mod reader;
 mod source;
+mod tags;
+mod writer;
 
 /// Sample rates the writer accepts, in Hz (Syrp's choice: the public `FlacAudioFormat`
 /// documentation does not list them).
@@ -85,6 +106,39 @@ impl FlacAudioFormat {
     pub const fn new() -> Self {
         Self { _private: () }
     }
+
+    /// The compression levels [`WriterOptions::with_quality`] picks from, by index: 0 is the
+    /// fastest, 8 the smallest, and `None` means level 5. The `flacenc` settings behind each
+    /// level are Syrp's choice; every level is lossless.
+    ///
+    /// ```
+    /// use syrp_audio_api::ChannelSet;
+    /// use syrp_format_api::{AudioFormat, AudioSpec, SampleKind, WriterOptions};
+    /// use syrp_format_flac::FlacAudioFormat;
+    /// let levels = FlacAudioFormat::quality_options();
+    /// assert_eq!((levels.len(), levels[0]), (9, "0 (fastest)"));
+    /// let spec = AudioSpec::new(48_000.0, ChannelSet::mono(), 16, SampleKind::Int)?;
+    /// let out = Box::new(std::io::Cursor::new(Vec::new()));
+    /// let w = FlacAudioFormat::new().create_writer(out, &WriterOptions::new(spec).with_quality(8))?;
+    /// w.finish()?;
+    /// # Ok::<(), syrp_format_api::FormatError>(())
+    /// ```
+    #[doc(alias = "getQualityOptions")]
+    #[must_use]
+    pub const fn quality_options() -> &'static [&'static str] {
+        const NAMES: [&str; writer::LEVEL_COUNT] = [
+            "0 (fastest)",
+            "1",
+            "2",
+            "3",
+            "4",
+            "5 (default)",
+            "6",
+            "7",
+            "8 (smallest)",
+        ];
+        &NAMES
+    }
 }
 
 impl AudioFormat for FlacAudioFormat {
@@ -123,12 +177,10 @@ impl AudioFormat for FlacAudioFormat {
 
     fn create_writer(
         &self,
-        _output: Box<dyn WriteSeek>,
+        output: Box<dyn WriteSeek>,
         options: &WriterOptions,
     ) -> Result<Box<dyn AudioWriter>, FormatError> {
         self.check_spec(options.spec())?;
-        Err(FormatError::unsupported(
-            "FLAC writing (arrives with WP-2.1-15 B4)",
-        ))
+        Ok(Box::new(writer::FlacWriter::create(output, options)?))
     }
 }

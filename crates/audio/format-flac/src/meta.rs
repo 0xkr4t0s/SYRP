@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-only OR BUSL-1.1
 //! The stream marker and metadata blocks, parsed from the layout in RFC 9639 (section 8).
 //!
-//! `claxon` 0.4 skips `SEEKTABLE`, so this module reads the blocks itself and hands `claxon`
-//! only the frames. Blocks other than `STREAMINFO` and `SEEKTABLE` are skipped for now.
+//! `claxon` 0.4 skips `SEEKTABLE`, `CUESHEET` and `PICTURE`, so this module reads every block
+//! itself and hands `claxon` only the frames.
 
 use claxon::input::ReadBytes;
 use syrp_audio_api::ChannelSet;
 use syrp_format_api::{AudioSpec, FormatError, Metadata, SampleKind};
 
 use crate::source::Source;
+use crate::tags;
 
 /// The four bytes every native FLAC stream starts with.
 pub(crate) const MAGIC: &[u8; 4] = b"fLaC";
@@ -18,7 +19,11 @@ pub(crate) const DECODABLE_DEPTHS: [u32; 5] = [8, 12, 16, 20, 24];
 
 const STREAMINFO: u8 = 0;
 const PADDING: u8 = 1;
+const APPLICATION: u8 = 2;
 const SEEKTABLE: u8 = 3;
+const VORBIS_COMMENT: u8 = 4;
+const CUESHEET: u8 = 5;
+const PICTURE: u8 = 6;
 const FORBIDDEN: u8 = 127;
 
 /// Everything read before the first frame.
@@ -100,7 +105,7 @@ pub(crate) fn read_header(src: &mut Source) -> Result<Header, FormatError> {
         return Err(invalid("the stream does not start with fLaC"));
     }
     let mut info: Option<(AudioSpec, u64, u32)> = None;
-    let metadata = Metadata::new();
+    let mut metadata = Metadata::new();
     let mut table = Vec::new();
     loop {
         let mut head = [0u8; 4];
@@ -117,6 +122,11 @@ pub(crate) fn read_header(src: &mut Source) -> Result<Header, FormatError> {
             STREAMINFO => info = Some(parse_streaminfo(&read_body(src, len)?)?),
             PADDING => src.skip(len as u32).map_err(io_error)?,
             SEEKTABLE => table = read_body(src, len)?,
+            VORBIS_COMMENT => tags::parse_vorbis(&read_body(src, len)?, &mut metadata)?,
+            CUESHEET => tags::parse_cuesheet(&read_body(src, len)?, &mut metadata)?,
+            APPLICATION | PICTURE => {
+                tags::push_other(kind == APPLICATION, read_body(src, len)?, &mut metadata)?;
+            }
             FORBIDDEN => return Err(invalid("metadata block type 127 is forbidden")),
             _ => src.skip(len as u32).map_err(io_error)?,
         }
@@ -213,10 +223,10 @@ fn parse_seektable(
 }
 
 /// A bounds-checked cursor over a block body.
-struct Bytes<'a>(&'a [u8]);
+pub(crate) struct Bytes<'a>(pub(crate) &'a [u8]);
 
 impl<'a> Bytes<'a> {
-    fn take(&mut self, n: usize) -> Result<&'a [u8], FormatError> {
+    pub(crate) fn take(&mut self, n: usize) -> Result<&'a [u8], FormatError> {
         if n > self.0.len() {
             return Err(invalid("a metadata block is shorter than its contents"));
         }
@@ -225,9 +235,27 @@ impl<'a> Bytes<'a> {
         Ok(head)
     }
 
-    fn u64_be(&mut self) -> Result<u64, FormatError> {
+    pub(crate) fn u8(&mut self) -> Result<u8, FormatError> {
+        Ok(self.take(1)?[0])
+    }
+
+    pub(crate) fn u32_le(&mut self) -> Result<u32, FormatError> {
+        let b = self.take(4)?;
+        Ok(u32::from_le_bytes([b[0], b[1], b[2], b[3]]))
+    }
+
+    pub(crate) fn u64_be(&mut self) -> Result<u64, FormatError> {
         let mut out = [0u8; 8];
         out.copy_from_slice(self.take(8)?);
         Ok(u64::from_be_bytes(out))
+    }
+
+    /// Rejects bytes left over after the last field.
+    pub(crate) fn finish(self) -> Result<(), FormatError> {
+        if self.0.is_empty() {
+            Ok(())
+        } else {
+            Err(invalid("a metadata block has bytes after its contents"))
+        }
     }
 }
