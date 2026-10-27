@@ -1,0 +1,1 @@
+{"wp": "WP-0.2-16", "kind": "changed", "summary": "syrp-progress: links point at SYRP-Foundation/SYRP; the WP treemap labels each wave; the roadmap fills every phase from its waves; the merge chart scales its time axis; every innerHTML value is escaped."}

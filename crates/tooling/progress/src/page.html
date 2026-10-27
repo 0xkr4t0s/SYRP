@@ -17,10 +17,10 @@
   --ink-3: #8a8478;
   --rule: #e2dfd7;
   --track: #ebe8e0;
-  --amber: #b86a00;       /* done / verified */
+  --amber: #b86a00;       /* accent: links, chart line */
   --amber-soft: #f0b75a;  /* in progress */
-  --gap: #9c968a;
-  --done: #2f9a3e;
+  --gap: #9c968a;         /* deliberate gap hatching */
+  --done: #2f9a3e;        /* verified / done */
   --map-bg: #2b2925;
   --cell-todo: #6d6a64;
   --map-ink: #ffffff;
@@ -179,7 +179,7 @@ footer { color: var(--ink-3); font: 0.78rem var(--mono); border-top: 1px solid v
   </section>
 
   <section aria-labelledby="h-road">
-    <div class="sec-head"><h2 id="h-road">Roadmap</h2><p>Phase widths follow the master plan's week estimates. Only Phase 0 has work packages on the board so far.</p></div>
+    <div class="sec-head"><h2 id="h-road">Roadmap</h2><p>Phase widths follow the master plan's week estimates. Each bar fills with the work packages of that phase's waves; a phase with no waves on the board yet stays empty.</p></div>
     <div class="roadmap"><div class="phases" id="phases"></div></div>
   </section>
 
@@ -206,7 +206,7 @@ footer { color: var(--ink-3); font: 0.78rem var(--mono); border-top: 1px solid v
     <h2 id="h-how">How it is counted</h2>
     <div class="method">
       <p><strong>Classes.</strong> The total is the classes listed in <span class="mono">parity/inventory/juce-9.0.4-classes.json</span>, read from JUCE's public docs. Ten modules are not fully listed yet, so the total will grow; graphics and GUI modules are the biggest missing blocks.</p>
-      <p><strong>Verified.</strong> A ledger row with status done or mapped, backed by a passing parity scenario in CI. None exist yet because no parity scenarios have run.</p>
+      <p><strong>Verified.</strong> A ledger row with status done or mapped, backed by a passing parity scenario in CI. Classes stay in progress until a scenario proves them; <span id="nver"></span>.</p>
       <p><strong>In progress.</strong> A ledger row whose owning work package has merged code. The Rust API exists but has not been checked against JUCE behaviour.</p>
       <p><strong>Gaps.</strong> Deliberate omissions with a written reason, such as VST2 and audio CD burning. They count as settled, not as missing. The Projucer GUI is a tooling gap and is not in the module table.</p>
     </div>
@@ -229,14 +229,14 @@ const PHASES = [
   [3,"Graphics and GUI basics",13,"12–14 wk"],[4,"Plugins",13,"12–14 wk"],[5,"GUI extras, remaining modules",9,"8–10 wk"],
   [6,"Mobile, web, completion",11,"10–12 wk"],[7,"Parity closure, 1.0",7,"6–8 wk"],[8,"Interop",14,"12–16 wk"]
 ];
-const REPO = "https://github.com/0xkr4t0s/SYRP";
-// Every string that comes from the repo (titles, names, subjects) goes through esc before it
-// reaches innerHTML; tooltips are set with textContent.
+const REPO = "https://github.com/SYRP-Foundation/SYRP";
+// Every value interpolated into innerHTML goes through esc, numbers and page constants included,
+// so a hostile title or a malformed snapshot can never add markup; tooltips use textContent.
 const esc = s => String(s).replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]);
 const el = (t, a = {}, h = "") => { const e = document.createElement(t); for (const k in a) e.setAttribute(k, a[k]); e.innerHTML = h; return e; };
 const pct = (a, b) => b ? (100 * a / b) : 0;
 const fmtPct = x => (x < 1 && x > 0 ? x.toFixed(1) : Math.round(x)) + "%";
-const bar = (parts, total) => `<div class="bar" role="img" aria-label="${parts.map(p => p[2] + ' ' + p[1]).join(', ')} of ${total}">${parts.filter(p => p[1] > 0).map(p => `<span class="s-${p[0]}" style="width:${pct(p[1], total)}%"></span>`).join("")}</div>`;
+const bar = (parts, total) => `<div class="bar" role="img" aria-label="${esc(parts.map(p => p[2] + ' ' + p[1]).join(', '))} of ${esc(total)}">${parts.filter(p => p[1] > 0).map(p => `<span class="s-${esc(p[0])}" style="width:${esc(pct(p[1], total))}%"></span>`).join("")}</div>`;
 
 // totals
 const mods = D.modules.map(m => {
@@ -252,57 +252,57 @@ const lastPr = D.prs[D.prs.length - 1] || { t: "" };
 const openPrs = allWps.flatMap(w => w.open);
 
 document.getElementById("meta").innerHTML =
-  `<span>main @ <a href="${REPO}/commit/${esc(D.commit)}">${esc(D.commit)}</a></span><span>as of ${esc(lastPr.t.replace("T", " ").replace("Z", " UTC"))}</span><span>baseline JUCE 9.0.4</span>`;
+  `<span>main @ <a href="${esc(REPO)}/commit/${esc(D.commit)}">${esc(D.commit)}</a></span><span>as of ${esc(lastPr.t.replace("T", " ").replace("Z", " UTC"))}</span><span>baseline JUCE 9.0.4</span>`;
 
 document.getElementById("meters").innerHTML = [
-  { k: "JUCE classes verified", big: `${T.verified}<small> of ${T.total}</small>`, parts: [["done", T.verified, "verified"], ["active", T.inwork, "in progress"], ["gap", T.gap, "gaps"]], total: T.total,
-    sub: `${T.inwork} in progress · ${T.gap} deliberate gaps · ${incomplete} of ${mods.length} modules not fully inventoried` },
-  { k: "Work packages done", big: `${wc("done")}<small> of ${allWps.length}</small>`, parts: [["done", wc("done"), "done"], ["active", wc("active"), "in progress"]], total: allWps.length,
-    sub: `${wc("active")} in progress · ${wc("planned")} planned · ${wc("parked")} parked until their core crates exist` },
-  { k: "Pull requests merged", big: `${D.prs.length}<small> on main</small>`, parts: [["done", D.prs.length, "merged"], ["active", openPrs.length, "open"]], total: D.prs.length + openPrs.length,
-    sub: `${openPrs.length} open in review · ${D.prs.filter(p => p.wp).length} tied to a work package` },
-].map(m => `<div class="meter"><span class="eyebrow">${m.k}</span><div class="big num">${m.big}</div>${bar(m.parts, m.total)}<div class="sub">${m.sub}</div></div>`).join("");
+  { k: "JUCE classes verified", big: `${esc(T.verified)}<small> of ${esc(T.total)}</small>`, parts: [["done", T.verified, "verified"], ["active", T.inwork, "in progress"], ["gap", T.gap, "gaps"]], total: T.total,
+    sub: `${esc(T.inwork)} in progress · ${esc(T.gap)} deliberate gaps · ${esc(incomplete)} of ${esc(mods.length)} modules not fully inventoried` },
+  { k: "Work packages done", big: `${esc(wc("done"))}<small> of ${esc(allWps.length)}</small>`, parts: [["done", wc("done"), "done"], ["active", wc("active"), "in progress"]], total: allWps.length,
+    sub: `${esc(wc("active"))} in progress · ${esc(wc("planned"))} planned · ${esc(wc("parked"))} parked until their core crates exist` },
+  { k: "Pull requests merged", big: `${esc(D.prs.length)}<small> on main</small>`, parts: [["done", D.prs.length, "merged"], ["active", openPrs.length, "open"]], total: D.prs.length + openPrs.length,
+    sub: `${esc(openPrs.length)} open in review · ${esc(D.prs.filter(p => p.wp).length)} tied to a work package` },
+].map(m => `<div class="meter"><span class="eyebrow">${esc(m.k)}</span><div class="big num">${m.big}</div>${bar(m.parts, m.total)}<div class="sub">${m.sub}</div></div>`).join("");
 
-// roadmap
-const p0 = D.waves.filter(w => w.phase === 0).flatMap(w => w.wps);
-const p1 = D.waves.filter(w => w.phase === 1).flatMap(w => w.wps);
+// roadmap: each phase's bar fills with the work packages of its waves
+const byPhase = n => D.waves.filter(w => w.phase === n).flatMap(w => w.wps);
+const unfinished = n => byPhase(n).some(w => w.status === "active" || w.status === "planned");
+// "now" is the latest phase with a work package in progress, else the first one with work left
+const nowPhase = [...PHASES].reverse().map(p => p[0]).find(n => byPhase(n).some(w => w.status === "active")) ?? PHASES.map(p => p[0]).find(unfinished);
 document.getElementById("phases").innerHTML = PHASES.map(([n, name, wk, wkl]) => {
-  let inner = "", note = "";
-  if (n === 0) {
-    const d = p0.filter(w => w.status === "done").length, a = p0.filter(w => w.status === "active").length;
-    inner = `<span class="s-done" style="width:${pct(d, p0.length)}%"></span><span class="s-active" style="width:${pct(a, p0.length)}%"></span>`;
-    note = `<span class="here">${d} of ${p0.length} WPs done · in progress now</span>`;
-  } else if (n === 1) note = `<span class="wk">${p1.length} compat WPs parked</span>`;
-  return `<div class="phase${n === 0 ? " now" : ""}${n === 8 ? " interop" : ""}" style="flex:${wk} 1 0"><div class="track" role="img" aria-label="Phase ${n}">${inner}</div><div class="label"><b>P${n}</b>${name}</div><span class="wk">${wkl}</span>${note}</div>`;
+  const ws = byPhase(n), cnt = s => ws.filter(w => w.status === s).length;
+  const [d, a, k] = [cnt("done"), cnt("active"), cnt("parked")];
+  const inner = ws.length ? `<span class="s-done" style="width:${esc(pct(d, ws.length))}%"></span><span class="s-active" style="width:${esc(pct(a, ws.length))}%"></span>` : "";
+  const note = ws.length ? `<span class="${n === nowPhase ? "here" : "wk"}">${esc(d)} of ${esc(ws.length)} WPs done${a ? ` · ${esc(a)} in progress` : ""}${k ? ` · ${esc(k)} parked` : ""}</span>` : "";
+  return `<div class="phase${n === nowPhase ? " now" : ""}${n === 8 ? " interop" : ""}" style="flex:${esc(wk)} 1 0"><div class="track" role="img" aria-label="Phase ${esc(n)}">${inner}</div><div class="label"><b>P${esc(n)}</b>${esc(name)}</div><span class="wk">${esc(wkl)}</span>${note}</div>`;
 }).join("");
 
 // modules table
 const tbody = document.querySelector("#mods tbody");
 let lastPhase = null;
 mods.sort((a, b) => a.phase - b.phase || b.total - a.total).forEach(m => {
-  if (m.phase !== lastPhase) { lastPhase = m.phase; tbody.append(el("tr", { class: "phase-row" }, `<td colspan="9">Phase ${m.phase} · ${PHASES[m.phase]?.[1] ?? ""}</td>`)); }
+  if (m.phase !== lastPhase) { lastPhase = m.phase; tbody.append(el("tr", { class: "phase-row" }, `<td colspan="9">Phase ${esc(m.phase)} · ${esc(PHASES[m.phase]?.[1] ?? "")}</td>`)); }
   const settled = m.verified + m.gap;
   const tr = el("tr", {}, `
     <td><span class="mono">${esc(m.module)}</span>${m.inwork_classes.length ? `<div class="tag-list">${esc(m.inwork_classes.join(", "))}</div>` : ""}</td>
-    <td class="n">${m.phase}</td><td>${m.diff}</td>
-    <td class="n">${m.total || "–"}</td><td class="n">${m.verified}</td><td class="n">${m.inwork || ""}</td><td class="n">${m.gap || ""}</td>
+    <td class="n">${esc(m.phase)}</td><td>${esc(m.diff)}</td>
+    <td class="n">${esc(m.total || "–")}</td><td class="n">${esc(m.verified)}</td><td class="n">${esc(m.inwork || "")}</td><td class="n">${esc(m.gap || "")}</td>
     <td>${m.total ? bar([["done", m.verified, "verified"], ["active", m.inwork, "in progress"], ["gap", m.gap, "gaps"]], m.total) : `<span class="tag-list">not listed yet</span>`}</td>
     <td>${m.complete ? `<span class="chip">complete</span>` : `<span class="chip" title="Module listing at docs.juce.com not fully read yet">partial</span>`}</td>`);
   if (m.gaps.length) tr.children[6].title = m.gaps.join(", ");
   tbody.append(tr);
 });
-tbody.append(el("tr", {}, `<td><strong>All modules</strong></td><td></td><td></td><td class="n"><strong>${T.total}</strong></td><td class="n"><strong>${T.verified}</strong></td><td class="n"><strong>${T.inwork}</strong></td><td class="n"><strong>${T.gap}</strong></td><td>${bar([["done", T.verified, "verified"], ["active", T.inwork, "in progress"], ["gap", T.gap, "gaps"]], T.total)}</td><td class="mono">${fmtPct(pct(T.verified, T.total))} verified</td>`));
+tbody.append(el("tr", {}, `<td><strong>All modules</strong></td><td></td><td></td><td class="n"><strong>${esc(T.total)}</strong></td><td class="n"><strong>${esc(T.verified)}</strong></td><td class="n"><strong>${esc(T.inwork)}</strong></td><td class="n"><strong>${esc(T.gap)}</strong></td><td>${bar([["done", T.verified, "verified"], ["active", T.inwork, "in progress"], ["gap", T.gap, "gaps"]], T.total)}</td><td class="mono">${esc(fmtPct(pct(T.verified, T.total)))} verified</td>`));
 
 // WP board
 const ST = { done: ["done", "Done"], active: ["active", "In progress"], planned: ["todo", "Planned"], parked: ["parked", "Parked"] };
 document.getElementById("waves").innerHTML = D.waves.map(w => {
   const d = w.wps.filter(x => x.status === "done").length;
-  return `<div class="wave"><h3>Wave ${esc(w.id)} · ${esc(w.title.replace(/,? parked until.*$/, ""))} <span class="mono">${d}/${w.wps.length} done${w.enabled ? "" : " · wave disabled"}</span></h3>
+  return `<div class="wave"><h3>Wave ${esc(w.id)} · ${esc(w.title.replace(/,? parked until.*$/, ""))} <span class="mono">${esc(d)}/${esc(w.wps.length)} done${w.enabled ? "" : " · wave disabled"}</span></h3>
   <div class="wps">${w.wps.map(x => {
-    const [cls, label] = ST[x.status];
-    const link = n => `<a href="${REPO}/pull/${Number(n)}">#${Number(n)}</a>`;
+    const [cls, label] = ST[x.status] ?? ["todo", String(x.status)];
+    const link = n => `<a href="${esc(REPO)}/pull/${esc(Number(n))}">#${esc(Number(n))}</a>`;
     const prs = [...x.prs.map(link), ...x.open.map(n => `${link(n)} open`)].join(" ");
-    return `<div class="wp"><span class="dot s-${cls}" aria-hidden="true"></span><div class="top"><span>${esc(x.id)}</span><span class="st ${esc(x.status)}">${label}</span></div>
+    return `<div class="wp"><span class="dot s-${esc(cls)}" aria-hidden="true"></span><div class="top"><span>${esc(x.id)}</span><span class="st ${esc(x.status)}">${esc(label)}</span></div>
       <div class="ttl">${esc(x.title)}</div><div class="prs">${esc(x.crate ? x.crate.replace("crates/", "") : "repo-wide")}${prs ? " · " + prs : ""}</div></div>`;
   }).join("")}</div></div>`;
 }).join("");
@@ -340,42 +340,49 @@ document.getElementById("waves").innerHTML = D.waves.map(w => {
     }
     return out;
   }
-  function panel(title, leaves, W, H, drawLeaf) {
-    const tm = { leaves: () => leaves };
+  // a rectangle; every attribute value is escaped, so callers may pass data straight in
+  const rect = (x, y, w, h, fill, tip) => `<rect x="${esc(x.toFixed(2))}" y="${esc(y.toFixed(2))}" width="${esc(Math.max(0, w).toFixed(2))}" height="${esc(Math.max(0, h).toFixed(2))}" fill="${esc(fill)}"${tip ? ` data-tip="${esc(tip)}"` : ""}/>`;
+  const text = (x, y, s, cls = "lbl") => `<text class="${esc(cls)}" x="${esc(x.toFixed(2))}" y="${esc(y.toFixed(2))}">${esc(s)}</text>`;
+  const fit = (s, w, px) => s.length * px > w - 8 ? s.slice(0, Math.max(3, Math.floor((w - 8) / px))) : s;
+  // head = [title text, detail text]; both are escaped here
+  function panel(head, svg, W, H) {
     const div = document.createElement("div"); div.className = "map";
-    div.innerHTML = `<h3>${title}</h3><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${title.replace(/<[^>]+>/g, "")}">${defs}${tm.leaves().map(drawLeaf).join("")}</svg>`;
+    div.innerHTML = `<h3>${esc(head[0])} <span class="num">${esc(head[1])}</span></h3><svg viewBox="0 0 ${esc(W)} ${esc(H)}" role="img" aria-label="${esc(head.join(" "))}">${defs}${svg}</svg>`;
     host.append(div);
   }
   // left: JUCE modules -> classes
   const W = 600, H = 420;
-  const verified = mods.reduce((a, m) => a + m.verified, 0);
   const root = squarify(mods.map(m => ({ m, value: m.total || 10 })), -1.5, -1.5, W + 1.5, H + 1.5, 3);
-  panel(`JUCE classes: ${fmtPct(pct(verified, T.total))} <span class="num">(${verified}/${T.total} verified, ${T.inwork} in progress)</span>`, root, W, H, leaf => {
+  panel([`JUCE classes: ${fmtPct(pct(T.verified, T.total))}`, `(${T.verified}/${T.total} verified, ${T.inwork} in progress)`], root.map(leaf => {
     const m = leaf.data.m, x = leaf.x0, y = leaf.y0, w = leaf.x1 - leaf.x0, h = leaf.y1 - leaf.y0, name = m.module.replace(/^juce_/, "");
-    let body = "";
+    let body;
     if (!m.total) {
-      body = `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#hatch2)" data-tip="${esc(m.module)}|Class listing not read from the docs yet · phase ${m.phase}"/>`;
+      body = rect(x, y, w, h, "url(#hatch2)", `${m.module}|Class listing not read from the docs yet · phase ${m.phase}`);
     } else {
-      const cells = [...m.cells].sort((a, b) => ORDER[a[1]] - ORDER[b[1]]);
+      const cells = [...m.cells].sort((a, b) => (ORDER[a[1]] ?? 9) - (ORDER[b[1]] ?? 9));
       // stretch the near-square grid to fill the block; only the last row stays partly empty
       const g = grid(w, h, cells.length), cw = w / g.cols, ch = h / Math.ceil(cells.length / g.cols), gap = Math.min(cw, ch) > 6 ? 1 : 0.6;
-      body = `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="var(--map-bg)"/>` + cells.map(([c, st], i) =>
-        `<rect x="${(x + (i % g.cols) * cw + gap / 2).toFixed(2)}" y="${(y + Math.floor(i / g.cols) * ch + gap / 2).toFixed(2)}" width="${(cw - gap).toFixed(2)}" height="${(ch - gap).toFixed(2)}" fill="${COL[st]}" data-tip="${esc(c)}|${esc(m.module)} · ${LBL[st]}"/>`).join("");
+      body = rect(x, y, w, h, "var(--map-bg)") + cells.map(([c, st], i) =>
+        rect(x + (i % g.cols) * cw + gap / 2, y + Math.floor(i / g.cols) * ch + gap / 2, cw - gap, ch - gap, COL[st] ?? COL.todo, `${c}|${m.module} · ${LBL[st] ?? st}`)).join("");
     }
-    const lab = w > 34 && h > 16 ? `<text class="lbl" x="${x + 4}" y="${y + 13}">${esc(name.length * 6.4 > w - 6 ? name.slice(0, Math.max(3, Math.floor((w - 8) / 6.4))) : name)}</text>` +
-      (w > 60 && h > 30 ? `<text class="lbl sub" x="${x + 4}" y="${y + 25}">${m.total ? `${m.verified}/${m.total}` : "not listed"}</text>` : "") : "";
+    const lab = w > 34 && h > 16 ? text(x + 4, y + 13, fit(name, w, 6.4)) +
+      (w > 60 && h > 30 ? text(x + 4, y + 25, m.total ? `${m.verified}/${m.total}` : "not listed", "lbl sub") : "") : "";
     return body + lab;
-  });
-  // right: work packages grouped by wave, sized by budget
-  const wroot = squarify(D.waves.map(w => ({ w, value: w.wps.reduce((s, x) => s + x.hours, 0) })), -1.5, -1.5, W + 1.5, H + 1.5, 6)
-    .flatMap(g => squarify(g.data.w.wps.map(x => ({ x, value: x.hours })), g.x0, g.y0, g.x1, g.y1, 3).map(l => ({ ...l, wave: g.data.w })));
-  const done = allWps.filter(w => w.status === "done").length;
-  panel(`Work packages: ${fmtPct(pct(done, allWps.length))} <span class="num">(${done}/${allWps.length} done, ${wc("active")} in progress)</span>`, wroot, W, H, leaf => {
-    const x = leaf.data.x, X = leaf.x0, Y = leaf.y0, w = leaf.x1 - leaf.x0, h = leaf.y1 - leaf.y0;
-    const short = x.title.split(":")[0];
-    return `<rect x="${X}" y="${Y}" width="${w}" height="${h}" fill="${COL[x.status]}" data-tip="${esc(x.id)} · ${LBL[x.status]}|${esc(x.title)}"/>
-      <text class="lbl" x="${X + 4}" y="${Y + 13}">${esc(x.id.replace("WP-", ""))}</text>${w > 70 && h > 30 ? `<text class="lbl sub" x="${X + 4}" y="${Y + 25}">${esc(short.length * 5.8 > w - 8 ? short.slice(0, Math.floor((w - 8) / 5.8)) + "…" : short)}</text>` : ""}`;
-  });
+  }).join(""), W, H);
+  // right: work packages grouped by wave (a labelled block per wave), sized by agent-hour budget
+  const HEAD = 15;
+  const groups = squarify(D.waves.filter(w => w.wps.length).map(w => ({ w, value: w.wps.reduce((s, x) => s + x.hours, 0) })), -1.5, -1.5, W + 1.5, H + 1.5, 6);
+  const done = wc("done");
+  panel([`Work packages: ${fmtPct(pct(done, allWps.length))}`, `(${done}/${allWps.length} done, ${wc("active")} in progress)`], groups.map(g => {
+    const wave = g.data.w, gw = g.x1 - g.x0, head = gw > 40 && g.y1 - g.y0 > HEAD + 20 ? HEAD : 0;
+    const label = head ? rect(g.x0, g.y0, gw, head, "var(--map-bg)", `Wave ${wave.id}|${wave.title}`) + text(g.x0 + 3, g.y0 + 11, fit(`Wave ${wave.id}`, gw, 6.4), "lbl sub") : "";
+    return label + squarify(wave.wps.map(x => ({ x, value: x.hours })), g.x0, g.y0 + head, g.x1, g.y1, 3).map(leaf => {
+      const x = leaf.data.x, X = leaf.x0, Y = leaf.y0, w = leaf.x1 - leaf.x0, h = leaf.y1 - leaf.y0, short = x.title.split(":")[0];
+      return rect(X, Y, w, h, COL[x.status] ?? COL.planned, `${x.id} · ${LBL[x.status] ?? x.status}|${x.title} · ${x.hours} agent-hours`) +
+        (w > 30 && h > 16 ? text(X + 4, Y + 13, x.id.replace("WP-", "")) : "") +
+        (w > 70 && h > 30 ? text(X + 4, Y + 25, short.length * 5.8 > w - 8 ? short.slice(0, Math.floor((w - 8) / 5.8)) + "…" : short, "lbl sub") : "");
+    }).join("");
+  }).join(""), W, H);
   host.addEventListener("pointermove", e => {
     const t = e.target.closest("[data-tip]");
     if (!t) { tip.hidden = true; return; }
@@ -394,23 +401,28 @@ document.getElementById("waves").innerHTML = D.waves.map(w => {
   const box = document.getElementById("chart"), tip = document.getElementById("tip");
   const W = 960, H = 260, L = 34, R = 14, Tp = 12, B = 28;
   const pts = D.prs.map((p, i) => ({ ...p, x: Date.parse(p.t), y: i + 1 }));
-  const x0 = Math.floor(pts[0].x / 36e5) * 36e5, x1 = Math.ceil(pts[pts.length - 1].x / 36e5) * 36e5;
+  const x0 = Math.floor(pts[0].x / 36e5) * 36e5, x1 = Math.max(x0 + 36e5, Math.ceil(pts[pts.length - 1].x / 36e5) * 36e5);
   const yMax = Math.ceil(pts.length / 10) * 10;
   const sx = v => L + (v - x0) / (x1 - x0) * (W - L - R), sy = v => H - B - v / yMax * (H - Tp - B);
   let g = "";
-  for (let v = 0; v <= yMax; v += 10) g += `<line x1="${L}" x2="${W - R}" y1="${sy(v)}" y2="${sy(v)}" stroke="var(--rule)" stroke-width="1"/><text x="${L - 8}" y="${sy(v) + 4}" text-anchor="end">${v}</text>`;
-  for (let t = x0; t <= x1; t += 36e5) g += `<text x="${sx(t)}" y="${H - 8}" text-anchor="middle">${new Date(t).toISOString().slice(11, 16)}</text>`;
+  const yStep = Math.max(10, Math.ceil(yMax / 80) * 10);
+  for (let v = 0; v <= yMax; v += yStep) g += `<line x1="${esc(L)}" x2="${esc(W - R)}" y1="${esc(sy(v))}" y2="${esc(sy(v))}" stroke="var(--rule)" stroke-width="1"/><text x="${esc(L - 8)}" y="${esc(sy(v) + 4)}" text-anchor="end">${esc(v)}</text>`;
+  // at most about twelve time labels: hours for a short history, then days, then weeks (UTC)
+  const span = x1 - x0, HOUR = 36e5, DAY = 24 * HOUR;
+  const step = [HOUR, 3 * HOUR, 6 * HOUR, 12 * HOUR, DAY, 2 * DAY, 7 * DAY, 14 * DAY, 28 * DAY].find(s => span / s <= 12) ?? 56 * DAY;
+  const label = t => step < DAY ? new Date(t).toISOString().slice(11, 16) : new Date(t).toISOString().slice(5, 10);
+  for (let t = Math.ceil(x0 / step) * step; t <= x1; t += step) g += `<text x="${esc(sx(t))}" y="${esc(H - 8)}" text-anchor="middle">${esc(label(t))}</text>`;
   let d = `M${sx(pts[0].x)},${sy(0)}`; pts.forEach(p => d += ` H${sx(p.x)} V${sy(p.y)}`); d += ` H${sx(x1)}`;
   const area = d + ` V${sy(0)} Z`;
   const last = pts[pts.length - 1];
-  box.insertAdjacentHTML("afterbegin", `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Cumulative merged pull requests, ${pts.length} by ${last.t}">
-    ${g}<path d="${area}" fill="var(--amber)" fill-opacity="0.12"/><path d="${d}" fill="none" stroke="var(--amber)" stroke-width="2" stroke-linejoin="round"/>
-    <circle cx="${sx(last.x)}" cy="${sy(last.y)}" r="4.5" fill="var(--amber)" stroke="var(--panel)" stroke-width="2"/>
-    <text x="${sx(last.x) - 8}" y="${sy(last.y) - 10}" text-anchor="end" style="fill:var(--ink)">${last.y} merged</text>
-    <line id="xh" y1="${Tp}" y2="${H - B}" stroke="var(--ink-3)" stroke-dasharray="3 3" visibility="hidden"/>
+  box.insertAdjacentHTML("afterbegin", `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Cumulative merged pull requests, ${esc(pts.length)} by ${esc(last.t)}">
+    ${g}<path d="${esc(area)}" fill="var(--amber)" fill-opacity="0.12"/><path d="${esc(d)}" fill="none" stroke="var(--amber)" stroke-width="2" stroke-linejoin="round"/>
+    <circle cx="${esc(sx(last.x))}" cy="${esc(sy(last.y))}" r="4.5" fill="var(--amber)" stroke="var(--panel)" stroke-width="2"/>
+    <text x="${esc(sx(last.x) - 8)}" y="${esc(sy(last.y) - 10)}" text-anchor="end" style="fill:var(--ink)">${esc(last.y)} merged</text>
+    <line id="xh" y1="${esc(Tp)}" y2="${esc(H - B)}" stroke="var(--ink-3)" stroke-dasharray="3 3" visibility="hidden"/>
     <circle id="hp" r="4.5" fill="var(--panel)" stroke="var(--amber)" stroke-width="2" visibility="hidden"/>
-    <text x="${W - R}" y="${H - 8 - 14}" text-anchor="end">UTC, ${last.t.slice(0, 10)}</text>
-    <rect x="${L}" y="${Tp}" width="${W - L - R}" height="${H - Tp - B}" fill="transparent" id="hit"/></svg>`);
+    <text x="${esc(W - R)}" y="${esc(H - 8 - 14)}" text-anchor="end">${esc(step < DAY ? "UTC, " + last.t.slice(0, 10) : "UTC dates, month-day")}</text>
+    <rect x="${esc(L)}" y="${esc(Tp)}" width="${esc(W - L - R)}" height="${esc(H - Tp - B)}" fill="transparent" id="hit"/></svg>`);
   const svg = box.querySelector("svg"), xh = svg.getElementById("xh"), hp = svg.getElementById("hp");
   svg.getElementById("hit").addEventListener("pointermove", e => {
     const r = svg.getBoundingClientRect(), vx = (e.clientX - r.left) / r.width * W;
@@ -418,14 +430,15 @@ document.getElementById("waves").innerHTML = D.waves.map(w => {
     xh.setAttribute("x1", sx(best.x)); xh.setAttribute("x2", sx(best.x)); xh.setAttribute("visibility", "visible");
     hp.setAttribute("cx", sx(best.x)); hp.setAttribute("cy", sy(best.y)); hp.setAttribute("visibility", "visible");
     tip.hidden = false;
-    tip.replaceChildren(Object.assign(document.createElement("b"), { textContent: `#${best.n} · ${best.t.slice(11, 16)} UTC · ${best.y} total` }), document.createElement("br"), best.title);
+    tip.replaceChildren(Object.assign(document.createElement("b"), { textContent: `#${best.n} · ${best.t.slice(0, 16).replace("T", " ")} UTC · ${best.y} total` }), document.createElement("br"), best.title);
     const px = sx(best.x) / W * r.width, py = sy(best.y) / H * r.height;
     tip.style.left = Math.min(Math.max(px - 140, 4), r.width - 284) + 12 + "px"; tip.style.top = Math.max(py - 70, 0) + "px";
   });
   svg.getElementById("hit").addEventListener("pointerleave", () => { tip.hidden = true; xh.setAttribute("visibility", "hidden"); hp.setAttribute("visibility", "hidden"); });
 })();
 
-document.getElementById("foot").innerHTML = `Sources: work/waves, work/packages, parity/inventory, parity/ledger.json (seed while empty), git log of main @ ${esc(D.commit)}, open PRs on GitHub. Data: ${D.prs.length} PRs, ${allWps.length} WPs, ${T.total} classes.`;
+document.getElementById("nver").textContent = `${T.verified} of ${T.total} classes are verified so far`;
+document.getElementById("foot").innerHTML = `Sources: work/waves, work/packages, parity/inventory, parity/ledger.json (seed while empty), git log of main @ <a href="${esc(REPO)}/commit/${esc(D.commit)}">${esc(D.commit)}</a>, open PRs on <a href="${esc(REPO)}/pulls">GitHub</a>. Data: ${esc(D.prs.length)} PRs, ${esc(allWps.length)} WPs, ${esc(T.total)} classes.`;
 </script>
 </body>
 </html>

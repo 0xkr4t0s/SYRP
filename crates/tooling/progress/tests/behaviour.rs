@@ -247,6 +247,13 @@ fn b4_page_embeds_data_and_cannot_be_broken_out_of() {
 }
 
 #[test]
+fn b4_page_links_to_the_foundation_repository() {
+    let html = syrp_progress::render_html(&syrp_progress::Progress::default());
+    assert!(html.contains(r#"const REPO = "https://github.com/SYRP-Foundation/SYRP";"#));
+    assert!(!html.contains("0xkr4t0s"), "no link to the old repository");
+}
+
+#[test]
 fn b5_binary_writes_both_files_and_reports_bad_input() {
     let root = fixture("b5");
     let out = root.join("site/progress");
