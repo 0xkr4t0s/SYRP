@@ -1,0 +1,1 @@
+{"wp": "WP-2.1-14", "kind": "added", "summary": "syrp-format-wav: WAV writer for 8/16/24/32-bit integer and 32-bit float, plain or extensible headers with channel masks, metadata chunks between fmt and data, and RF64 via a reserved JUNK chunk (increment 3: B4)."}

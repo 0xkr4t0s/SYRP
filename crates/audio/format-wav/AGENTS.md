@@ -12,6 +12,7 @@ increments: (1) B1–B2 plain RIFF; (2) B2 extensible/masks/RF64 and B3 metadata
 |---|---|
 | `src/riff.rs` | Chunk walk, `ds64`, `fmt ` parsing |
 | `src/meta.rs` | Metadata chunks → contract `Metadata` (B3) |
+| `src/writer.rs`, `src/meta_write.rs` | `WavWriter` (B4) and metadata chunk encoding |
 | `src/layout.rs` | Channel mask ↔ `ChannelSet` (private table of Microsoft's speaker bits) |
 | `src/reader.rs` | `WavReader`, sample decoding |
 | `src/error.rs` | `WavError` (`SYRP-FORMAT-0006`..`0013`) |
@@ -24,6 +25,10 @@ juce_audio_formats/WavAudioFormat
   WP-2.1-02 B2 mapping, implemented locally (no `syrp-audio-basics` dependency). Bits below
   `valid_bits_per_sample` are padding and ignored.
 - Channels come out in `ChannelSet` canonical order; `layout::from_mask` gives the permutation.
+- Writing: floats become integers by ×2^(bits − 1), round half away from zero, clip, NaN → 0
+  (WP-2.1-02 B2 rule, `b4_rounds_ties_away_clips_and_zeroes_nan_syrp_choice`).
+- The writer reserves a 28-byte `JUNK` at offset 12; `finish` (or drop, best effort) turns it
+  into `ds64` and the header into `RF64` when the RIFF size exceeds `rf64_threshold`.
 - No panic on any input. Every allocation sized by the input is checked against the input
   length first and uses `try_reserve_exact` (`SYRP-FORMAT-0011` on failure).
 - `WavError` converts into `FormatError` with its code at the start of the reason text.
@@ -52,6 +57,14 @@ juce_audio_formats/WavAudioFormat
   metadata chunk past the end of the input is skipped
   (`b3_metadata_chunk_past_the_end_is_skipped_syrp_choice`). `JUNK`, `fact`, `LIST` types other
   than `INFO`/`adtl`, and chunks JUCE's docs do not name are not reported.
+- Writer header: plain `fmt ` for ≤ 2 channels and ≤ 16 bits, else extensible (so 32-bit
+  float is extensible with the float GUID). A `discrete(1|2)` layout written plain reads back
+  as mono/stereo. Fractional rates and positions past 2^32 frames are `SYRP-FORMAT-0003`.
+- Writer metadata goes after `fmt ` and before `data`. Cues (plus a `LIST`/`adtl` of `labl`s),
+  loops (one `smpl`, unity note 60, period 10^9/rate ns) and tags (one `LIST`/`INFO`) are each
+  written at their first item's place. `Other` items with ids that are not four bytes, or
+  `RIFF`/`RF64`/`BW64`/`ds64`/`fmt `/`data`, and custom tags that are not four bytes, are skipped.
+  An `Other("bext")` supplies bytes 346..602 of the `Bext` item instead of a second chunk.
 - `sample_rates()` is empty (any whole rate); `name()` is `"WAV file"`.
 - An unknown chunk that runs past the end ends the walk without an error.
 
@@ -69,7 +82,6 @@ cargo syrp wp check WP-2.1-14
 Test files are built byte by byte in `tests/common/mod.rs` from the public layouts.
 
 ## Known gaps
-- Writer (B4; `create_writer` returns `SYRP-FORMAT-0003` until then): next increment.
 - Contract gaps: `smpl` header fields (MIDI unity note, SMPTE), `ltxt`, and a `note` shadowed
   by a `labl` are not reported.
 - Byte-flip/truncation proptest (B5) and parity scenarios (B6): final increment.
