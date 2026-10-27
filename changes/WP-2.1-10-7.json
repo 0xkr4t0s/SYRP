@@ -1,0 +1,1 @@
+{"wp": "WP-2.1-10", "kind": "added", "summary": "syrp-dsp-core: elliptic special functions (elliptic_integral_k, cde, sne, asne), the SIMDRegister to syrp-simd map, a Callgrind bench for the order-10 real FFT and allocation-guard tests over every audio-thread call (increment 7, final: B6-B7)."}

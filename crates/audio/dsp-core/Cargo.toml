@@ -24,5 +24,9 @@ syrp-simd = { version = "0.0.1", path = "../../foundation/simd" }
 [dev-dependencies]
 syrp-testkit = { version = "0.0.1", path = "../../tooling/testkit" }
 
+[[bench]]
+name = "fft"
+harness = false
+
 [lints]
 workspace = true
