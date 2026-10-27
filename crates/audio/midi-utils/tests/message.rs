@@ -257,7 +257,7 @@ fn b5_crate_layout_leaves_file_and_ump_to_their_work_packages() {
         .unwrap();
     let names: Vec<&str> = deps
         .lines()
-        .filter_map(|l| l.split(' ').next())
+        .filter_map(|l| l.trim().split(' ').next())
         .filter(|n| !n.is_empty())
         .collect();
     assert_eq!(names, ["syrp-error", "syrp-midi", "syrp-rt"]);
