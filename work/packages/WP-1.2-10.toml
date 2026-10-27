@@ -1,7 +1,7 @@
 id = "WP-1.2-10"
 title = "syrp-osc: addresses and patterns, arguments, messages, bundles, OSCSender and OSCReceiver"
 crate = "crates/core/osc"
-depends_on = ["WP-1.1-10", "WP-0.2-01"]
+depends_on = ["WP-1.1-10", "WP-0.2-01", "WP-1.1-12"]
 ledger_rows = ["juce_osc/OSCAddress", "juce_osc/OSCAddressPattern", "juce_osc/OSCArgument", "juce_osc/OSCBundle", "juce_osc/OSCColour", "juce_osc/OSCMessage", "juce_osc/OSCReceiver", "juce_osc/OSCSender", "juce_osc/OSCTimeTag", "juce_osc/OSCTypes", "juce_osc/OSCException", "juce_osc/OSCFormatError", "juce_osc/OSCInternalError"]
 spec = "work/specs/WP-1.2-10.md"
 risk = ["public-api", "supply-chain"]
